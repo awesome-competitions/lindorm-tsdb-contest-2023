@@ -25,4 +25,5 @@ package com.alibaba.lindorm.contest.structs;
  * You can treat the annotated object as a constant object.
  */
 public @interface Constant {
+
 }
