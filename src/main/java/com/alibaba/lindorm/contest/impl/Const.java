@@ -1,5 +1,9 @@
 package com.alibaba.lindorm.contest.impl;
 
+import com.alibaba.lindorm.contest.structs.Row;
+
+import java.util.ArrayList;
+
 public interface Const {
 
     String TEST_DATA_DIR = "D:\\Workspace\\tests\\test-tsdb\\";
@@ -28,5 +32,7 @@ public interface Const {
     long BEGIN_TIMESTAMP = 1689091199000L;
 
     String VIN_PREFIX = "LSVNV2182E";
+
+    ArrayList<Row> EMPTY_ROWS = new ArrayList<>();
 
 }

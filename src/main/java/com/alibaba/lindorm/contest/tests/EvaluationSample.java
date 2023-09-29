@@ -139,7 +139,6 @@ public class EvaluationSample {
 
       tsdbEngineSample.shutdown();
 
-
       tsdbEngineSample = new TSDBEngineImpl(dataDir);
       tsdbEngineSample.connect();
 

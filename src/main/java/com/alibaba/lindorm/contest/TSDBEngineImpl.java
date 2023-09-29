@@ -103,7 +103,12 @@ public class TSDBEngineImpl extends TSDBEngine {
   }
 
   @Override public ArrayList<Row> executeAggregateQuery(TimeRangeAggregationRequest aggregationReq) throws IOException {
-    return null;
+    try {
+      return this.table.executeAggregateQuery(aggregationReq.getVin(), aggregationReq.getTimeLowerBound(), aggregationReq.getTimeUpperBound(), aggregationReq.getColumnName(), aggregationReq.getAggregator());
+    } catch (Throwable e) {
+      e.printStackTrace();
+      throw new IOException("executeAggregateQuery err:" + e.getMessage() + ";" + aggregationReq.getVin());
+    }
   }
 
   @Override public ArrayList<Row> executeDownsampleQuery(TimeRangeDownsampleRequest downsampleReq) throws IOException {

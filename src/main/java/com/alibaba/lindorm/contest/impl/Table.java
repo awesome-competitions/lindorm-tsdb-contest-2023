@@ -1,9 +1,6 @@
 package com.alibaba.lindorm.contest.impl;
 
-import com.alibaba.lindorm.contest.structs.ColumnValue;
-import com.alibaba.lindorm.contest.structs.Row;
-import com.alibaba.lindorm.contest.structs.Schema;
-import com.alibaba.lindorm.contest.structs.Vin;
+import com.alibaba.lindorm.contest.structs.*;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -68,43 +65,47 @@ public class Table {
     }
 
     public void upsert(Collection<Row> rows) throws IOException {
-        Context ctx = Context.get();
         for (Row row: rows){
             Index index = this.getVinIndex(row.getVin().getId());
-            BitBuffer writeBuffer = ctx.getWriteDataBuffer();
-            writeBuffer.clear();
-            writeBuffer.putInt(row.getVin().getId(), Const.VIN_ID_BITS);
-            writeBuffer.putInt(Util.expressTimestamp(row.getTimestamp()), Const.TIMESTAMP_BITS);
-            for(String col: sortedColumns){
-                ColumnValue value = row.getColumns().get(col);
-                ColumnValue.ColumnType type = value.getColumnType();
-                int intVal = 0, intBits = 0;
-                if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_STRING)){
-                    Range range = this.getRange(col, type);
-                    ByteBuffer stringValue = value.getStringValue();
-                    intVal = range.get(stringValue);
-                    intBits = Util.calculateBits(intVal, true);
-                }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_DOUBLE_FLOAT)) {
-                    double doubleVal = value.getDoubleFloatValue();
-                    intVal = (int) Math.round(doubleVal * Const.DOUBLE_EXPAND_MULTIPLE);
-                    intBits = Util.calculateBits(intVal, true);
-                }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_INTEGER)) {
-                    intVal = value.getIntegerValue();
-                    intBits = Util.calculateBits(intVal, true);
-                }
-                writeBuffer.putInt(intBits, Const.INT_BYTES_BITS);
-                writeBuffer.putInt(intVal, intBits);
-            }
-            writeBuffer.flip();
-            BitBuffer tmpBuffer = ctx.getWriteTmpBuffer();
-            tmpBuffer.clear();
-            int len = writeBuffer.remaining();
-            tmpBuffer.putShort((short) len);
-            tmpBuffer.put(writeBuffer);
-            tmpBuffer.flip();
-            long position = this.data.write(tmpBuffer);
-            index.put(row.getTimestamp(), Util.assembleLenAndPos(len, position), row);
+            upsert(row, index);
         }
+    }
+
+    public void upsert(Row row, Index index) throws IOException {
+        Context ctx = Context.get();
+        BitBuffer writeBuffer = ctx.getWriteDataBuffer();
+        writeBuffer.clear();
+        writeBuffer.putInt(row.getVin().getId(), Const.VIN_ID_BITS);
+        writeBuffer.putInt(Util.expressTimestamp(row.getTimestamp()), Const.TIMESTAMP_BITS);
+        for(String col: sortedColumns){
+            ColumnValue value = row.getColumns().get(col);
+            ColumnValue.ColumnType type = value.getColumnType();
+            int intVal = 0, intBits = 0;
+            if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_STRING)){
+                Range range = this.getRange(col, type);
+                ByteBuffer stringValue = value.getStringValue();
+                intVal = range.get(stringValue);
+                intBits = Util.calculateBits(intVal, true);
+            }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_DOUBLE_FLOAT)) {
+                double doubleVal = value.getDoubleFloatValue();
+                intVal = (int) Math.round(doubleVal * Const.DOUBLE_EXPAND_MULTIPLE);
+                intBits = Util.calculateBits(intVal, true);
+            }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_INTEGER)) {
+                intVal = value.getIntegerValue();
+                intBits = Util.calculateBits(intVal, true);
+            }
+            writeBuffer.putInt(intBits, Const.INT_BYTES_BITS);
+            writeBuffer.putInt(intVal, intBits);
+        }
+        writeBuffer.flip();
+        BitBuffer tmpBuffer = ctx.getWriteTmpBuffer();
+        tmpBuffer.clear();
+        int len = writeBuffer.remaining();
+        tmpBuffer.putShort((short) len);
+        tmpBuffer.put(writeBuffer);
+        tmpBuffer.flip();
+        long position = this.data.write(tmpBuffer);
+        index.put(row.getTimestamp(), Util.assembleLenAndPos(len, position), row);
     }
 
     public ArrayList<Row> executeLatestQuery(Collection<Vin> vins, Set<String> requestedColumns) throws IOException {
@@ -130,11 +131,11 @@ public class Table {
     }
 
     public ArrayList<Row> executeTimeRangeQuery(Vin vin, long timeLowerBound, long timeUpperBound, Set<String> requestedColumns) {
-        ArrayList<Row> rows = new ArrayList<>();
         Index index = this.getVinIndex(vin.getId());
         if(index == null || index.isEmpty()){
-            return rows;
+            return Const.EMPTY_ROWS;
         }
+        ArrayList<Row> rows = new ArrayList<>();
         index.forRangeEach(timeLowerBound, timeUpperBound, (timestamp, position) -> {
             try {
                 rows.add(new Row(vin, timestamp, getColumnValues(position, requestedColumns)));
@@ -144,6 +145,81 @@ public class Table {
         });
         return rows;
     }
+
+    public ArrayList<Row> executeAggregateQuery(Vin vin, long timeLowerBound, long timeUpperBound, String columnName, Aggregator aggregator) throws IOException {
+        Index index = this.getVinIndex(vin.getId());
+        if(index == null || index.isEmpty()){
+            return Const.EMPTY_ROWS;
+        }
+        Set<String> requestedColumns = Collections.singleton(columnName);
+        ColumnValue.ColumnType type = this.schema.getColumnTypeMap().get(columnName);
+        List<Double> numbers = new ArrayList<>();
+        index.forRangeEach(timeLowerBound, timeUpperBound, (timestamp, position) -> {
+            try {
+                Map<String, ColumnValue> columnValues = getColumnValues(position, requestedColumns);
+                ColumnValue value = columnValues.get(columnName);
+                if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_INTEGER)){
+                    numbers.add((double) value.getIntegerValue());
+                }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_DOUBLE_FLOAT)) {
+                    numbers.add(value.getDoubleFloatValue());
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+        if (numbers.size() == 0){
+            return Const.EMPTY_ROWS;
+        }
+
+        Double d = null;
+        if(aggregator.equals(Aggregator.AVG)){
+            double sum = 0;
+            for(double n: numbers){
+                sum += n;
+            }
+            d = sum/numbers.size();
+        }else if (aggregator.equals(Aggregator.MAX)){
+            for(double n: numbers){
+                if (d == null || d < n){
+                    d = n;
+                }
+            }
+        }
+        Map<String, ColumnValue> columnValues = new HashMap<>();
+        if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_INTEGER)){
+            columnValues.put(columnName, new ColumnValue.IntegerColumn((int)d.doubleValue()));
+        }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_DOUBLE_FLOAT)) {
+            columnValues.put(columnName, new ColumnValue.DoubleFloatColumn(d));
+        }
+        ArrayList<Row> rows = new ArrayList<>();
+        rows.add(new Row(vin, timeLowerBound, columnValues));
+        return rows;
+    }
+
+    public ArrayList<Row> executeDownsampleQuery(Vin vin, long timeLowerBound, long timeUpperBound, String columnName, Aggregator aggregator, long interval, CompareExpression columnFilter) throws IOException {
+        Index index = this.getVinIndex(vin.getId());
+        if(index == null || index.isEmpty()){
+            return Const.EMPTY_ROWS;
+        }
+        Set<String> requestedColumns = Collections.singleton(columnName);
+        ColumnValue.ColumnType type = this.schema.getColumnTypeMap().get(columnName);
+        List<Double> numbers = new ArrayList<>();
+        index.forRangeEach(timeLowerBound, timeUpperBound, (timestamp, position) -> {
+            try {
+                Map<String, ColumnValue> columnValues = getColumnValues(position, requestedColumns);
+                ColumnValue value = columnValues.get(columnName);
+                if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_INTEGER)){
+                    numbers.add((double) value.getIntegerValue());
+                }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_DOUBLE_FLOAT)) {
+                    numbers.add(value.getDoubleFloatValue());
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+        return null;
+    }
+
 
     private Map<String, ColumnValue> getColumnValues(long position, Set<String> requestedColumns) throws IOException {
         Context ctx = Context.get();
