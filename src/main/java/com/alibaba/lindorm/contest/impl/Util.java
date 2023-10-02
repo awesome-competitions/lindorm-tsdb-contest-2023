@@ -119,4 +119,7 @@ public class Util {
         return timestamp * 1000L + Const.BEGIN_TIMESTAMP;
     }
 
+    public static void main(String[] args) {
+        System.out.println(calculateBits(-4, true));
+    }
 }

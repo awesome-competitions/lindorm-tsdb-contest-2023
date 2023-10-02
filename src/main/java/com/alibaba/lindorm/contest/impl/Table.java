@@ -88,19 +88,25 @@ public class Table {
             ColumnValue value = row.getColumns().get(col);
             ColumnValue.ColumnType type = value.getColumnType();
             int intVal = 0, intBits = 0;
+            int symbol = 0;
             if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_STRING)){
                 Range range = this.getRange(col, type);
                 ByteBuffer stringValue = value.getStringValue();
                 intVal = range.get(stringValue);
-                intBits = Util.calculateBits(intVal, true);
-            }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_DOUBLE_FLOAT)) {
-                double doubleVal = value.getDoubleFloatValue();
-                intVal = (int) Math.round(doubleVal * Const.DOUBLE_EXPAND_MULTIPLE);
-                intBits = Util.calculateBits(intVal, true);
-            }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_INTEGER)) {
-                intVal = value.getIntegerValue();
-                intBits = Util.calculateBits(intVal, true);
+            }else {
+                if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_DOUBLE_FLOAT)) {
+                    double doubleVal = value.getDoubleFloatValue();
+                    intVal = (int) Math.round(doubleVal * Const.DOUBLE_EXPAND_MULTIPLE);
+                }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_INTEGER)) {
+                    intVal = value.getIntegerValue();
+                }
+                if (intVal < 0){
+                    symbol = 1;
+                    intVal = -intVal;
+                }
+                writeBuffer.putInt(symbol, 1);
             }
+            intBits = Util.calculateBits(intVal, true);
             writeBuffer.putInt(intBits, Const.INT_BYTES_BITS);
             writeBuffer.putInt(intVal, intBits);
         }
@@ -293,15 +299,23 @@ public class Table {
                     columnValue.put(col, new ColumnValue.StringColumn(stringValue));
                 }
             }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_DOUBLE_FLOAT)) {
+                int symbol = readBuffer.getInt(1);
                 int intBits = readBuffer.getInt(Const.INT_BYTES_BITS);
                 int intVal = readBuffer.getInt(intBits);
                 double doubleVal =((double)intVal)/Const.DOUBLE_EXPAND_MULTIPLE;
+                if (symbol == 1){
+                    doubleVal = -doubleVal;
+                }
                 if (requestedColumns.isEmpty() || requestedColumns.contains(col)) {
                     columnValue.put(col, new ColumnValue.DoubleFloatColumn(doubleVal));
                 }
             }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_INTEGER)) {
+                int symbol = readBuffer.getInt(1);
                 int intBits = readBuffer.getInt(Const.INT_BYTES_BITS);
                 int intVal = readBuffer.getInt(intBits);
+                if (symbol == 1){
+                    intVal = -intVal;
+                }
                 if (requestedColumns.isEmpty() || requestedColumns.contains(col)) {
                     columnValue.put(col, new ColumnValue.IntegerColumn(intVal));
                 }
