@@ -72,13 +72,15 @@ public class EvaluationSample {
       // Stage1: write
       tsdbEngineSample.connect();
 
-      Map<String, ColumnValue> columns = new HashMap<>();
+
       ByteBuffer buffer = ByteBuffer.allocate(3);
       buffer.put((byte) 70);
       buffer.put((byte) 71);
       buffer.put((byte) 72);
       buffer.flip();
       ArrayList<Vin> vinList = new ArrayList<>();
+
+      Map<String, ColumnValue> columns = new HashMap<>();
       columns.put("col1", new ColumnValue.IntegerColumn(123));
       columns.put("col2", new ColumnValue.DoubleFloatColumn(36.16));
       columns.put("col3", new ColumnValue.StringColumn(buffer));
@@ -90,8 +92,29 @@ public class EvaluationSample {
       str = "LSVNV2182E0200002";
       vinList.add(new Vin(str.getBytes(StandardCharsets.UTF_8)));
       rowList.add(new Row(new Vin(str.getBytes(StandardCharsets.UTF_8)), 1689091211000L, columns));
+
+      columns = new HashMap<>();
+      columns.put("col1", new ColumnValue.IntegerColumn(124));
+      columns.put("col2", new ColumnValue.DoubleFloatColumn(36.17));
+      columns.put("col3", new ColumnValue.StringColumn(buffer));
       rowList.add(new Row(new Vin(str.getBytes(StandardCharsets.UTF_8)), 1689091212000L, columns));
-      rowList.add(new Row(new Vin(str.getBytes(StandardCharsets.UTF_8)), 1689091213001L, columns));
+
+      columns = new HashMap<>();
+      columns.put("col1", new ColumnValue.IntegerColumn(125));
+      columns.put("col2", new ColumnValue.DoubleFloatColumn(36.18));
+      columns.put("col3", new ColumnValue.StringColumn(buffer));
+      rowList.add(new Row(new Vin(str.getBytes(StandardCharsets.UTF_8)), 1689091213000L, columns));
+
+      String str3 = "LSVNV2182E0200003";
+      long startTimestamp = 1689091400000L;
+      for(int i = 0; i < 20; i ++){
+        columns = new HashMap<>();
+        columns.put("col1", new ColumnValue.IntegerColumn(i));
+        columns.put("col2", new ColumnValue.DoubleFloatColumn((double) i /10));
+        columns.put("col3", new ColumnValue.StringColumn(buffer));
+        rowList.add(new Row(new Vin(str3.getBytes(StandardCharsets.UTF_8)), startTimestamp, columns));
+        startTimestamp += 1000;
+      }
 
       Map<String, ColumnValue.ColumnType> columnTypes = new HashMap<>();
       columnTypes.put("col1", ColumnValue.ColumnType.COLUMN_TYPE_INTEGER);
@@ -102,40 +125,6 @@ public class EvaluationSample {
       tsdbEngineSample.createTable("test", schema);
       tsdbEngineSample.write(new WriteRequest("test", rowList));
       Set<String> requestedColumns = new HashSet<>(Arrays.asList("col1", "col2", "col3"));
-//
-//      // Stage2: read
-//      tsdbEngineSample.connect();
-//
-//      ArrayList<Vin> vinList = new ArrayList<>();
-//      vinList.add(new Vin(str.getBytes(StandardCharsets.UTF_8)));
-//      Set<String> requestedColumns = new HashSet<>(Arrays.asList("col1", "col2", "col3"));
-//      ArrayList<Row> resultSet = tsdbEngineSample.executeLatestQuery(new LatestQueryRequest("test", vinList, requestedColumns));
-//      showResult(resultSet);
-//
-//
-//      // Stage3: overwrite
-//      tsdbEngineSample.connect();
-//
-//      buffer.flip();
-//      columns = new HashMap<>();
-//      columns.put("col1", new ColumnValue.IntegerColumn(321));
-//      columns.put("col2", new ColumnValue.DoubleFloatColumn(1.23));
-//      columns.put("col3", new ColumnValue.StringColumn(buffer));
-//      str = "LSVNV2182E0200001";
-//      rowList = new ArrayList<>();
-//      rowList.add(new Row(new Vin(str.getBytes(StandardCharsets.UTF_8)), 1000, columns));
-//      str = "LSVNV2182E0200002";
-//      rowList.add(new Row(new Vin(str.getBytes(StandardCharsets.UTF_8)), 1000, columns));
-//      rowList.add(new Row(new Vin(str.getBytes(StandardCharsets.UTF_8)), 2000, columns));
-//      rowList.add(new Row(new Vin(str.getBytes(StandardCharsets.UTF_8)), 3001, columns));
-//      vinList.add(new Vin(str.getBytes(StandardCharsets.UTF_8)));
-//
-//      tsdbEngineSample.upsert(new WriteRequest("test", rowList));
-//      resultSet = tsdbEngineSample.executeLatestQuery(new LatestQueryRequest("test", vinList, requestedColumns));
-//      showResult(resultSet);
-//      resultSet = tsdbEngineSample.executeTimeRangeQuery(new TimeRangeQueryRequest("test", new Vin(str.getBytes(StandardCharsets.UTF_8)), requestedColumns, 2000, 10000));
-//      showResult(resultSet);
-//
 
       tsdbEngineSample.shutdown();
 
@@ -143,10 +132,23 @@ public class EvaluationSample {
       tsdbEngineSample.connect();
 
       ArrayList<Row> resultSet = tsdbEngineSample.executeLatestQuery(new LatestQueryRequest("test", vinList, requestedColumns));
-      showResult(resultSet);
+      showResult("executeLatestQuery", resultSet);
       resultSet = tsdbEngineSample.executeTimeRangeQuery(new TimeRangeQueryRequest("test", new Vin(str.getBytes(StandardCharsets.UTF_8)), requestedColumns, 1689091211000L, 1689091311000L));
-      showResult(resultSet);
-
+      showResult("executeTimeRangeQuery", resultSet);
+      resultSet = tsdbEngineSample.executeAggregateQuery(new TimeRangeAggregationRequest("test", new Vin(str.getBytes(StandardCharsets.UTF_8)), "col2", 1689091211000L, 1689091311000L, Aggregator.AVG));
+      showResult("executeAggregateQuery col2", resultSet);
+      resultSet = tsdbEngineSample.executeAggregateQuery(new TimeRangeAggregationRequest("test", new Vin(str.getBytes(StandardCharsets.UTF_8)), "col1", 1689091211000L, 1689091311000L, Aggregator.AVG));
+      showResult("executeAggregateQuery col1", resultSet);
+      resultSet = tsdbEngineSample.executeAggregateQuery(new TimeRangeAggregationRequest("test", new Vin(str.getBytes(StandardCharsets.UTF_8)), "col1", 1689091211000L, 1689091111000L, Aggregator.AVG));
+      showResult("executeAggregateQuery empty", resultSet);
+      resultSet = tsdbEngineSample.executeAggregateQuery(new TimeRangeAggregationRequest("test", new Vin(str.getBytes(StandardCharsets.UTF_8)), "col2", 1689091211000L, 1689091311000L, Aggregator.MAX));
+      showResult("executeAggregateQuery col2 max", resultSet);
+      resultSet = tsdbEngineSample.executeAggregateQuery(new TimeRangeAggregationRequest("test", new Vin(str.getBytes(StandardCharsets.UTF_8)), "col1", 1689091211000L, 1689091311000L, Aggregator.MAX));
+      showResult("executeAggregateQuery col1 max", resultSet);
+      resultSet = tsdbEngineSample.executeDownsampleQuery(new TimeRangeDownsampleRequest("test", new Vin(str.getBytes(StandardCharsets.UTF_8)), "col1", 1689091211000L, 1689091213000L, Aggregator.AVG, 1000, new CompareExpression(new ColumnValue.IntegerColumn(0), CompareExpression.CompareOp.GREATER)));
+      showResult("executeDownsampleQuery", resultSet);
+      resultSet = tsdbEngineSample.executeDownsampleQuery(new TimeRangeDownsampleRequest("test", new Vin(str3.getBytes(StandardCharsets.UTF_8)), "col2", 1689091400000L, 1689091400000L + 20 * 1000, Aggregator.MAX, 4000, new CompareExpression(new ColumnValue.DoubleFloatColumn(-1), CompareExpression.CompareOp.GREATER)));
+      showResult("executeDownsampleQuery str3", resultSet);
 
 
     } catch (IOException e) {
@@ -154,9 +156,9 @@ public class EvaluationSample {
     }
   }
 
-  public static void showResult(ArrayList<Row> resultSet) {
+  public static void showResult(String name, ArrayList<Row> resultSet) {
     for (Row result : resultSet)
       System.out.println(result);
-    System.out.println("-------next query-------");
+    System.out.println("-------" + name + "-------");
   }
 }

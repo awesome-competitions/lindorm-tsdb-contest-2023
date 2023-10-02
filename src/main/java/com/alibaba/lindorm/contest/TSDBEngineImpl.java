@@ -112,6 +112,11 @@ public class TSDBEngineImpl extends TSDBEngine {
   }
 
   @Override public ArrayList<Row> executeDownsampleQuery(TimeRangeDownsampleRequest downsampleReq) throws IOException {
-    return null;
+    try {
+      return this.table.executeDownsampleQuery(downsampleReq.getVin(), downsampleReq.getTimeLowerBound(), downsampleReq.getTimeUpperBound(), downsampleReq.getColumnName(), downsampleReq.getAggregator(), downsampleReq.getInterval(), downsampleReq.getColumnFilter());
+    } catch (Throwable e) {
+      e.printStackTrace();
+      throw new IOException("executeDownsampleQuery err:" + e.getMessage() + ";" + downsampleReq.getVin());
+    }
   }
 }

@@ -170,9 +170,56 @@ public class Table {
         if (numbers.size() == 0){
             return Const.EMPTY_ROWS;
         }
+        ArrayList<Row> rows = new ArrayList<>();
+        rows.add(handleNumbers(vin, timeLowerBound, numbers, type, columnName, aggregator));
+        return rows;
+    }
 
+    public ArrayList<Row> executeDownsampleQuery(Vin vin, long timeLowerBound, long timeUpperBound, String columnName, Aggregator aggregator, long interval, CompareExpression columnFilter) throws IOException {
+        Index index = this.getVinIndex(vin.getId());
+        if(index == null || index.isEmpty()){
+            return Const.EMPTY_ROWS;
+        }
+        Set<String> requestedColumns = Collections.singleton(columnName);
+        ColumnValue.ColumnType type = this.schema.getColumnTypeMap().get(columnName);
+
+        int size = (int) ((timeUpperBound - timeLowerBound)/interval);
+        List<Double>[] group = new List[size];
+        for (int i= 0; i < group.length; i++){
+            group[i] = new ArrayList<>();
+        }
+        index.forRangeEach(timeLowerBound, timeUpperBound, (timestamp, position) -> {
+            try {
+                Map<String, ColumnValue> columnValues = getColumnValues(position, requestedColumns);
+                ColumnValue value = columnValues.get(columnName);
+                int groupIndex = (int) ((timestamp - timeLowerBound)/interval);
+                List<Double> numbers = group[groupIndex];
+                if ( columnFilter.doCompare(value)){
+                    if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_INTEGER)){
+                        numbers.add((double) value.getIntegerValue());
+                    }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_DOUBLE_FLOAT)) {
+                        numbers.add(value.getDoubleFloatValue());
+                    }
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        ArrayList<Row> rows = new ArrayList<>();
+        long subTimeLowerBound = timeLowerBound;
+        for(List<Double> numbers: group){
+            rows.add(handleNumbers(vin, subTimeLowerBound, numbers, type, columnName, aggregator));
+            subTimeLowerBound += interval;
+        }
+        return rows;
+    }
+
+    private Row handleNumbers(Vin vin, long timeLowerBound, List<Double> numbers, ColumnValue.ColumnType type, String columnName, Aggregator aggregator) {
         Double d = null;
-        if(aggregator.equals(Aggregator.AVG)){
+        if(numbers.size() == 0){
+            d = Double.NEGATIVE_INFINITY;
+        }else if(aggregator.equals(Aggregator.AVG)){
             double sum = 0;
             for(double n: numbers){
                 sum += n;
@@ -191,33 +238,7 @@ public class Table {
         }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_DOUBLE_FLOAT)) {
             columnValues.put(columnName, new ColumnValue.DoubleFloatColumn(d));
         }
-        ArrayList<Row> rows = new ArrayList<>();
-        rows.add(new Row(vin, timeLowerBound, columnValues));
-        return rows;
-    }
-
-    public ArrayList<Row> executeDownsampleQuery(Vin vin, long timeLowerBound, long timeUpperBound, String columnName, Aggregator aggregator, long interval, CompareExpression columnFilter) throws IOException {
-        Index index = this.getVinIndex(vin.getId());
-        if(index == null || index.isEmpty()){
-            return Const.EMPTY_ROWS;
-        }
-        Set<String> requestedColumns = Collections.singleton(columnName);
-        ColumnValue.ColumnType type = this.schema.getColumnTypeMap().get(columnName);
-        List<Double> numbers = new ArrayList<>();
-        index.forRangeEach(timeLowerBound, timeUpperBound, (timestamp, position) -> {
-            try {
-                Map<String, ColumnValue> columnValues = getColumnValues(position, requestedColumns);
-                ColumnValue value = columnValues.get(columnName);
-                if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_INTEGER)){
-                    numbers.add((double) value.getIntegerValue());
-                }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_DOUBLE_FLOAT)) {
-                    numbers.add(value.getDoubleFloatValue());
-                }
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        });
-        return null;
+        return new Row(vin, timeLowerBound, columnValues);
     }
 
 
