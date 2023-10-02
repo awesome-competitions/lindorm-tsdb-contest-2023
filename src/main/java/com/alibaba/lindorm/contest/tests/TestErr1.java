@@ -82,7 +82,7 @@ public class TestErr1 {
 
             Map<String, ColumnValue> columns = new HashMap<>();
             columns.put("col1", new ColumnValue.IntegerColumn(-2147483646));
-            columns.put("col2", new ColumnValue.DoubleFloatColumn(37.16));
+            columns.put("col2", new ColumnValue.DoubleFloatColumn(16312.903124254735));
             columns.put("col3", new ColumnValue.StringColumn(buffer));
             String str = "LSVNV2182E0200001";
             vinList.add(new Vin(str.getBytes(StandardCharsets.UTF_8)));

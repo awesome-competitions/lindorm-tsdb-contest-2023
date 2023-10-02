@@ -23,8 +23,8 @@ public interface Const {
 
     int TIMESTAMP_BITS = Util.calculateBits(Util.expressTimestamp(1689094801000L), true);
     int INT_BYTES_BITS = 6;
-    int DOUBLE_DECIMALS = 10;
-    int DOUBLE_EXPAND_MULTIPLE = (int) Math.pow(10, DOUBLE_DECIMALS);
+    int DOUBLE_DECIMALS = 12;
+    double DOUBLE_EXPAND_MULTIPLE =  Math.pow(10, DOUBLE_DECIMALS);
 
     int ROW_LEN_BYTES = 2;
     int VIN_ID_BITS = 32;
