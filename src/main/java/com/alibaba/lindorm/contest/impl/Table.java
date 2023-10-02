@@ -87,28 +87,29 @@ public class Table {
         for(String col: sortedColumns){
             ColumnValue value = row.getColumns().get(col);
             ColumnValue.ColumnType type = value.getColumnType();
-            int intVal = 0, intBits = 0;
+            long val = 0;
+            int bits;
             int symbol = 0;
             if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_STRING)){
                 Range range = this.getRange(col, type);
                 ByteBuffer stringValue = value.getStringValue();
-                intVal = range.get(stringValue);
+                val = range.get(stringValue);
             }else {
                 if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_DOUBLE_FLOAT)) {
                     double doubleVal = value.getDoubleFloatValue();
-                    intVal = (int) Math.round(doubleVal * Const.DOUBLE_EXPAND_MULTIPLE);
+                    val = Math.round(doubleVal * Const.DOUBLE_EXPAND_MULTIPLE);
                 }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_INTEGER)) {
-                    intVal = value.getIntegerValue();
+                    val = value.getIntegerValue();
                 }
-                if (intVal < 0){
+                if (val < 0){
                     symbol = 1;
-                    intVal = -intVal;
+                    val = -val;
                 }
                 writeBuffer.putInt(symbol, 1);
             }
-            intBits = Util.calculateBits(intVal, true);
-            writeBuffer.putInt(intBits, Const.INT_BYTES_BITS);
-            writeBuffer.putInt(intVal, intBits);
+            bits = Util.calculateBits(val, true);
+            writeBuffer.putInt(bits, Const.INT_BYTES_BITS);
+            writeBuffer.putLong(val, bits);
         }
         writeBuffer.flip();
         BitBuffer tmpBuffer = ctx.getWriteTmpBuffer();
@@ -301,8 +302,8 @@ public class Table {
             }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_DOUBLE_FLOAT)) {
                 int symbol = readBuffer.getInt(1);
                 int intBits = readBuffer.getInt(Const.INT_BYTES_BITS);
-                int intVal = readBuffer.getInt(intBits);
-                double doubleVal =((double)intVal)/Const.DOUBLE_EXPAND_MULTIPLE;
+                long val = readBuffer.getLong(intBits);
+                double doubleVal =((double)val)/Const.DOUBLE_EXPAND_MULTIPLE;
                 if (symbol == 1){
                     doubleVal = -doubleVal;
                 }
