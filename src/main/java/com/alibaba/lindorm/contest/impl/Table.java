@@ -153,16 +153,12 @@ public class Table {
         }
         Set<String> requestedColumns = Collections.singleton(columnName);
         ColumnValue.ColumnType type = this.schema.getColumnTypeMap().get(columnName);
-        List<Double> numbers = new ArrayList<>();
+        List<ColumnValue> numbers = new ArrayList<>();
         index.forRangeEach(timeLowerBound, timeUpperBound, (timestamp, position) -> {
             try {
                 Map<String, ColumnValue> columnValues = getColumnValues(position, requestedColumns);
                 ColumnValue value = columnValues.get(columnName);
-                if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_INTEGER)){
-                    numbers.add((double) value.getIntegerValue());
-                }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_DOUBLE_FLOAT)) {
-                    numbers.add(value.getDoubleFloatValue());
-                }
+                numbers.add(value);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -171,7 +167,7 @@ public class Table {
             return Const.EMPTY_ROWS;
         }
         ArrayList<Row> rows = new ArrayList<>();
-        rows.add(handleNumbers(vin, timeLowerBound, numbers, type, columnName, aggregator));
+        rows.add(handleNumbers(vin, timeLowerBound, numbers, type, columnName, aggregator, null));
         return rows;
     }
 
@@ -184,7 +180,7 @@ public class Table {
         ColumnValue.ColumnType type = this.schema.getColumnTypeMap().get(columnName);
 
         int size = (int) ((timeUpperBound - timeLowerBound)/interval);
-        List<Double>[] group = new List[size];
+        List<ColumnValue>[] group = new List[size];
         for (int i= 0; i < group.length; i++){
             group[i] = new ArrayList<>();
         }
@@ -193,14 +189,8 @@ public class Table {
                 Map<String, ColumnValue> columnValues = getColumnValues(position, requestedColumns);
                 ColumnValue value = columnValues.get(columnName);
                 int groupIndex = (int) ((timestamp - timeLowerBound)/interval);
-                List<Double> numbers = group[groupIndex];
-                if ( columnFilter.doCompare(value)){
-                    if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_INTEGER)){
-                        numbers.add((double) value.getIntegerValue());
-                    }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_DOUBLE_FLOAT)) {
-                        numbers.add(value.getDoubleFloatValue());
-                    }
-                }
+                List<ColumnValue> numbers = group[groupIndex];
+                numbers.add(value);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -208,33 +198,65 @@ public class Table {
 
         ArrayList<Row> rows = new ArrayList<>();
         long subTimeLowerBound = timeLowerBound;
-        for(List<Double> numbers: group){
-            rows.add(handleNumbers(vin, subTimeLowerBound, numbers, type, columnName, aggregator));
+        for(List<ColumnValue> numbers: group){
+            Row row = handleNumbers(vin, subTimeLowerBound, numbers, type, columnName, aggregator, columnFilter);
+            if (row != null){
+                rows.add(row);
+            }
             subTimeLowerBound += interval;
         }
         return rows;
     }
 
-    private Row handleNumbers(Vin vin, long timeLowerBound, List<Double> numbers, ColumnValue.ColumnType type, String columnName, Aggregator aggregator) {
+    private Row handleNumbers(Vin vin, long timeLowerBound, List<ColumnValue> numbers, ColumnValue.ColumnType type, String columnName, Aggregator aggregator, CompareExpression columnFilter) {
+        if (numbers == null || numbers.size() == 0){
+            return null;
+        }
+
         Double d = null;
-        if(numbers.size() == 0){
-            d = Double.NEGATIVE_INFINITY;
-        }else if(aggregator.equals(Aggregator.AVG)){
+        if(aggregator.equals(Aggregator.AVG)){
             double sum = 0;
-            for(double n: numbers){
-                sum += n;
+            boolean suc = false;
+            for(ColumnValue v: numbers){
+                if(columnFilter != null && !columnFilter.doCompare(v)){
+                    continue;
+                }
+                suc = true;
+                if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_INTEGER)){
+                    sum += v.getIntegerValue();
+                }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_DOUBLE_FLOAT)){
+                    sum += v.getDoubleFloatValue();
+                }
             }
-            d = sum/numbers.size();
+            if(suc){
+                d = sum/numbers.size();
+            }
         }else if (aggregator.equals(Aggregator.MAX)){
-            for(double n: numbers){
-                if (d == null || d < n){
-                    d = n;
+            for(ColumnValue v: numbers){
+                if(columnFilter != null && !columnFilter.doCompare(v)){
+                    continue;
+                }
+                double t = 0;
+                if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_INTEGER)){
+                    t = v.getIntegerValue();
+                }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_DOUBLE_FLOAT)){
+                    t = v.getDoubleFloatValue();
+                }
+                if (d == null || d < t){
+                    d = t;
                 }
             }
         }
+        if (d == null){
+            d = Double.NEGATIVE_INFINITY;
+        }
         Map<String, ColumnValue> columnValues = new HashMap<>();
         if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_INTEGER)){
-            columnValues.put(columnName, new ColumnValue.IntegerColumn((int)d.doubleValue()));
+            if(aggregator.equals(Aggregator.AVG)){
+                columnValues.put(columnName, new ColumnValue.DoubleFloatColumn(d));
+            }else{
+                columnValues.put(columnName, new ColumnValue.IntegerColumn((int)d.doubleValue()));
+            }
         }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_DOUBLE_FLOAT)) {
             columnValues.put(columnName, new ColumnValue.DoubleFloatColumn(d));
         }

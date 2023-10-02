@@ -149,6 +149,16 @@ public class EvaluationSample {
       showResult("executeDownsampleQuery", resultSet);
       resultSet = tsdbEngineSample.executeDownsampleQuery(new TimeRangeDownsampleRequest("test", new Vin(str3.getBytes(StandardCharsets.UTF_8)), "col2", 1689091400000L, 1689091400000L + 20 * 1000, Aggregator.MAX, 4000, new CompareExpression(new ColumnValue.DoubleFloatColumn(-1), CompareExpression.CompareOp.GREATER)));
       showResult("executeDownsampleQuery str3", resultSet);
+      resultSet = tsdbEngineSample.executeDownsampleQuery(new TimeRangeDownsampleRequest("test", new Vin(str3.getBytes(StandardCharsets.UTF_8)), "col1", 1689091400000L, 1689091400000L + 20 * 1000, Aggregator.MAX, 4000, new CompareExpression(new ColumnValue.IntegerColumn(-1), CompareExpression.CompareOp.GREATER)));
+      showResult("executeDownsampleQuery str3", resultSet);
+      resultSet = tsdbEngineSample.executeDownsampleQuery(new TimeRangeDownsampleRequest("test", new Vin(str3.getBytes(StandardCharsets.UTF_8)), "col2", 1689091400000L, 1689091400000L + 20 * 1000, Aggregator.AVG, 4000, new CompareExpression(new ColumnValue.DoubleFloatColumn(-1), CompareExpression.CompareOp.GREATER)));
+      showResult("executeDownsampleQuery str3", resultSet);
+      resultSet = tsdbEngineSample.executeDownsampleQuery(new TimeRangeDownsampleRequest("test", new Vin(str3.getBytes(StandardCharsets.UTF_8)), "col1", 1689091400000L, 1689091400000L + 20 * 1000, Aggregator.AVG, 4000, new CompareExpression(new ColumnValue.IntegerColumn(-1), CompareExpression.CompareOp.GREATER)));
+      showResult("executeDownsampleQuery str3", resultSet);
+      resultSet = tsdbEngineSample.executeDownsampleQuery(new TimeRangeDownsampleRequest("test", new Vin(str3.getBytes(StandardCharsets.UTF_8)), "col1", 1689091500000L, 1689091500000L + 20 * 1000, Aggregator.AVG, 4000, new CompareExpression(new ColumnValue.IntegerColumn(-1), CompareExpression.CompareOp.GREATER)));
+      showResult("executeDownsampleQuery str3", resultSet);
+      resultSet = tsdbEngineSample.executeDownsampleQuery(new TimeRangeDownsampleRequest("test", new Vin(str3.getBytes(StandardCharsets.UTF_8)), "col1", 1689091400000L, 1689091400000L + 20 * 1000, Aggregator.AVG, 4000, new CompareExpression(new ColumnValue.IntegerColumn(100), CompareExpression.CompareOp.GREATER)));
+      showResult("executeDownsampleQuery str3", resultSet);
 
 
     } catch (IOException e) {

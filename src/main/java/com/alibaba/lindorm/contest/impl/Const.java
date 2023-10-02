@@ -16,9 +16,9 @@ public interface Const {
 
     int MAX_ROW_SIZE = ((4 + 17 + 6 + 60 * 1024) / (4 * K) + 1) * (4 * K);
 
-    int INITIALIZE_VIN_POSITIONS_SIZE = 3600;
+    int INITIALIZE_VIN_POSITIONS_SIZE = 10 * 3600;
 
-    int MAX_VIN_COUNT = 30000;
+    int MAX_VIN_COUNT = 5000;
 
 
     int TIMESTAMP_BITS = Util.calculateBits(Util.expressTimestamp(1689094801000L), true);

@@ -1,3 +1,3 @@
 .PHONY: pkg
 pkg:
-	zip -r result.zip ../lindorm-tsdb-2023 debug
+	zip -r result.zip ../lindorm-tsdb-contest-java debug
