@@ -37,20 +37,13 @@ public class Vin implements Comparable<Vin> {
 
   @Constant private final byte[] vin;
 
-  private final int id;
-
   public Vin(@Constant byte[] vin) {
     assert vin.length == VIN_LENGTH;
     this.vin = vin;
-    this.id = Util.parseVinId(vin);
   }
 
   public @Constant byte[] getVin() {
     return vin;
-  }
-
-  public int getId() {
-    return id;
   }
 
   @Override

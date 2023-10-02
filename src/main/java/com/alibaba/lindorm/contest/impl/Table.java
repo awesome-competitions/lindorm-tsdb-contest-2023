@@ -20,6 +20,8 @@ public class Table {
 
     private final Map<Integer, Index> indexes;
 
+    private final Map<Vin, Integer> vinIds;
+
     private final List<String> sortedColumns;
 
     private final Map<String, Range> ranges;
@@ -31,6 +33,7 @@ public class Table {
         this.name = tableName;
         this.basePath = basePath;
         this.indexes = new ConcurrentHashMap<>(Const.MAX_VIN_COUNT, 0.65F);
+        this.vinIds = new ConcurrentHashMap<>();
         this.ranges = new ConcurrentHashMap<>();
         this.data = new Data(Path.of(basePath, tableName + ".data"), StandardOpenOption.WRITE, StandardOpenOption.READ, StandardOpenOption.CREATE);
     }
@@ -60,13 +63,17 @@ public class Table {
         return indexes.computeIfAbsent(vinId, k -> new Index());
     }
 
+    public int getVinId(Vin vin){
+        return vinIds.computeIfAbsent(vin, k -> Util.parseVinId(k.getVin()));
+    }
+
     public Range getRange(String column, ColumnValue.ColumnType type){
         return ranges.computeIfAbsent(column, k -> new Range(column, type));
     }
 
     public void upsert(Collection<Row> rows) throws IOException {
         for (Row row: rows){
-            Index index = this.getVinIndex(row.getVin().getId());
+            Index index = this.getVinIndex(getVinId(row.getVin()));
             upsert(row, index);
         }
     }
@@ -75,7 +82,7 @@ public class Table {
         Context ctx = Context.get();
         BitBuffer writeBuffer = ctx.getWriteDataBuffer();
         writeBuffer.clear();
-        writeBuffer.putInt(row.getVin().getId(), Const.VIN_ID_BITS);
+        writeBuffer.putInt(getVinId(row.getVin()), Const.VIN_ID_BITS);
         writeBuffer.putInt(Util.expressTimestamp(row.getTimestamp()), Const.TIMESTAMP_BITS);
         for(String col: sortedColumns){
             ColumnValue value = row.getColumns().get(col);
@@ -111,7 +118,7 @@ public class Table {
     public ArrayList<Row> executeLatestQuery(Collection<Vin> vins, Set<String> requestedColumns) throws IOException {
         ArrayList<Row> rows = new ArrayList<>();
         for(Vin vin: vins){
-            Index index = this.getVinIndex(vin.getId());
+            Index index = this.getVinIndex(getVinId(vin));
             if(index == null || index.isEmpty()){
                 continue;
             }
@@ -131,7 +138,7 @@ public class Table {
     }
 
     public ArrayList<Row> executeTimeRangeQuery(Vin vin, long timeLowerBound, long timeUpperBound, Set<String> requestedColumns) {
-        Index index = this.getVinIndex(vin.getId());
+        Index index = this.getVinIndex(getVinId(vin));
         if(index == null || index.isEmpty()){
             return Const.EMPTY_ROWS;
         }
@@ -147,7 +154,7 @@ public class Table {
     }
 
     public ArrayList<Row> executeAggregateQuery(Vin vin, long timeLowerBound, long timeUpperBound, String columnName, Aggregator aggregator) throws IOException {
-        Index index = this.getVinIndex(vin.getId());
+        Index index = this.getVinIndex(getVinId(vin));
         if(index == null || index.isEmpty()){
             return Const.EMPTY_ROWS;
         }
@@ -172,7 +179,7 @@ public class Table {
     }
 
     public ArrayList<Row> executeDownsampleQuery(Vin vin, long timeLowerBound, long timeUpperBound, String columnName, Aggregator aggregator, long interval, CompareExpression columnFilter) throws IOException {
-        Index index = this.getVinIndex(vin.getId());
+        Index index = this.getVinIndex(getVinId(vin));
         if(index == null || index.isEmpty()){
             return Const.EMPTY_ROWS;
         }
