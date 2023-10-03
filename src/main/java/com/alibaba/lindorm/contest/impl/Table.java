@@ -1,6 +1,7 @@
 package com.alibaba.lindorm.contest.impl;
 
 import com.alibaba.lindorm.contest.structs.*;
+import com.sun.labs.minion.util.BitBuffer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -80,39 +81,25 @@ public class Table {
 
     public void upsert(Row row, Index index) throws IOException {
         Context ctx = Context.get();
-        BitBuffer writeBuffer = ctx.getWriteDataBuffer();
+        ByteBuffer writeBuffer = ctx.getWriteDataBuffer();
         writeBuffer.clear();
-        writeBuffer.putInt(getVinId(row.getVin()), Const.VIN_ID_BITS);
-        writeBuffer.putInt(Util.expressTimestamp(row.getTimestamp()), Const.TIMESTAMP_BITS);
+        writeBuffer.putInt(getVinId(row.getVin()));
+        writeBuffer.putInt(Util.expressTimestamp(row.getTimestamp()));
         for(String col: sortedColumns){
             ColumnValue value = row.getColumns().get(col);
             ColumnValue.ColumnType type = value.getColumnType();
-            long val = 0;
-            int bits;
-            int symbol = 0;
             if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_STRING)){
                 Range range = this.getRange(col, type);
                 ByteBuffer stringValue = value.getStringValue();
-                val = range.get(stringValue);
-            }else {
-                if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_DOUBLE_FLOAT)) {
-                    double doubleVal = value.getDoubleFloatValue();
-                    val = Math.round(doubleVal * Const.DOUBLE_EXPAND_MULTIPLE);
-                }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_INTEGER)) {
-                    val = value.getIntegerValue();
-                }
-                if (val < 0){
-                    symbol = 1;
-                    val = -val;
-                }
-                writeBuffer.putInt(symbol, 1);
+                writeBuffer.putInt(range.get(stringValue));
+            }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_DOUBLE_FLOAT)) {
+                writeBuffer.putDouble(value.getDoubleFloatValue());
+            }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_INTEGER)){
+                writeBuffer.putInt(value.getIntegerValue());
             }
-            bits = Util.calculateBits(val, true);
-            writeBuffer.putInt(bits, Const.INT_BYTES_BITS);
-            writeBuffer.putLong(val, bits);
         }
         writeBuffer.flip();
-        BitBuffer tmpBuffer = ctx.getWriteTmpBuffer();
+        ByteBuffer tmpBuffer = ctx.getWriteTmpBuffer();
         tmpBuffer.clear();
         int len = writeBuffer.remaining();
         tmpBuffer.putShort((short) len);
@@ -282,41 +269,29 @@ public class Table {
         Context ctx = Context.get();
         int len = Util.getLen(position);
         position = Util.getPosition(position);
-        BitBuffer readBuffer = ctx.getReadDataBuffer();
+        ByteBuffer readBuffer = ctx.getReadDataBuffer();
         readBuffer.clear();
         this.data.read(readBuffer, position + Const.ROW_LEN_BYTES, len);
         readBuffer.flip();
-        readBuffer.skip(Const.VIN_ID_BITS);
-        readBuffer.skip(Const.TIMESTAMP_BITS);
+        readBuffer.getInt();
+        readBuffer.getInt();
         Map<String, ColumnValue> columnValue = new HashMap<>();
         for (String col : sortedColumns) {
             ColumnValue.ColumnType type = schema.getColumnTypeMap().get(col);
             if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_STRING)){
                 Range range = this.getRange(col, type);
-                int intBits = readBuffer.getInt(Const.INT_BYTES_BITS);
-                int bytesId = readBuffer.getInt(intBits);
+                int bytesId = readBuffer.getInt();
                 ByteBuffer stringValue = range.getStringValue(bytesId);
                 if (requestedColumns.isEmpty() || requestedColumns.contains(col)) {
                     columnValue.put(col, new ColumnValue.StringColumn(stringValue));
                 }
             }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_DOUBLE_FLOAT)) {
-                int symbol = readBuffer.getInt(1);
-                int intBits = readBuffer.getInt(Const.INT_BYTES_BITS);
-                long val = readBuffer.getLong(intBits);
-                double doubleVal =((double)val)/Const.DOUBLE_EXPAND_MULTIPLE;
-                if (symbol == 1){
-                    doubleVal = -doubleVal;
-                }
+                double doubleVal = readBuffer.getDouble();
                 if (requestedColumns.isEmpty() || requestedColumns.contains(col)) {
                     columnValue.put(col, new ColumnValue.DoubleFloatColumn(doubleVal));
                 }
             }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_INTEGER)) {
-                int symbol = readBuffer.getInt(1);
-                int intBits = readBuffer.getInt(Const.INT_BYTES_BITS);
-                int intVal = readBuffer.getInt(intBits);
-                if (symbol == 1){
-                    intVal = -intVal;
-                }
+                int intVal = readBuffer.getInt();
                 if (requestedColumns.isEmpty() || requestedColumns.contains(col)) {
                     columnValue.put(col, new ColumnValue.IntegerColumn(intVal));
                 }
@@ -366,8 +341,8 @@ public class Table {
 
     public void loadData() throws IOException {
         this.data.foreach((buffer, len, position) -> {
-            int vinId = buffer.getInt(Const.VIN_ID_BITS);
-            int timestamp = buffer.getInt(Const.TIMESTAMP_BITS);
+            int vinId = buffer.getInt();
+            int timestamp = buffer.getInt();
             Index index = this.getVinIndex(vinId);
             index.put(Util.unExpressTimestamp(timestamp), Util.assembleLenAndPos(len, position));
         });

@@ -32,22 +32,18 @@ public class Data {
         this.lock = new ReentrantReadWriteLock();
     }
 
-    public synchronized long write(BitBuffer src) throws IOException {
-        try{
-            this.lock.writeLock().lock();
-            long prev = this.readPosition;
-            if (this.writeBuffer.remaining() < src.remaining()){
-                this.writeBuffer.flip();
-                this.writePosition += this.writeBuffer.remaining();
-                this.channel.write(this.writeBuffer);
-                this.writeBuffer.clear();
-            }
-            this.readPosition += src.remaining();
-            this.writeBuffer.put(src.buffer());
-            return prev;
-        }finally {
-            this.lock.writeLock().unlock();
+    public synchronized long write(ByteBuffer buffer) throws IOException {
+        long prev = this.readPosition;
+        if (this.writeBuffer.remaining() < buffer.remaining()){
+            this.writeBuffer.flip();
+            this.writePosition += this.writeBuffer.remaining();
+            this.channel.write(this.writeBuffer);
+            this.writeBuffer.clear();
         }
+        this.readPosition += buffer.remaining();
+        this.writeBuffer.put(buffer);
+        return prev;
+
     }
 
     public void setPosition(long position) throws IOException {
@@ -56,15 +52,15 @@ public class Data {
         this.channel.position(position);
     }
 
-    public int read(BitBuffer dst, long position, int len) throws IOException {
+    public int read(ByteBuffer dst, long position, int len) throws IOException {
         try{
             this.lock.readLock().lock();
             dst.limit(len);
             if (this.writePosition > position){
-                return this.channel.read(dst.buffer(), position);
+                return this.channel.read(dst, position);
             }else if(this.readPosition > position){
                 long srcAddress = Util.getAddress(this.writeBuffer);
-                long dstAddress = Util.getAddress(dst.buffer());
+                long dstAddress = Util.getAddress(dst);
                 Util.copyMemory(srcAddress + position - this.writePosition, dstAddress, dst.limit());
                 dst.position(dst.limit());
                 return len;
@@ -87,9 +83,9 @@ public class Data {
         this.channel.close();
     }
 
-    public void foreach(ThConsumer<BitBuffer, Integer, Long> consumer) throws IOException {
+    public void foreach(ThConsumer<ByteBuffer, Integer, Long> consumer) throws IOException {
         int batch = 4 * Const.M;
-        BitBuffer buffer = new BitBuffer(batch);
+        ByteBuffer buffer = ByteBuffer.allocateDirect(batch);
         long position = 0;
         while (true){
             buffer.clear();
@@ -101,7 +97,7 @@ public class Data {
                 if(buffer.remaining() <= 2){
                     break;
                 }
-                int len = buffer.getInt(2 * Const.BITS);
+                int len = buffer.getShort();
                 if(len == 0 || buffer.remaining() < len){
                     break;
                 }

@@ -1,5 +1,9 @@
 package com.alibaba.lindorm.contest.impl;
 
+import com.sun.labs.minion.util.BitBuffer;
+
+import java.nio.ByteBuffer;
+
 public class Context {
 
     private static final ThreadLocal<Context> CTX = new ThreadLocal<>();
@@ -19,27 +23,27 @@ public class Context {
         return ctx;
     }
 
-    private final BitBuffer writeDataBuffer;
+    private final ByteBuffer writeDataBuffer;
 
-    private final BitBuffer writeTmpBuffer;
+    private final ByteBuffer writeTmpBuffer;
 
-    private final BitBuffer readDataBuffer;
+    private final ByteBuffer readDataBuffer;
 
     public Context() {
-        this.writeDataBuffer = new BitBuffer(Const.MAX_ROW_SIZE);
-        this.writeTmpBuffer = new BitBuffer(Const.MAX_ROW_SIZE);
-        this.readDataBuffer = new BitBuffer(Const.MAX_ROW_SIZE);
+        this.writeDataBuffer = ByteBuffer.allocateDirect(Const.MAX_ROW_SIZE);
+        this.writeTmpBuffer = ByteBuffer.allocateDirect(Const.MAX_ROW_SIZE);
+        this.readDataBuffer = ByteBuffer.allocateDirect(Const.MAX_ROW_SIZE);
     }
 
-    public BitBuffer getWriteDataBuffer() {
+    public ByteBuffer getWriteDataBuffer() {
         return writeDataBuffer;
     }
 
-    public BitBuffer getWriteTmpBuffer() {
+    public ByteBuffer getWriteTmpBuffer() {
         return writeTmpBuffer;
     }
 
-    public BitBuffer getReadDataBuffer() {
+    public ByteBuffer getReadDataBuffer() {
         return readDataBuffer;
     }
 }
