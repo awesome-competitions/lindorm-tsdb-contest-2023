@@ -47,7 +47,7 @@ public class Table {
     public static Table load(String basePath, String tableName) throws IOException {
         Table t = new Table(basePath, tableName);
         t.loadSchema();
-        t.loadDict();
+//        t.loadDict();
         t.loadData();
         return t;
     }
@@ -89,9 +89,9 @@ public class Table {
             ColumnValue value = row.getColumns().get(col);
             ColumnValue.ColumnType type = value.getColumnType();
             if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_STRING)){
-                Range range = this.getRange(col, type);
-                ByteBuffer stringValue = value.getStringValue();
-                writeBuffer.putInt(range.get(stringValue));
+                ByteBuffer stringVal = value.getStringValue();
+                writeBuffer.putInt(stringVal.remaining());
+                writeBuffer.put(value.getStringValue());
             }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_DOUBLE_FLOAT)) {
                 writeBuffer.putDouble(value.getDoubleFloatValue());
             }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_INTEGER)){
@@ -279,11 +279,11 @@ public class Table {
         for (String col : sortedColumns) {
             ColumnValue.ColumnType type = schema.getColumnTypeMap().get(col);
             if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_STRING)){
-                Range range = this.getRange(col, type);
-                int bytesId = readBuffer.getInt();
-                ByteBuffer stringValue = range.getStringValue(bytesId);
+                int stringLen = readBuffer.getInt();
+                byte[] bs = new byte[stringLen];
+                readBuffer.get(bs);
                 if (requestedColumns.isEmpty() || requestedColumns.contains(col)) {
-                    columnValue.put(col, new ColumnValue.StringColumn(stringValue));
+                    columnValue.put(col, new ColumnValue.StringColumn(ByteBuffer.wrap(bs)));
                 }
             }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_DOUBLE_FLOAT)) {
                 double doubleVal = readBuffer.getDouble();
@@ -303,7 +303,7 @@ public class Table {
     public void force() throws IOException {
         this.data.force();
         this.flushSchema();
-        this.flushDict();
+//        this.flushDict();
     }
 
     public long size() throws IOException {
