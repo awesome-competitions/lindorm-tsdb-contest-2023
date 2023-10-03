@@ -240,20 +240,20 @@ public class Table {
         Double d = null;
         if(aggregator.equals(Aggregator.AVG)){
             double sum = 0;
-            boolean suc = false;
+            int count = 0;
             for(ColumnValue v: numbers){
                 if(columnFilter != null && !columnFilter.doCompare(v)){
                     continue;
                 }
-                suc = true;
+                count ++;
                 if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_INTEGER)){
                     sum += v.getIntegerValue();
                 }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_DOUBLE_FLOAT)){
                     sum += v.getDoubleFloatValue();
                 }
             }
-            if(suc){
-                d = sum/numbers.size();
+            if(count > 0){
+                d = sum/count;
             }
         }else if (aggregator.equals(Aggregator.MAX)){
             for(ColumnValue v: numbers){
