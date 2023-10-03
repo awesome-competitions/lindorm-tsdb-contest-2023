@@ -19,9 +19,7 @@ public class Table {
 
     private Schema schema;
 
-    private final Map<Integer, Index> indexes;
-
-    private final Map<Vin, Integer> vinIds;
+    private final Map<Vin, Index> indexes;
 
     private final List<String> sortedColumns;
 
@@ -34,7 +32,6 @@ public class Table {
         this.name = tableName;
         this.basePath = basePath;
         this.indexes = new ConcurrentHashMap<>(Const.MAX_VIN_COUNT, 0.65F);
-        this.vinIds = new ConcurrentHashMap<>();
         this.ranges = new ConcurrentHashMap<>();
         this.data = new Data(Path.of(basePath, tableName + ".data"), StandardOpenOption.WRITE, StandardOpenOption.READ, StandardOpenOption.CREATE);
     }
@@ -56,16 +53,8 @@ public class Table {
         return name;
     }
 
-    public Map<Integer, Index> getIndexes() {
-        return indexes;
-    }
-
-    public Index getVinIndex(int vinId){
-        return indexes.computeIfAbsent(vinId, k -> new Index());
-    }
-
-    public int getVinId(Vin vin){
-        return vinIds.computeIfAbsent(vin, k -> Util.parseVinId(k.getVin()));
+    public Index getVinIndex(Vin vin){
+        return indexes.computeIfAbsent(vin, k -> new Index());
     }
 
     public Range getRange(String column, ColumnValue.ColumnType type){
@@ -74,7 +63,7 @@ public class Table {
 
     public void upsert(Collection<Row> rows) throws IOException {
         for (Row row: rows){
-            Index index = this.getVinIndex(getVinId(row.getVin()));
+            Index index = this.getVinIndex(row.getVin());
             upsert(row, index);
         }
     }
@@ -83,15 +72,15 @@ public class Table {
         Context ctx = Context.get();
         ByteBuffer writeBuffer = ctx.getWriteDataBuffer();
         writeBuffer.clear();
-        writeBuffer.putInt(getVinId(row.getVin()));
-        writeBuffer.putInt(Util.expressTimestamp(row.getTimestamp()));
+        writeBuffer.put(row.getVin().getVin());
+        writeBuffer.putLong(row.getTimestamp());
         for(String col: sortedColumns){
             ColumnValue value = row.getColumns().get(col);
             ColumnValue.ColumnType type = value.getColumnType();
             if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_STRING)){
-                ByteBuffer stringVal = value.getStringValue();
-                writeBuffer.putInt(stringVal.remaining());
-                writeBuffer.put(value.getStringValue());
+                byte[] bs = value.getStringValue().array();
+                writeBuffer.putInt(bs.length);
+                writeBuffer.put(bs);
             }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_DOUBLE_FLOAT)) {
                 writeBuffer.putDouble(value.getDoubleFloatValue());
             }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_INTEGER)){
@@ -109,10 +98,44 @@ public class Table {
         index.put(row.getTimestamp(), Util.assembleLenAndPos(len, position), row);
     }
 
+
+    private Map<String, ColumnValue> getColumnValues(long position, Set<String> requestedColumns) throws IOException {
+        Context ctx = Context.get();
+        int len = Util.getLen(position);
+        position = Util.getPosition(position);
+        ByteBuffer readBuffer = ctx.getReadDataBuffer();
+        readBuffer.clear();
+        this.data.read(readBuffer, position + Const.ROW_LEN_BYTES + Vin.VIN_LENGTH + 8, len);
+        readBuffer.flip();
+        Map<String, ColumnValue> columnValue = new HashMap<>();
+        for (String col : sortedColumns) {
+            ColumnValue.ColumnType type = schema.getColumnTypeMap().get(col);
+            if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_STRING)){
+                int stringLen = readBuffer.getInt();
+                byte[] bs = new byte[stringLen];
+                readBuffer.get(bs);
+                if (requestedColumns.isEmpty() || requestedColumns.contains(col)) {
+                    columnValue.put(col, new ColumnValue.StringColumn(ByteBuffer.wrap(bs)));
+                }
+            }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_DOUBLE_FLOAT)) {
+                double doubleVal = readBuffer.getDouble();
+                if (requestedColumns.isEmpty() || requestedColumns.contains(col)) {
+                    columnValue.put(col, new ColumnValue.DoubleFloatColumn(doubleVal));
+                }
+            }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_INTEGER)) {
+                int intVal = readBuffer.getInt();
+                if (requestedColumns.isEmpty() || requestedColumns.contains(col)) {
+                    columnValue.put(col, new ColumnValue.IntegerColumn(intVal));
+                }
+            }
+        }
+        return columnValue;
+    }
+
     public ArrayList<Row> executeLatestQuery(Collection<Vin> vins, Set<String> requestedColumns) throws IOException {
         ArrayList<Row> rows = new ArrayList<>();
         for(Vin vin: vins){
-            Index index = this.getVinIndex(getVinId(vin));
+            Index index = this.getVinIndex(vin);
             if(index == null || index.isEmpty()){
                 continue;
             }
@@ -132,7 +155,7 @@ public class Table {
     }
 
     public ArrayList<Row> executeTimeRangeQuery(Vin vin, long timeLowerBound, long timeUpperBound, Set<String> requestedColumns) {
-        Index index = this.getVinIndex(getVinId(vin));
+        Index index = this.getVinIndex(vin);
         if(index == null || index.isEmpty()){
             return Const.EMPTY_ROWS;
         }
@@ -148,7 +171,7 @@ public class Table {
     }
 
     public ArrayList<Row> executeAggregateQuery(Vin vin, long timeLowerBound, long timeUpperBound, String columnName, Aggregator aggregator) throws IOException {
-        Index index = this.getVinIndex(getVinId(vin));
+        Index index = this.getVinIndex(vin);
         if(index == null || index.isEmpty()){
             return Const.EMPTY_ROWS;
         }
@@ -173,7 +196,7 @@ public class Table {
     }
 
     public ArrayList<Row> executeDownsampleQuery(Vin vin, long timeLowerBound, long timeUpperBound, String columnName, Aggregator aggregator, long interval, CompareExpression columnFilter) throws IOException {
-        Index index = this.getVinIndex(getVinId(vin));
+        Index index = this.getVinIndex(vin);
         if(index == null || index.isEmpty()){
             return Const.EMPTY_ROWS;
         }
@@ -264,42 +287,6 @@ public class Table {
         return new Row(vin, timeLowerBound, columnValues);
     }
 
-
-    private Map<String, ColumnValue> getColumnValues(long position, Set<String> requestedColumns) throws IOException {
-        Context ctx = Context.get();
-        int len = Util.getLen(position);
-        position = Util.getPosition(position);
-        ByteBuffer readBuffer = ctx.getReadDataBuffer();
-        readBuffer.clear();
-        this.data.read(readBuffer, position + Const.ROW_LEN_BYTES, len);
-        readBuffer.flip();
-        readBuffer.getInt();
-        readBuffer.getInt();
-        Map<String, ColumnValue> columnValue = new HashMap<>();
-        for (String col : sortedColumns) {
-            ColumnValue.ColumnType type = schema.getColumnTypeMap().get(col);
-            if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_STRING)){
-                int stringLen = readBuffer.getInt();
-                byte[] bs = new byte[stringLen];
-                readBuffer.get(bs);
-                if (requestedColumns.isEmpty() || requestedColumns.contains(col)) {
-                    columnValue.put(col, new ColumnValue.StringColumn(ByteBuffer.wrap(bs)));
-                }
-            }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_DOUBLE_FLOAT)) {
-                double doubleVal = readBuffer.getDouble();
-                if (requestedColumns.isEmpty() || requestedColumns.contains(col)) {
-                    columnValue.put(col, new ColumnValue.DoubleFloatColumn(doubleVal));
-                }
-            }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_INTEGER)) {
-                int intVal = readBuffer.getInt();
-                if (requestedColumns.isEmpty() || requestedColumns.contains(col)) {
-                    columnValue.put(col, new ColumnValue.IntegerColumn(intVal));
-                }
-            }
-        }
-        return columnValue;
-    }
-
     public void force() throws IOException {
         this.data.force();
         this.flushSchema();
@@ -341,10 +328,11 @@ public class Table {
 
     public void loadData() throws IOException {
         this.data.foreach((buffer, len, position) -> {
-            int vinId = buffer.getInt();
-            int timestamp = buffer.getInt();
-            Index index = this.getVinIndex(vinId);
-            index.put(Util.unExpressTimestamp(timestamp), Util.assembleLenAndPos(len, position));
+            byte[] bs = new byte[Vin.VIN_LENGTH];
+            buffer.get(bs);
+            long timestamp = buffer.getLong();
+            Index index = this.getVinIndex(new Vin(bs));
+            index.put(timestamp, Util.assembleLenAndPos(len, position));
         });
     }
 

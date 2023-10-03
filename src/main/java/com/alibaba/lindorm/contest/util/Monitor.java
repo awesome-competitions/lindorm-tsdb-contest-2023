@@ -7,7 +7,7 @@ import com.alibaba.lindorm.contest.impl.Table;
 public class Monitor {
     public static Runtime runtime = Runtime.getRuntime();
     public static String information(Table table){
-        return "heap max: " + runtime.maxMemory() / Const.M + ", heap used: " + (runtime.totalMemory() - runtime.freeMemory()) / Const.M + ", table index size:" + table.getIndexes().size();
+        return "heap max: " + runtime.maxMemory() / Const.M + ", heap used: " + (runtime.totalMemory() - runtime.freeMemory()) / Const.M;
     }
 
     public static void start(Table table){

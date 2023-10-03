@@ -81,24 +81,16 @@ public class TestErr1 {
             ArrayList<Vin> vinList = new ArrayList<>();
 
             double val = 16170.2215572700133131123123;
-            double val1 =  16170.2215572700133131123123;
-            ColumnValue.DoubleFloatColumn dfc = new ColumnValue.DoubleFloatColumn(val);
-            System.out.println(dfc.getDoubleFloatValue() == val1);
-
-            long l1 = Double.doubleToRawLongBits(val);
-            double val2 = Double.longBitsToDouble(l1);
-            System.out.println(l1);
-            System.out.println(val == val2);
 
             Map<String, ColumnValue> columns = new HashMap<>();
-            columns.put("col1", new ColumnValue.IntegerColumn(-2147483646));
+            columns.put("col1", new ColumnValue.IntegerColumn(-2147483645));
             columns.put("col2", new ColumnValue.DoubleFloatColumn(val));
             columns.put("col3", new ColumnValue.StringColumn(buffer));
             String str = "LSVNV2182E0200001";
             vinList.add(new Vin(str.getBytes(StandardCharsets.UTF_8)));
             ArrayList<Row> rowList = new ArrayList<>();
             long timestamp = 1689092000000L;
-            for (int i = 0; i < 1; i ++){
+            for (int i = 0; i < 1000000; i ++){
                 timestamp += 1000;
                 rowList.add(new Row(new Vin(str.getBytes(StandardCharsets.UTF_8)), timestamp, columns));
             }
