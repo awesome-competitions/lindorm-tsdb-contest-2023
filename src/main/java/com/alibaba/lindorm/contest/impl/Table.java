@@ -91,7 +91,7 @@ public class Table {
         ByteBuffer tmpBuffer = ctx.getWriteTmpBuffer();
         tmpBuffer.clear();
         int len = writeBuffer.remaining();
-        tmpBuffer.putShort((short) len);
+        tmpBuffer.putInt(len);
         tmpBuffer.put(writeBuffer);
         tmpBuffer.flip();
         long position = this.data.write(tmpBuffer);
@@ -105,7 +105,7 @@ public class Table {
         position = Util.getPosition(position);
         ByteBuffer readBuffer = ctx.getReadDataBuffer();
         readBuffer.clear();
-        this.data.read(readBuffer, position + Const.ROW_LEN_BYTES + Vin.VIN_LENGTH + 8, len);
+        this.data.read(readBuffer, position + 4 + Vin.VIN_LENGTH + 8, len - Vin.VIN_LENGTH - 8);
         readBuffer.flip();
         Map<String, ColumnValue> columnValue = new HashMap<>();
         for (String col : sortedColumns) {

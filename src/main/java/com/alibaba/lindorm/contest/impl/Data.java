@@ -32,18 +32,22 @@ public class Data {
         this.lock = new ReentrantReadWriteLock();
     }
 
-    public synchronized long write(ByteBuffer buffer) throws IOException {
-        long prev = this.readPosition;
-        if (this.writeBuffer.remaining() < buffer.remaining()){
-            this.writeBuffer.flip();
-            this.writePosition += this.writeBuffer.remaining();
-            this.channel.write(this.writeBuffer);
-            this.writeBuffer.clear();
+    public long write(ByteBuffer buffer) throws IOException {
+        try{
+            this.lock.writeLock().lock();
+            long prev = this.readPosition;
+            if (this.writeBuffer.remaining() < buffer.remaining()){
+                this.writeBuffer.flip();
+                this.writePosition += this.writeBuffer.remaining();
+                this.channel.write(this.writeBuffer);
+                this.writeBuffer.clear();
+            }
+            this.readPosition += buffer.remaining();
+            this.writeBuffer.put(buffer);
+            return prev;
+        }finally {
+            this.lock.writeLock().unlock();
         }
-        this.readPosition += buffer.remaining();
-        this.writeBuffer.put(buffer);
-        return prev;
-
     }
 
     public void setPosition(long position) throws IOException {
@@ -94,10 +98,10 @@ public class Data {
             }
             buffer.flip();
             while(true){
-                if(buffer.remaining() <= 2){
+                if(buffer.remaining() <= 4){
                     break;
                 }
-                int len = buffer.getShort();
+                int len = buffer.getInt();
                 if(len == 0 || buffer.remaining() < len){
                     break;
                 }
@@ -106,7 +110,7 @@ public class Data {
                 consumer.accept(buffer, len, position);
                 buffer.position(nextPosition);
                 buffer.limit(oldLimit);
-                position += 2 + len;
+                position += 4 + len;
             }
         }
     }

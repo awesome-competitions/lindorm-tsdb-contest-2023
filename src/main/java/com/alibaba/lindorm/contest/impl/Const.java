@@ -14,7 +14,7 @@ public interface Const {
     int M = 1024 * K;
     int G = 1024 * M;
 
-    int MAX_ROW_SIZE = ((4 + 17 + 6 + 60 * 1024) / (4 * K) + 1) * (4 * K);
+    int MAX_ROW_SIZE = 64 * K;
 
     int INITIALIZE_VIN_POSITIONS_SIZE = 10 * 3600;
 
