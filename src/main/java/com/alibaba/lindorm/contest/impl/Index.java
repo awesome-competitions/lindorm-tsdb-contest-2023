@@ -76,7 +76,7 @@ public class Index {
                 continue;
             }
             long t = i * 1000L;
-            if ( t < end){
+            if (t < end && t >= start){
                 consumer.accept(t,this.positions[index]);
             }
         }
@@ -97,5 +97,9 @@ public class Index {
                 ", latestTimestamp=" + latestTimestamp +
                 ", oldestTimestamp=" + oldestTimestamp +
                 '}';
+    }
+
+    public static void main(String[] args) {
+        System.out.println(1694078716012L/1000);
     }
 }
