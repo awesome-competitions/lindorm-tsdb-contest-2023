@@ -1,5 +1,6 @@
 package com.alibaba.lindorm.contest.impl;
 
+import com.alibaba.lindorm.contest.structs.Vin;
 import sun.misc.Unsafe;
 
 import java.lang.reflect.Field;
@@ -102,11 +103,12 @@ public class Util {
         return s.length() - s.indexOf(".") - 1;
     }
 
-    public static int parseVinId(byte[] vin){
+    public static int parseVinId(Vin vin){
         int vinId = 0;
-        for (int i = Const.VIN_PREFIX.length(); i < vin.length; i ++){
+        byte[] bs = vin.getVin();
+        for (int i = Const.VIN_PREFIX.length(); i < bs.length; i ++){
             vinId *= 10;
-            vinId += vin[i] - '0';
+            vinId += bs[i] - '0';
         }
         return vinId;
     }

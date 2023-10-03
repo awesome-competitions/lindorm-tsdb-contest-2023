@@ -19,7 +19,9 @@ public class Table {
 
     private Schema schema;
 
-    private final Map<Vin, Index> indexes;
+    private final Map<Integer, Index> indexes;
+
+    private final Map<Vin, Integer> vinIds;
 
     private final List<String> sortedColumns;
 
@@ -32,6 +34,7 @@ public class Table {
         this.name = tableName;
         this.basePath = basePath;
         this.indexes = new ConcurrentHashMap<>(Const.MAX_VIN_COUNT, 0.65F);
+        this.vinIds = new ConcurrentHashMap<>();
         this.ranges = new ConcurrentHashMap<>();
         this.data = new Data(Path.of(basePath, tableName + ".data"), StandardOpenOption.WRITE, StandardOpenOption.READ, StandardOpenOption.CREATE);
     }
@@ -53,8 +56,16 @@ public class Table {
         return name;
     }
 
+    public Index getVinIndex(Integer vId){
+        return indexes.computeIfAbsent(vId, k -> new Index());
+    }
+
     public Index getVinIndex(Vin vin){
-        return indexes.computeIfAbsent(vin, k -> new Index());
+        return indexes.computeIfAbsent(getVinId(vin), k -> new Index());
+    }
+
+    public Integer getVinId(Vin vin){
+        return vinIds.computeIfAbsent(vin, Util::parseVinId);
     }
 
     public Range getRange(String column, ColumnValue.ColumnType type){
@@ -72,7 +83,7 @@ public class Table {
         Context ctx = Context.get();
         ByteBuffer writeBuffer = ctx.getWriteDataBuffer();
         writeBuffer.clear();
-        writeBuffer.put(row.getVin().getVin());
+        writeBuffer.putInt(getVinId(row.getVin()));
         writeBuffer.putLong(row.getTimestamp());
         for(String col: sortedColumns){
             ColumnValue value = row.getColumns().get(col);
@@ -105,7 +116,7 @@ public class Table {
         position = Util.getPosition(position);
         ByteBuffer readBuffer = ctx.getReadDataBuffer();
         readBuffer.clear();
-        this.data.read(readBuffer, position + 4 + Vin.VIN_LENGTH + 8, len - Vin.VIN_LENGTH - 8);
+        this.data.read(readBuffer, position + 4 + 4 + 8, len - 4 - 8);
         readBuffer.flip();
         Map<String, ColumnValue> columnValue = new HashMap<>();
         for (String col : sortedColumns) {
@@ -328,10 +339,9 @@ public class Table {
 
     public void loadData() throws IOException {
         this.data.foreach((buffer, len, position) -> {
-            byte[] bs = new byte[Vin.VIN_LENGTH];
-            buffer.get(bs);
+            int vId = buffer.getInt();
             long timestamp = buffer.getLong();
-            Index index = this.getVinIndex(new Vin(bs));
+            Index index = this.getVinIndex(vId);
             index.put(timestamp, Util.assembleLenAndPos(len, position));
         });
     }
