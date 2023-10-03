@@ -1,10 +1,10 @@
 package com.alibaba.lindorm.contest.impl;
 
 import com.alibaba.lindorm.contest.structs.*;
-import com.sun.labs.minion.util.BitBuffer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -47,8 +47,7 @@ public class Table {
     public static Table load(String basePath, String tableName) throws IOException {
         Table t = new Table(basePath, tableName);
         t.loadSchema();
-//        t.loadDict();
-        t.loadData();
+        t.loadIndex();
         return t;
     }
 
@@ -56,12 +55,12 @@ public class Table {
         return name;
     }
 
-    public Index getVinIndex(Integer vId){
-        return indexes.computeIfAbsent(vId, k -> new Index());
+    public Index getVinIndex(Integer vinId){
+        return indexes.computeIfAbsent(vinId, k -> new Index(vinId));
     }
 
     public Index getVinIndex(Vin vin){
-        return indexes.computeIfAbsent(getVinId(vin), k -> new Index());
+        return getVinIndex(getVinId(vin));
     }
 
     public Integer getVinId(Vin vin){
@@ -83,8 +82,6 @@ public class Table {
         Context ctx = Context.get();
         ByteBuffer writeBuffer = ctx.getWriteDataBuffer();
         writeBuffer.clear();
-        writeBuffer.putInt(getVinId(row.getVin()));
-        writeBuffer.putLong(row.getTimestamp());
         for(String col: sortedColumns){
             ColumnValue value = row.getColumns().get(col);
             ColumnValue.ColumnType type = value.getColumnType();
@@ -99,13 +96,8 @@ public class Table {
             }
         }
         writeBuffer.flip();
-        ByteBuffer tmpBuffer = ctx.getWriteTmpBuffer();
-        tmpBuffer.clear();
         int len = writeBuffer.remaining();
-        tmpBuffer.putInt(len);
-        tmpBuffer.put(writeBuffer);
-        tmpBuffer.flip();
-        long position = this.data.write(tmpBuffer);
+        long position = this.data.write(writeBuffer);
         index.put(row.getTimestamp(), Util.assembleLenAndPos(len, position), row);
     }
 
@@ -116,7 +108,7 @@ public class Table {
         position = Util.getPosition(position);
         ByteBuffer readBuffer = ctx.getReadDataBuffer();
         readBuffer.clear();
-        this.data.read(readBuffer, position + 4 + 4 + 8, len - 4 - 8);
+        this.data.read(readBuffer, position, len);
         readBuffer.flip();
         Map<String, ColumnValue> columnValue = new HashMap<>();
         for (String col : sortedColumns) {
@@ -150,7 +142,7 @@ public class Table {
             if(index == null || index.isEmpty()){
                 continue;
             }
-            Row lastRow = index.getLastestRow();
+            Row lastRow = index.getLatestRow();
             if (lastRow != null){
                 HashMap<String, ColumnValue> columnValues = new HashMap<>();
                 for (String col: requestedColumns){
@@ -301,6 +293,7 @@ public class Table {
     public void force() throws IOException {
         this.data.force();
         this.flushSchema();
+        this.flushIndex();
 //        this.flushDict();
     }
 
@@ -337,15 +330,6 @@ public class Table {
         this.setSchema(new Schema(columnTypeMap));
     }
 
-    public void loadData() throws IOException {
-        this.data.foreach((buffer, len, position) -> {
-            int vId = buffer.getInt();
-            long timestamp = buffer.getLong();
-            Index index = this.getVinIndex(vId);
-            index.put(timestamp, Util.assembleLenAndPos(len, position));
-        });
-    }
-
     public void flushDict() throws IOException {
         Path dictPath = Path.of(basePath, name+ ".dict");
         StringBuilder builder = new StringBuilder();
@@ -361,6 +345,62 @@ public class Table {
         for(String line: lines){
             Range range = new Range(line);
             this.ranges.put(range.getColumn(), range);
+        }
+    }
+
+    public void flushIndex() throws IOException {
+        Path indexPath = Path.of(basePath, name+ ".index");
+        FileChannel ch = FileChannel.open(indexPath, StandardOpenOption.WRITE, StandardOpenOption.READ, StandardOpenOption.CREATE);
+
+        // single index
+        Index singleIndex = null;
+        for (Index index: indexes.values()){
+            singleIndex = index;
+            break;
+        }
+        if(singleIndex == null){
+            return;
+        }
+        long oldest = singleIndex.getOldestTimestamp();
+
+        // write first timestamp
+        ByteBuffer buffer = ByteBuffer.allocateDirect(4 * Const.M);
+        buffer.putLong(oldest);
+        for (Index index: indexes.values()){
+            buffer.putInt(index.getId());
+            for (long i = oldest; i < oldest + Const.INITIALIZE_VIN_POSITIONS_SIZE * 1000; i += 1000){
+                buffer.putLong(index.get(i));
+            }
+            buffer.flip();
+            ch.write(buffer);
+            buffer.clear();
+        }
+    }
+
+    public void loadIndex() throws IOException {
+        Path indexPath = Path.of(basePath, name+ ".index");
+        FileChannel ch = FileChannel.open(indexPath, StandardOpenOption.WRITE, StandardOpenOption.READ, StandardOpenOption.CREATE);
+
+        int capacity = Const.INITIALIZE_VIN_POSITIONS_SIZE * 8 + 4;
+        ByteBuffer buffer = ByteBuffer.allocateDirect(capacity);
+        buffer.limit(8);
+        ch.read(buffer);
+        buffer.flip();
+        long oldest = buffer.getLong();
+        while (true){
+            buffer.clear();
+            if (ch.read(buffer) != capacity){
+                break;
+            }
+            buffer.flip();
+            int vinId = buffer.getInt();
+            Index index = getVinIndex(vinId);
+            for (long i = oldest; i < oldest + Const.INITIALIZE_VIN_POSITIONS_SIZE * 1000; i += 1000){
+                long pos = buffer.getLong();
+                if (pos != -1){
+                    index.put(i, pos);
+                }
+            }
         }
     }
 

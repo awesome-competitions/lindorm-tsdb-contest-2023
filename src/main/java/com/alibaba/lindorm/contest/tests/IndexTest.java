@@ -6,7 +6,7 @@ public class IndexTest {
 
     public static void main(String[] args) {
 
-        Index index = new Index();
+        Index index = new Index(1);
         index.put(1694078716000L, 1);
         index.put(1694078717000L, 1);
         index.put(1694078776000L, 1);

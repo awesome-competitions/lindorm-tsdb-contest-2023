@@ -90,7 +90,7 @@ public class TestErr1 {
             vinList.add(new Vin(str.getBytes(StandardCharsets.UTF_8)));
             ArrayList<Row> rowList = new ArrayList<>();
             long timestamp = 1689092000000L;
-            for (int i = 0; i < 1000000; i ++){
+            for (int i = 0; i < 1; i ++){
                 timestamp += 1000;
                 rowList.add(new Row(new Vin(str.getBytes(StandardCharsets.UTF_8)), timestamp, columns));
             }

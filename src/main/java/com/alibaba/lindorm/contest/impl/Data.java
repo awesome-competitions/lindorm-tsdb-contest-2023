@@ -87,34 +87,6 @@ public class Data {
         this.channel.close();
     }
 
-    public void foreach(ThConsumer<ByteBuffer, Integer, Long> consumer) throws IOException {
-        int batch = 4 * Const.M;
-        ByteBuffer buffer = ByteBuffer.allocateDirect(batch);
-        long position = 0;
-        while (true){
-            buffer.clear();
-            if(this.read(buffer, position, batch) <= 0){
-                break;
-            }
-            buffer.flip();
-            while(true){
-                if(buffer.remaining() <= 4){
-                    break;
-                }
-                int len = buffer.getInt();
-                if(len == 0 || buffer.remaining() < len){
-                    break;
-                }
-                int nextPosition = buffer.position() + len;
-                int oldLimit = buffer.limit();
-                consumer.accept(buffer, len, position);
-                buffer.position(nextPosition);
-                buffer.limit(oldLimit);
-                position += 4 + len;
-            }
-        }
-    }
-
     public long size() throws IOException {
         return this.channel.size();
     }

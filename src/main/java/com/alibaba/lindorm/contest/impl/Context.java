@@ -25,22 +25,15 @@ public class Context {
 
     private final ByteBuffer writeDataBuffer;
 
-    private final ByteBuffer writeTmpBuffer;
-
     private final ByteBuffer readDataBuffer;
 
     public Context() {
         this.writeDataBuffer = ByteBuffer.allocateDirect(Const.MAX_ROW_SIZE);
-        this.writeTmpBuffer = ByteBuffer.allocateDirect(Const.MAX_ROW_SIZE);
         this.readDataBuffer = ByteBuffer.allocateDirect(Const.MAX_ROW_SIZE);
     }
 
     public ByteBuffer getWriteDataBuffer() {
         return writeDataBuffer;
-    }
-
-    public ByteBuffer getWriteTmpBuffer() {
-        return writeTmpBuffer;
     }
 
     public ByteBuffer getReadDataBuffer() {
