@@ -1,0 +1,140 @@
+% Total % Received % Xferd Average Speed Time Time Time Current
+Dload Upload Total Spent Left Speed
+100 146 100 45 100 101 373 838 --:--:-- --:--:-- --:--:-- 841
+{"code":"SUCCESS","data":{"returnCode":true}}
+The current evalution program version: [semis-908V1-fix4]
+[INFO] Found the competitor's uploaded zip file from: /tctmp/tccfile
+[INFO] Checking the competitor's zip package to ensure that the content structure is correct ...
+[INFO] Found TSDB Engine written by JAVA
+[INFO] Start to compile the JAVA Engine code
+[INFO] Start to compile JAVA code ...
+[INFO] Java code compiled
+[INFO] TSDB Engine submitted customed JVM properties because [/tmp/uploaded_engine/jvm] found
+[INFO] Read JVM property: [-Xms512m]
+[INFO] Read JVM property: [-Xmx7550m]
+[INFO] Read JVM property: [-XX:ParallelGCThreads=4]
+[INFO] Read JVM property: [-XX:+UseParallelGC]
+[INFO] The customed JVM properties are: [-Xms512m -Xmx7550m -XX:ParallelGCThreads=4 -XX:+UseParallelGC]
+[INFO] Preparing the empty folder for Database to use ...
+2023-10-04 12:34:25-334 [INFO] Data trait loaded. The data set has [5000] vehicles, and the time span is [600] minutes
+2023-10-04 12:34:25-354 [INFO] Creating DataBase at phase [1]
+2023-10-04 12:34:25-364 [INFO] TSDBEngine loaded. Type: [JAVA]
+2023-10-04 12:34:25-369 [INFO] Start to create table
+2023-10-04 12:34:25-380 [INFO] Table created
+2023-10-04 12:34:25-380 [INFO] Start to run write progress...
+new thread local context:DataWritingExecutor-WritingThread
+new thread local context:DataWritingExecutor-WritingThread
+new thread local context:DataWritingExecutor-WritingThread
+new thread local context:DataWritingExecutor-WritingThread
+new thread local context:DataWritingExecutor-WritingThread
+new thread local context:DataWritingExecutor-WritingThread
+new thread local context:DataWritingExecutor-WritingThread
+new thread local context:DataWritingExecutor-WritingThread
+WARNING: An illegal reflective access operation has occurred
+WARNING: Illegal reflective access by com.alibaba.lindorm.contest.impl.Util (file:/tmp/uploaded_engine/lindorm-tsdb-contest-java/target/lindorm-tsdb-contest-java-1.0.jar) to field java.nio.Buffer.address
+WARNING: Please consider reporting this to the maintainers of com.alibaba.lindorm.contest.impl.Util
+WARNING: Use --illegal-access=warn to enable warnings of further illegal reflective access operations
+WARNING: All illegal access operations will be denied in a future release
+2023-10-04 12:39:25-391 [INFO] Write progress elapsed [5] mins, [84744900] rows have been written
+2023-10-04 12:44:25-394 [INFO] Write progress elapsed [10] mins, [166966900] rows have been written
+table's column value ranges:
+GMVS:COLUMN_TYPE_INTEGER min:12393.0 max:12448.0
+LIOS:COLUMN_TYPE_INTEGER min:-31829.0 max:4.9E-324
+LFZG:COLUMN_TYPE_INTEGER min:36284.0 max:91103.0
+WLYQ:COLUMN_TYPE_INTEGER min:-87636.0 max:4.9E-324
+ZTGP:COLUMN_TYPE_INTEGER min:27874.0 max:55283.0
+GMNR:COLUMN_TYPE_INTEGER min:-399851.0 max:4.9E-324
+BTJH:COLUMN_TYPE_INTEGER min:1152956.0 max:3893907.0
+XCDQ:COLUMN_TYPE_INTEGER min:-601156.0 max:4.9E-324
+JKZL:COLUMN_TYPE_INTEGER min:185955.0 max:624508.0
+MLBY:COLUMN_TYPE_INTEGER min:-6.1902784E7 max:4.9E-324
+DSKQ:COLUMN_TYPE_INTEGER min:-14716.0 max:4.9E-324
+EQLU:COLUMN_TYPE_INTEGER min:-751719.0 max:4.9E-324
+KACE:COLUMN_TYPE_INTEGER min:2253115.0 max:7735018.0
+YDXB:COLUMN_TYPE_INTEGER min:-7728753.0 max:4.9E-324
+NXCR:COLUMN_TYPE_INTEGER min:1143645.0 max:3884596.0
+OZSM:COLUMN_TYPE_INTEGER min:1.12946741E8 max:3.87041904E8
+SYMN:COLUMN_TYPE_INTEGER min:-3.8703705E7 max:4.9E-324
+UAPJ:COLUMN_TYPE_INTEGER min:-6211841.0 max:4.9E-324
+PQRQ:COLUMN_TYPE_INTEGER min:1.8095023E7 max:6.1950249E7
+UICP:COLUMN_TYPE_INTEGER min:-6.19251917E8 max:4.9E-324
+KFGP:COLUMN_TYPE_INTEGER min:-18068.0 max:4.9E-324
+ZZBE:COLUMN_TYPE_INTEGER min:-24669.0 max:4.9E-324
+HJPZ:COLUMN_TYPE_INTEGER min:-17916.0 max:4.9E-324
+JDOE:COLUMN_TYPE_INTEGER min:-7653.0 max:4.9E-324
+KWET:COLUMN_TYPE_INTEGER min:17995.0 max:20993.0
+WNHB:COLUMN_TYPE_INTEGER min:-22663.0 max:4.9E-324
+ENVH:COLUMN_TYPE_INTEGER min:17190.0 max:1517188.0
+CSRC:COLUMN_TYPE_INTEGER min:-8072.0 max:9991926.0
+GONE:COLUMN_TYPE_INTEGER min:-21827.0 max:5978171.0
+BZPV:COLUMN_TYPE_INTEGER min:2631.0 max:5.0002629E7
+AOAO:COLUMN_TYPE_INTEGER min:-2.147483647E9 max:4.9E-324
+EXGV:COLUMN_TYPE_INTEGER min:-2.147483647E9 max:4.9E-324
+JCGU:COLUMN_TYPE_INTEGER min:-2.147483647E9 max:4.9E-324
+TFGW:COLUMN_TYPE_INTEGER min:-2.147483647E9 max:4.9E-324
+MUBC:COLUMN_TYPE_INTEGER min:-2.147483647E9 max:4.9E-324
+JHET:COLUMN_TYPE_INTEGER min:1.0 max:3.0
+WKUZ:COLUMN_TYPE_INTEGER min:-1.0 max:4.9E-324
+YCTI:COLUMN_TYPE_INTEGER min:1.0 max:5.0
+BBPX:COLUMN_TYPE_INTEGER min:1.0 max:9.0
+HRXI:COLUMN_TYPE_INTEGER min:1.0 max:9.0
+FWKW:COLUMN_TYPE_DOUBLE_FLOAT min:20154.92085711649 max:20703.111182428667
+BDPO:COLUMN_TYPE_DOUBLE_FLOAT min:250137.5104897177 max:798327.8358018958
+FQTH:COLUMN_TYPE_DOUBLE_FLOAT min:-7707023.717140162 max:4.9E-324
+SBXA:COLUMN_TYPE_DOUBLE_FLOAT min:-72437.72641448099 max:4.9E-324
+XRTP:COLUMN_TYPE_DOUBLE_FLOAT min:2.260128009904561E7 max:7.742031263026342E7
+ZIKG:COLUMN_TYPE_DOUBLE_FLOAT min:9803.90080395643 max:9974.232027316591
+LMLK:COLUMN_TYPE_DOUBLE_FLOAT min:3759225.344188673 max:5462537.57779027
+TEDW:COLUMN_TYPE_DOUBLE_FLOAT min:5.054005620565559E7 max:6.757317854167156E7
+UVGJ:COLUMN_TYPE_DOUBLE_FLOAT min:9460.694475550845 max:15429.781866984284
+LYLI:COLUMN_TYPE_DOUBLE_FLOAT min:128104.2864086387 max:154622.23478497582
+FVXS:COLUMN_TYPE_STRING minLen:1 maxLen:2 minAscii:45 maxAscii:49
+LIYD:COLUMN_TYPE_STRING minLen:1 maxLen:1 minAscii:120 maxAscii:122
+ZEBY:COLUMN_TYPE_STRING minLen:7 maxLen:7 minAscii:67 maxAscii:85
+UFPI:COLUMN_TYPE_STRING minLen:5 maxLen:5 minAscii:71 maxAscii:84
+UZSV:COLUMN_TYPE_STRING minLen:15 maxLen:15 minAscii:33 maxAscii:121
+FLLY:COLUMN_TYPE_STRING minLen:1 maxLen:1 minAscii:33 maxAscii:121
+JUBK:COLUMN_TYPE_STRING minLen:100 maxLen:100 minAscii:33 maxAscii:121
+ORNI:COLUMN_TYPE_STRING minLen:30 maxLen:30 minAscii:33 maxAscii:121
+SCHU:COLUMN_TYPE_STRING minLen:0 maxLen:2 minAscii:33 maxAscii:119
+GLNG:COLUMN_TYPE_STRING minLen:30 maxLen:40 minAscii:33 maxAscii:121
+shutdown table:table, size:85740028925
+2023-10-04 12:45:15-068 [INFO] Write progress finished. Rows written totally: [180000000]. Time consumed minutes: [10]
+[INFO] Check the phase 1 process with pid 79 has exit ...
+2023-10-04 12:45:15-810 [INFO] Data trait loaded. The data set has [5000] vehicles, and the time span is [600] minutes
+2023-10-04 12:45:15-830 [INFO] Creating DataBase at phase [2]
+2023-10-04 12:45:18-037 [INFO] TSDBEngine loaded. Type: [JAVA]
+new thread local context:main
+2023-10-04 12:45:35-267 [INFO] Start to run query progress...
+new thread local context:DataQueryExecutor-QueryingThread
+new thread local context:DataQueryExecutor-QueryingThread
+new thread local context:DataQueryExecutor-QueryingThread
+new thread local context:DataQueryExecutor-QueryingThread
+new thread local context:DataQueryExecutor-QueryingThread
+new thread local context:DataQueryExecutor-QueryingThread
+new thread local context:DataQueryExecutor-QueryingThread
+new thread local context:DataQueryExecutor-QueryingThread
+new thread local context:DataQueryExecutor-QueryingThread
+new thread local context:DataQueryExecutor-QueryingThread
+new thread local context:DataQueryExecutor-QueryingThread
+new thread local context:DataQueryExecutor-QueryingThread
+new thread local context:DataQueryExecutor-QueryingThread
+new thread local context:DataQueryExecutor-QueryingThread
+new thread local context:DataQueryExecutor-QueryingThread
+new thread local context:DataQueryExecutor-QueryingThread
+2023-10-04 12:50:35-828 [INFO] Latest query progress finished, we queried [179643200] rows and elapsed [4] minutes
+2023-10-04 12:55:35-872 [INFO] Query progress elapsed [9] mins, [182089280] rows have been queried
+2023-10-04 12:55:35-916 [INFO] Time range query progress finished, we queried [2446680] rows and elapsed [5] minutes
+2023-10-04 13:00:35-925 [INFO] Query progress elapsed [14] mins, [182090102] rows have been queried
+2023-10-04 13:00:49-955 [INFO] Aggregate query progress finished, we queried [238] rows and elapsed [5] minutes
+2023-10-04 13:05:49-965 [INFO] Query progress elapsed [19] mins, [182098194] rows have been queried
+2023-10-04 13:05:53-222 [INFO] Downsample query progress finished, we queried [8268] rows and elapsed [5] minutes
+2023-10-04 13:05:53.344:INFO::main: Logging initialized @1237693ms to org.eclipse.jetty.util.log.StdErrLog
+2023-10-04 13:05:53-345 [INFO] Raw result: [{"latestQueriedRows":"179643200","timeRangeQueriedRows":"2446680","downsampleQueriedRows":"8268","compressRate":"0.9999995508494067","latestQueryTimeConsumedMillis":"286626","writtenConsumedTimeMillis":"497677","timeRangeTimeConsumedMillis":"300004","aggregateQueriedRows":"238","aggregateTimeConsumedMillis":"310691","debugMode":"false","writtenRows":"180000000","downsampleTimeConsumedMillis":"301849"}]. This result may be further processed, and is for reference only, please refer to the actual scores
+[INFO] Evalution finished. Starting generating output file ...
+adding: result.json (deflated 51%)
+[INFO] Finished
+% Total % Received % Xferd Average Speed Time Time Time Current
+Dload Upload Total Spent Left Speed
+100 1004 100 434 100 570 5426 7127 --:--:-- --:--:-- --:--:-- 7215
+{eval_score:1.1642214641509117,cost_time:31,info:"null","score_detail":{"success": true, "score": 1.1642214641509117, "scoreJson": {"score": 1.1642214641509117, "writtenRowsPerSec": 361680.36698501237, "latestQueriedRowsPerSec": 626751.2368033605, "timeRangeQueriedRowsPerSec": 8155.4912601165315, "aggregatedQueriedRowsPerSec": 0.76603442005079, "downsampleQueriedRowsPerSec": 27.39117903322522, "compressRate": 0.9999995508494067}}}
