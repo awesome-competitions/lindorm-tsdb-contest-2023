@@ -1,9 +1,5 @@
-package com.alibaba.lindorm.contest.tests;
+package com.alibaba.lindorm.contest.v1.tests;
 
-
-import net.magik6k.bitbuffer.BitBuffer;
-
-import java.nio.ByteBuffer;
 
 public class TestBitBuffer {
 

@@ -1,8 +1,8 @@
-package com.alibaba.lindorm.contest.util;
+package com.alibaba.lindorm.contest.v1;
 
 
-import com.alibaba.lindorm.contest.impl.Const;
-import com.alibaba.lindorm.contest.impl.Table;
+import com.alibaba.lindorm.contest.v1.Const;
+import com.alibaba.lindorm.contest.v1.Table;
 
 public class Monitor {
     public static Runtime runtime = Runtime.getRuntime();

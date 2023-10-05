@@ -1,6 +1,4 @@
-package com.alibaba.lindorm.contest.impl;
-
-import com.sun.labs.minion.util.BitBuffer;
+package com.alibaba.lindorm.contest.v1;
 
 import java.nio.ByteBuffer;
 

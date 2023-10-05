@@ -1,4 +1,4 @@
-package com.alibaba.lindorm.contest.impl;
+package com.alibaba.lindorm.contest.v1;
 
 import com.alibaba.lindorm.contest.structs.Row;
 

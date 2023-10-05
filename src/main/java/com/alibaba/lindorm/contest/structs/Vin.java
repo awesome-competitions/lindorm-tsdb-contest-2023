@@ -20,8 +20,6 @@
 
 package com.alibaba.lindorm.contest.structs;
 
-import com.alibaba.lindorm.contest.impl.Util;
-
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 

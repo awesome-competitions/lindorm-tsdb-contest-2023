@@ -1,6 +1,6 @@
-package com.alibaba.lindorm.contest.tests;
+package com.alibaba.lindorm.contest.v1.tests;
 
-import com.alibaba.lindorm.contest.impl.Index;
+import com.alibaba.lindorm.contest.v1.Index;
 
 public class IndexTest {
 

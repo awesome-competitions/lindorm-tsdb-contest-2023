@@ -19,16 +19,15 @@
  * limitations under the License.
  */
 
-package com.alibaba.lindorm.contest.tests;
+package com.alibaba.lindorm.contest.v1.tests;
 
 import com.alibaba.lindorm.contest.TSDBEngine;
 import com.alibaba.lindorm.contest.TSDBEngineImpl;
-import com.alibaba.lindorm.contest.impl.Const;
+import com.alibaba.lindorm.contest.v1.Const;
 import com.alibaba.lindorm.contest.structs.*;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
