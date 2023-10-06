@@ -132,10 +132,6 @@ public class Block {
         }
 
         // todo only get requested columns values
-        readBuffer.clear();
-        data.read(readBuffer, position + 12 + headerSize, dataSize);
-        readBuffer.flip();
-
         Map<Long, Map<String, ColumnValue>> results = new HashMap<>();
         for (String requestedColumn: requestedColumns){
             Colum column = Const.COLUMNS_INDEX.get(requestedColumn);
@@ -147,9 +143,11 @@ public class Block {
                 latestPos = positions[index + 1];
             }
             int currentPos = positions[index];
+            int currentSize = latestPos - currentPos;
 
-            readBuffer.position(currentPos);
-            readBuffer.limit(latestPos);
+            readBuffer.clear();
+            data.read(readBuffer, position + 12 + headerSize + currentPos, currentSize);
+            readBuffer.flip();
 
             for (long timestamp: timestamps){
                 if (! requestedTimestamps.contains(timestamp)){
