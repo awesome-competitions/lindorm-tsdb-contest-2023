@@ -78,6 +78,9 @@ public class Index {
             }
         }
 
+        if (requestedColumns.isEmpty()){
+            requestedColumns = Const.COLUMNS_INDEX.keySet();
+        }
         Map<Long, Map<String, ColumnValue>> results = new HashMap<>();
         for (Map.Entry<Long, Set<Long>> e: timestamps.entrySet()){
             // read from disk

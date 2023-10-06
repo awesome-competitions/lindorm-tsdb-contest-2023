@@ -149,7 +149,7 @@ public class Block {
             int currentPos = positions[index];
 
             readBuffer.position(currentPos);
-            readBuffer.limit(latestPos - currentPos);
+            readBuffer.limit(latestPos);
 
             for (long timestamp: timestamps){
                 if (! requestedTimestamps.contains(timestamp)){
@@ -179,6 +179,7 @@ public class Block {
                     case COLUMN_TYPE_STRING:
                         byte len = readBuffer.get();
                         byte[] bs = new byte[len];
+                        readBuffer.get(bs);
                         values.put(requestedColumn, new ColumnValue.StringColumn(ByteBuffer.wrap(bs)));
                         break;
                 }
