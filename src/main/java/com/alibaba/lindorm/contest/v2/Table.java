@@ -1,0 +1,388 @@
+package com.alibaba.lindorm.contest.v2;
+
+import com.alibaba.lindorm.contest.structs.*;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+
+public class Table {
+
+    private final String name;
+
+    private final String basePath;
+
+    private Schema schema;
+
+    private final Map<Integer, Index> indexes;
+
+    private final Map<Vin, Integer> vinIds;
+
+    private final Data data;
+
+    public Table(String basePath, String tableName) throws IOException {
+        this.name = tableName;
+        this.basePath = basePath;
+        this.indexes = new ConcurrentHashMap<>(Const.MAX_VIN_COUNT, 0.65F);
+        this.vinIds = new ConcurrentHashMap<>();
+        this.data = new Data(Path.of(basePath, tableName + ".data"), StandardOpenOption.WRITE, StandardOpenOption.READ, StandardOpenOption.CREATE);
+    }
+
+    public void setSchema(Schema schema) {
+        this.schema = schema;
+        this.schema.getColumnTypeMap().keySet().stream().sorted().forEach(Const.SORTED_COLUMNS::add);
+        for (int i = 0; i < Const.SORTED_COLUMNS.size(); i++) {
+            String columnName = Const.SORTED_COLUMNS.get(i);
+            Const.COLUMNS_INDEX.put(Const.SORTED_COLUMNS.get(i), new Colum(i, schema.getColumnTypeMap().get(columnName)));
+        }
+    }
+
+    public static Table load(String basePath, String tableName) throws IOException {
+        Table t = new Table(basePath, tableName);
+        t.loadSchema();
+        t.loadIndex();
+        return t;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public Index getVinIndex(Integer vinId){
+        return indexes.computeIfAbsent(vinId, k -> new Index(this.data, vinId));
+    }
+
+    public Index getVinIndex(Vin vin){
+        return getVinIndex(getVinId(vin));
+    }
+
+    public Integer getVinId(Vin vin){
+        return vinIds.computeIfAbsent(vin, Util::parseVinId);
+    }
+
+
+    public void upsert(Collection<Row> rows) throws IOException {
+        for (Row row: rows){
+            Index index = this.getVinIndex(row.getVin());
+            index.insert(row.getTimestamp(), row.getColumns());
+        }
+    }
+
+    public void get(Vin vin, long timestamp) throws IOException{
+        Index index = this.getVinIndex(vin);
+        long position = index.get(timestamp);
+        if (position == -1){
+            return;
+        }
+        Map<String, ColumnValue> columnValues = getColumnValues(position, Collections.emptySet());
+        System.out.println(columnValues);
+    }
+
+    private Map<String, ColumnValue> getColumnValues(long position, Set<String> requestedColumns) throws IOException {
+        Context ctx = Context.get();
+        int len = Util.getLen(position);
+        position = Util.getPosition(position);
+        ByteBuffer readBuffer = ctx.getReadDataBuffer();
+        readBuffer.clear();
+        this.data.read(readBuffer, position, len);
+        readBuffer.flip();
+        Map<String, ColumnValue> columnValue = new HashMap<>();
+        for (String col : sortedColumns) {
+            ColumnValue.ColumnType type = schema.getColumnTypeMap().get(col);
+            if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_STRING)){
+                int stringLen = readBuffer.getInt();
+                byte[] bs = new byte[stringLen];
+                readBuffer.get(bs);
+                if (requestedColumns.isEmpty() || requestedColumns.contains(col)) {
+                    columnValue.put(col, new ColumnValue.StringColumn(ByteBuffer.wrap(bs)));
+                }
+            }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_DOUBLE_FLOAT)) {
+                double doubleVal = readBuffer.getDouble();
+                if (requestedColumns.isEmpty() || requestedColumns.contains(col)) {
+                    columnValue.put(col, new ColumnValue.DoubleFloatColumn(doubleVal));
+                }
+            }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_INTEGER)) {
+                int intVal = readBuffer.getInt();
+                if (requestedColumns.isEmpty() || requestedColumns.contains(col)) {
+                    columnValue.put(col, new ColumnValue.IntegerColumn(intVal));
+                }
+            }
+        }
+        return columnValue;
+    }
+
+    public ArrayList<Row> executeLatestQuery(Collection<Vin> vins, Set<String> requestedColumns) throws IOException {
+        ArrayList<Row> rows = new ArrayList<>();
+        for(Vin vin: vins){
+            Index index = this.getVinIndex(vin);
+            if(index == null || index.isEmpty()){
+                continue;
+            }
+            Row lastRow = index.getLatestRow();
+            if (lastRow != null){
+                HashMap<String, ColumnValue> columnValues = new HashMap<>();
+                for (String col: requestedColumns){
+                    columnValues.put(col, lastRow.getColumns().get(col));
+                }
+                rows.add(new Row(lastRow.getVin(), lastRow.getTimestamp(), columnValues));
+                continue;
+            }
+            long lastTimestamp = index.getLatestTimestamp();
+            rows.add(new Row(vin, lastTimestamp, getColumnValues(index.get(lastTimestamp), requestedColumns)));
+        }
+        return rows;
+    }
+
+    public ArrayList<Row> executeTimeRangeQuery(Vin vin, long timeLowerBound, long timeUpperBound, Set<String> requestedColumns) {
+        Index index = this.getVinIndex(vin);
+        if(index == null || index.isEmpty()){
+            return Const.EMPTY_ROWS;
+        }
+        ArrayList<Row> rows = new ArrayList<>();
+        index.forRangeEach(timeLowerBound, timeUpperBound, (timestamp, position) -> {
+            try {
+                rows.add(new Row(vin, timestamp, getColumnValues(position, requestedColumns)));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+        return rows;
+    }
+
+    public ArrayList<Row> executeAggregateQuery(Vin vin, long timeLowerBound, long timeUpperBound, String columnName, Aggregator aggregator) throws IOException {
+        Index index = this.getVinIndex(vin);
+        if(index == null || index.isEmpty()){
+            return Const.EMPTY_ROWS;
+        }
+        Set<String> requestedColumns = Collections.singleton(columnName);
+        ColumnValue.ColumnType type = this.schema.getColumnTypeMap().get(columnName);
+        List<ColumnValue> numbers = new ArrayList<>();
+        index.forRangeEach(timeLowerBound, timeUpperBound, (timestamp, position) -> {
+            try {
+                Map<String, ColumnValue> columnValues = getColumnValues(position, requestedColumns);
+                ColumnValue value = columnValues.get(columnName);
+                numbers.add(value);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+        if (numbers.size() == 0){
+            return Const.EMPTY_ROWS;
+        }
+        ArrayList<Row> rows = new ArrayList<>();
+        rows.add(handleNumbers(vin, timeLowerBound, numbers, type, columnName, aggregator, null));
+        return rows;
+    }
+
+    public ArrayList<Row> executeDownsampleQuery(Vin vin, long timeLowerBound, long timeUpperBound, String columnName, Aggregator aggregator, long interval, CompareExpression columnFilter) throws IOException {
+        Index index = this.getVinIndex(vin);
+        if(index == null || index.isEmpty()){
+            return Const.EMPTY_ROWS;
+        }
+        Set<String> requestedColumns = Collections.singleton(columnName);
+        ColumnValue.ColumnType type = this.schema.getColumnTypeMap().get(columnName);
+
+        int size = (int) ((timeUpperBound - timeLowerBound)/interval);
+        List<ColumnValue>[] group = new List[size];
+        for (int i= 0; i < group.length; i++){
+            group[i] = new ArrayList<>();
+        }
+        index.forRangeEach(timeLowerBound, timeUpperBound, (timestamp, position) -> {
+            try {
+                Map<String, ColumnValue> columnValues = getColumnValues(position, requestedColumns);
+                ColumnValue value = columnValues.get(columnName);
+                int groupIndex = (int) ((timestamp - timeLowerBound)/interval);
+                List<ColumnValue> numbers = group[groupIndex];
+                numbers.add(value);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        ArrayList<Row> rows = new ArrayList<>();
+        long subTimeLowerBound = timeLowerBound;
+        for(List<ColumnValue> numbers: group){
+            Row row = handleNumbers(vin, subTimeLowerBound, numbers, type, columnName, aggregator, columnFilter);
+            if (row != null){
+                rows.add(row);
+            }
+            subTimeLowerBound += interval;
+        }
+        return rows;
+    }
+
+    private Row handleNumbers(Vin vin, long timeLowerBound, List<ColumnValue> numbers, ColumnValue.ColumnType type, String columnName, Aggregator aggregator, CompareExpression columnFilter) {
+        if (numbers == null || numbers.size() == 0){
+            return null;
+        }
+
+        Double d = null;
+        if(aggregator.equals(Aggregator.AVG)){
+            double sum = 0;
+            int count = 0;
+            for(ColumnValue v: numbers){
+                if(columnFilter != null && !columnFilter.doCompare(v)){
+                    continue;
+                }
+                count ++;
+                if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_INTEGER)){
+                    sum += v.getIntegerValue();
+                }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_DOUBLE_FLOAT)){
+                    sum += v.getDoubleFloatValue();
+                }
+            }
+            if(count > 0){
+                d = sum/count;
+            }
+        }else if (aggregator.equals(Aggregator.MAX)){
+            for(ColumnValue v: numbers){
+                if(columnFilter != null && !columnFilter.doCompare(v)){
+                    continue;
+                }
+                double t = 0;
+                if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_INTEGER)){
+                    t = v.getIntegerValue();
+                }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_DOUBLE_FLOAT)){
+                    t = v.getDoubleFloatValue();
+                }
+                if (d == null || d < t){
+                    d = t;
+                }
+            }
+        }
+        if (d == null){
+            d = Double.NEGATIVE_INFINITY;
+        }
+        Map<String, ColumnValue> columnValues = new HashMap<>();
+        if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_INTEGER)){
+            if(aggregator.equals(Aggregator.AVG)){
+                columnValues.put(columnName, new ColumnValue.DoubleFloatColumn(d));
+            }else{
+                columnValues.put(columnName, new ColumnValue.IntegerColumn((int)d.doubleValue()));
+            }
+        }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_DOUBLE_FLOAT)) {
+            columnValues.put(columnName, new ColumnValue.DoubleFloatColumn(d));
+        }
+        return new Row(vin, timeLowerBound, columnValues);
+    }
+
+    public void force() throws IOException {
+        this.data.force();
+        this.flushSchema();
+        this.flushIndex();
+//        this.flushDict();
+    }
+
+    public long size() throws IOException {
+        return this.data.size();
+    }
+
+    public void close() throws IOException {
+        this.data.close();
+    }
+
+    public void flushSchema() throws IOException {
+        Path schemaPath = Path.of(basePath, name+ ".schema");
+        StringBuilder builder = new StringBuilder();
+        for(Map.Entry<String, ColumnValue.ColumnType> entry : schema.getColumnTypeMap().entrySet()){
+            builder.append(entry.getKey())
+                    .append(":")
+                    .append(entry.getValue().name())
+                    .append("\n");
+        }
+        Files.write(schemaPath, builder.toString().getBytes(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+    }
+
+    public void loadSchema() throws IOException {
+        byte[] bytes = Files.readAllBytes(Path.of(basePath, name + ".schema"));
+        String[] lines = new String(bytes).split("\n");
+        Map<String, ColumnValue.ColumnType> columnTypeMap = new HashMap<>();
+        for(String line: lines){
+            String[] kv = line.split(":");
+            String columnName = kv[0];
+            ColumnValue.ColumnType columnType = ColumnValue.ColumnType.valueOf(kv[1]);
+            columnTypeMap.put(columnName, columnType);
+        }
+        this.setSchema(new Schema(columnTypeMap));
+    }
+
+    public void flushDict() throws IOException {
+        Path dictPath = Path.of(basePath, name+ ".dict");
+        StringBuilder builder = new StringBuilder();
+        for(Range range : this.ranges.values()){
+            builder.append(range.toString()).append("\n");
+        }
+        Files.write(dictPath, builder.toString().getBytes(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+    }
+
+    public void loadDict() throws IOException {
+        byte[] bs = Files.readAllBytes(Path.of(basePath, name + ".dict"));
+        String[] lines = new String(bs).split("\n");
+        for(String line: lines){
+            Range range = new Range(line);
+            this.ranges.put(range.getColumn(), range);
+        }
+    }
+
+    public void flushIndex() throws IOException {
+        Path indexPath = Path.of(basePath, name+ ".index");
+        FileChannel ch = FileChannel.open(indexPath, StandardOpenOption.WRITE, StandardOpenOption.READ, StandardOpenOption.CREATE);
+
+        // single index
+        Index singleIndex = null;
+        for (Index index: indexes.values()){
+            singleIndex = index;
+            break;
+        }
+        if(singleIndex == null){
+            return;
+        }
+        long oldest = singleIndex.getOldestTimestamp();
+
+        // write first timestamp
+        ByteBuffer buffer = ByteBuffer.allocateDirect(4 * Const.M);
+        buffer.putLong(oldest);
+        for (Index index: indexes.values()){
+            buffer.putInt(index.getId());
+            for (long i = oldest; i < oldest + Const.INITIALIZE_VIN_POSITIONS_SIZE * 1000; i += 1000){
+                buffer.putLong(index.get(i));
+            }
+            buffer.flip();
+            ch.write(buffer);
+            buffer.clear();
+        }
+    }
+
+    public void loadIndex() throws IOException {
+        Path indexPath = Path.of(basePath, name+ ".index");
+        FileChannel ch = FileChannel.open(indexPath, StandardOpenOption.WRITE, StandardOpenOption.READ, StandardOpenOption.CREATE);
+
+        int capacity = Const.INITIALIZE_VIN_POSITIONS_SIZE * 8 + 4;
+        ByteBuffer buffer = ByteBuffer.allocateDirect(capacity);
+        buffer.limit(8);
+        ch.read(buffer);
+        buffer.flip();
+        long oldest = buffer.getLong();
+        while (true){
+            buffer.clear();
+            if (ch.read(buffer) != capacity){
+                break;
+            }
+            buffer.flip();
+            int vinId = buffer.getInt();
+            Index index = getVinIndex(vinId);
+            for (long i = oldest; i < oldest + Const.INITIALIZE_VIN_POSITIONS_SIZE * 1000; i += 1000){
+                long pos = buffer.getLong();
+                if (pos != -1){
+                    index.put(i, pos);
+                }
+            }
+        }
+    }
+
+}
