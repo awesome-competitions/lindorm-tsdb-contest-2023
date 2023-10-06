@@ -63,8 +63,8 @@ public class Index {
     }
 
     public Map<Long, Map<String, ColumnValue>> range(long start, long end, Set<String> requestedColumns) throws IOException {
-        int left = getIndex(Math.max(start, this.oldestTimestamp));
-        int right = getIndex(Math.min(end, this.latestTimestamp));
+        int left = getSec(Math.max(start, this.oldestTimestamp));
+        int right = getSec(Math.min(end, this.latestTimestamp));
         Map<Long, Set<Long>> timestamps = new HashMap<>();
         for (int i = left; i <= right; i++) {
             int index = getIndex(i);

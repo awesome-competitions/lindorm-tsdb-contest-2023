@@ -34,6 +34,9 @@ public class Table {
     }
 
     public void setSchema(Schema schema) {
+        Const.SORTED_COLUMNS.clear();
+        Const.COLUMNS_INDEX.clear();
+
         this.schema = schema;
         this.schema.getColumnTypeMap().keySet().stream().sorted().forEach(Const.SORTED_COLUMNS::add);
         for (int i = 0; i < Const.SORTED_COLUMNS.size(); i++) {
@@ -62,11 +65,7 @@ public class Table {
     }
 
     public Index getVinIndex(Vin vin){
-        Integer id = vinIds.get(vin);
-        if (id == null){
-            return null;
-        }
-        return indexes.get(vinIds.get(vin));
+        return indexes.get(vinIds.computeIfAbsent(vin, Util::parseVinId));
     }
 
     public void upsert(Collection<Row> rows) throws IOException {
@@ -223,7 +222,6 @@ public class Table {
         this.data.force();
         this.flushSchema();
         this.flushIndex();
-//        this.flushDict();
     }
 
     public long size() throws IOException {

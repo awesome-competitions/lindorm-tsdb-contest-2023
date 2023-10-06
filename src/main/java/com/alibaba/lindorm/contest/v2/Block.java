@@ -80,8 +80,10 @@ public class Block {
         // header
         writerBuffer.putInt(headerBuffer.remaining());
         writerBuffer.putInt(dataBuffer.remaining());
+        writerBuffer.putInt(timestamps.size());
         writerBuffer.put(headerBuffer);
         writerBuffer.put(dataBuffer);
+        writerBuffer.flip();
         return this.data.write(writerBuffer);
     }
 
@@ -105,31 +107,33 @@ public class Block {
         ByteBuffer readBuffer = Context.getBlockReadBuffer();
         readBuffer.clear();
 
-        int readBytes = data.read(readBuffer, position, 8);
-        if (readBytes != 4){
+        int readBytes = data.read(readBuffer, position, 12);
+        if (readBytes != 12){
             throw new IOException("read bytes not enough");
         }
 
         readBuffer.flip();
         int headerSize = readBuffer.getInt();
         int dataSize = readBuffer.getInt();
+        int tsCount = readBuffer.getInt();
 
         readBuffer.clear();
-        data.read(readBuffer, position + 8, headerSize);
+        data.read(readBuffer, position + 12, headerSize);
         readBuffer.flip();
 
-        int[] positions = new int[Const.COLUMN_COUNT];
-        for (int i = 0; i < Const.COLUMN_COUNT; i++) {
+        int[] positions = new int[Const.SORTED_COLUMNS.size()];
+        for (int i = 0; i < positions.length; i++) {
             positions[i] = readBuffer.getInt();
         }
 
-        long[] timestamps = new long[Const.BLOCK_SIZE];
-        for (int i = 0; i < Const.BLOCK_SIZE; i++) {
+        long[] timestamps = new long[tsCount];
+        for (int i = 0; i < tsCount; i++) {
             timestamps[i] = readBuffer.getLong();
         }
 
+        // todo only get requested columns values
         readBuffer.clear();
-        data.read(readBuffer, position + 8 + headerSize, dataSize);
+        data.read(readBuffer, position + 12 + headerSize, dataSize);
         readBuffer.flip();
 
         Map<Long, Map<String, ColumnValue>> results = new HashMap<>();
@@ -139,7 +143,7 @@ public class Block {
             ColumnValue.ColumnType type = column.getType();
 
             int latestPos = dataSize;
-            if (index < Const.COLUMN_COUNT - 1){
+            if (index < positions.length - 1){
                 latestPos = positions[index + 1];
             }
             int currentPos = positions[index];
