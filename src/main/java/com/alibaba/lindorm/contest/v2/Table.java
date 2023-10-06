@@ -57,6 +57,10 @@ public class Table {
         return name;
     }
 
+    public Map<Integer, Index> getIndexes() {
+        return indexes;
+    }
+
     public Index getOrCreateVinIndex(Integer vinId){
         return indexes.computeIfAbsent(vinId, k -> new Index(this.data, vinId));
     }
