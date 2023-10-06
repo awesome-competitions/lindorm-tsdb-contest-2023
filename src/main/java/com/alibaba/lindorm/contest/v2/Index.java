@@ -27,12 +27,6 @@ public class Index {
     }
 
     public void insert(long timestamp, Map<String, ColumnValue> columns) throws IOException {
-        if(timestamp > latestTimestamp){
-            latestTimestamp = timestamp;
-        }
-        if (oldestTimestamp == 0L || timestamp < oldestTimestamp){
-            oldestTimestamp = timestamp;
-        }
         if (block == null){
             block = new Block(data);
         }
@@ -41,6 +35,7 @@ public class Index {
             block = new Block(data);
         }
         block.insert(timestamp, columns);
+        this.insert(timestamp, -2);
     }
 
     public long get(long timestamp) {
@@ -69,7 +64,6 @@ public class Index {
         for (int i = left; i <= right; i++) {
             int index = getIndex(i);
             long pos = this.positions[index];
-            // todo fix memory block query
             if (pos == -1){
                 continue;
             }
@@ -84,12 +78,15 @@ public class Index {
         }
         Map<Long, Map<String, ColumnValue>> results = new HashMap<>();
         for (Map.Entry<Long, Set<Long>> e: timestamps.entrySet()){
-            // read from disk
-            results.putAll(Block.read(this.data, e.getKey(), e.getValue(), requestedColumns));
+            long pos = e.getKey();
+            Set<Long> requestedTimestamps = e.getValue();
             // read from memory
-            if (block != null){
-                results.putAll(block.read(e.getValue(), requestedColumns));
+            if (pos == -2 && block != null){
+                results.putAll(block.read(requestedTimestamps, requestedColumns));
+                continue;
             }
+            // read from disk
+            results.putAll(Block.read(this.data, pos, requestedTimestamps, requestedColumns));
         }
         return results;
     }
@@ -125,5 +122,15 @@ public class Index {
 
     public int getVin() {
         return vin;
+    }
+
+    public int size(){
+        int size = 0;
+        for (long position: this.positions){
+            if (position != -1){
+                size++;
+            }
+        }
+        return size;
     }
 }

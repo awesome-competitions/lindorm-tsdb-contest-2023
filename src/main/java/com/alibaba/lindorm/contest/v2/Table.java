@@ -84,6 +84,9 @@ public class Table {
             }
             long lastTimestamp = index.getLatestTimestamp();
             Map<String, ColumnValue> columnValue = index.get(lastTimestamp, requestedColumns);
+            if (columnValue == null){
+                continue;
+            }
             rows.add(new Row(vin, lastTimestamp, columnValue));
         }
         return rows;
@@ -277,7 +280,9 @@ public class Table {
         buffer.putLong(oldest);
         for (Index index: indexes.values()){
             buffer.putInt(index.getVin());
-            for (long i = oldest; i < oldest + Const.TIME_SPAN * 1000; i += 1000){
+            short size = (short) singleIndex.size();
+            buffer.putShort(size);
+            for (long i = oldest; i < oldest + size * 1000; i += 1000){
                 buffer.putLong(index.get(i));
             }
             buffer.flip();
@@ -290,21 +295,30 @@ public class Table {
         Path indexPath = Path.of(basePath, name+ ".index");
         FileChannel ch = FileChannel.open(indexPath, StandardOpenOption.WRITE, StandardOpenOption.READ, StandardOpenOption.CREATE);
 
-        int capacity = Const.TIME_SPAN * 8 + 4;
-        ByteBuffer buffer = ByteBuffer.allocateDirect(capacity);
+        ByteBuffer buffer = ByteBuffer.allocateDirect(4 * Const.M);
         buffer.limit(8);
         ch.read(buffer);
         buffer.flip();
         long oldest = buffer.getLong();
         while (true){
             buffer.clear();
-            if (ch.read(buffer) != capacity){
+            buffer.limit(4 + 2);
+            if (ch.read(buffer) != buffer.limit()){
                 break;
             }
             buffer.flip();
             int vinId = buffer.getInt();
+            short size = buffer.getShort();
+
+            buffer.clear();
+            buffer.limit(size * 8);
+            if (ch.read(buffer) != buffer.limit()){
+                break;
+            }
+            buffer.flip();
+
             Index index = getOrCreateVinIndex(vinId);
-            for (long i = oldest; i < oldest + Const.TIME_SPAN * 1000; i += 1000){
+            for (long i = oldest; i < oldest + size * 1000; i += 1000){
                 long pos = buffer.getLong();
                 if (pos != -1){
                     index.insert(i, pos);

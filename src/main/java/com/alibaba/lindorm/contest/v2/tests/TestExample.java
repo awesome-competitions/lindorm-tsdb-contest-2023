@@ -117,9 +117,9 @@ public class TestExample {
 
       // before shutdown
       System.out.println("=========== before shutdown ===========");
-      ArrayList<Row> resultSet = tsdbEngineSample.executeLatestQuery(new LatestQueryRequest("test", vinList, requestedColumns));
+      ArrayList<Row> resultSet = tsdbEngineSample.executeLatestQuery(new LatestQueryRequest("test", vinList, new HashSet<>()));
       showResult("executeLatestQuery", resultSet);
-      resultSet = tsdbEngineSample.executeTimeRangeQuery(new TimeRangeQueryRequest("test", new Vin(str.getBytes(StandardCharsets.UTF_8)), requestedColumns, 1689091210000L, 1689091311000L));
+      resultSet = tsdbEngineSample.executeTimeRangeQuery(new TimeRangeQueryRequest("test", new Vin(str.getBytes(StandardCharsets.UTF_8)), new HashSet<>(Arrays.asList("col1", "col3")), 1689091210000L, 1689091311000L));
       showResult("executeTimeRangeQuery", resultSet);
 
 
