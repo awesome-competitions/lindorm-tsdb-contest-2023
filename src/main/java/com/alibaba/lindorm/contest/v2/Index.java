@@ -26,7 +26,7 @@ public class Index {
         Arrays.fill(this.positions, -1);
     }
 
-    public void insert(long timestamp, Map<String, ColumnValue> columns) throws IOException {
+    public synchronized void insert(long timestamp, Map<String, ColumnValue> columns) throws IOException {
         if (block == null){
             block = new Block(data);
         }

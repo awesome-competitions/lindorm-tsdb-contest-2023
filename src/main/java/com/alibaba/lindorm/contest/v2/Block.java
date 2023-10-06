@@ -131,7 +131,6 @@ public class Block {
             timestamps[i] = readBuffer.getLong();
         }
 
-        // todo only get requested columns values
         Map<Long, Map<String, ColumnValue>> results = new HashMap<>();
         for (String requestedColumn: requestedColumns){
             Colum column = Const.COLUMNS_INDEX.get(requestedColumn);

@@ -115,7 +115,7 @@ public class TestManyRows {
       System.out.println("=========== after shutdown ===========");
       resultSet = tsdbEngineSample.executeLatestQuery(new LatestQueryRequest("test", vinList, requestedColumns));
       showResult("executeLatestQuery", resultSet);
-      resultSet = tsdbEngineSample.executeTimeRangeQuery(new TimeRangeQueryRequest("test", new Vin(str.getBytes(StandardCharsets.UTF_8)), requestedColumns, 1689091210000L + 5000 * 1000, 1689091220000L+ 5000 * 1000));
+      resultSet = tsdbEngineSample.executeTimeRangeQuery(new TimeRangeQueryRequest("test", new Vin(str.getBytes(StandardCharsets.UTF_8)), requestedColumns, 1689091211001L + 5000 * 1000, 1689091220999L + 5000 * 1000));
       showResult("executeTimeRangeQuery", resultSet);
 
     } catch (IOException e) {
