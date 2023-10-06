@@ -50,7 +50,7 @@ public class TSDBEngineImpl extends TSDBEngine {
     try {
       this.table = new Table(getDataPath().getAbsolutePath(), tableName);
       this.table.setSchema(schema);
-      Monitor.start(this.table);
+//      Monitor.start(this.table);
     } catch (Throwable e) {
       e.printStackTrace();
       throw new RuntimeException(e);

@@ -285,9 +285,9 @@ public class Table {
         buffer.putLong(oldest);
         for (Index index: indexes.values()){
             buffer.putInt(index.getVin());
-            short size = (short) singleIndex.size();
-            buffer.putShort(size);
-            for (long i = oldest; i < oldest + size * 1000; i += 1000){
+            int size = singleIndex.size();
+            buffer.putInt(size);
+            for (long i = oldest; i < oldest + size * 1000L; i += 1000){
                 buffer.putLong(index.get(i));
             }
             buffer.flip();
@@ -307,13 +307,13 @@ public class Table {
         long oldest = buffer.getLong();
         while (true){
             buffer.clear();
-            buffer.limit(4 + 2);
+            buffer.limit(4 + 4);
             if (ch.read(buffer) != buffer.limit()){
                 break;
             }
             buffer.flip();
             int vinId = buffer.getInt();
-            short size = buffer.getShort();
+            int size = buffer.getInt();
 
             buffer.clear();
             buffer.limit(size * 8);
@@ -323,7 +323,7 @@ public class Table {
             buffer.flip();
 
             Index index = getOrCreateVinIndex(vinId);
-            for (long i = oldest; i < oldest + size * 1000; i += 1000){
+            for (long i = oldest; i < oldest + size * 1000L; i += 1000){
                 long pos = buffer.getLong();
                 if (pos != -1){
                     index.insert(i, pos);

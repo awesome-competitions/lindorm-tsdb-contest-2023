@@ -8,11 +8,13 @@ import java.util.Map;
 
 public interface Const {
 
-    // unit
+    // settings
+    ArrayList<Row> EMPTY_ROWS = new ArrayList<>();
     int K = 1024;
     int M = 1024 * K;
     int G = 1024 * M;
     int BYTE_BUFFER_SIZE = 512 * K;
+    int DATA_BUFFER_SIZE = 4 * M;
 
     // vin
     int VIN_COUNT = 5000;
@@ -28,7 +30,5 @@ public interface Const {
     int TIME_SPAN = 60 * 60 * 10;
 
     int INDEX_POSITIONS_SIZE = TIME_SPAN / BLOCK_SIZE;
-
-    ArrayList<Row> EMPTY_ROWS = new ArrayList<>();
 
 }

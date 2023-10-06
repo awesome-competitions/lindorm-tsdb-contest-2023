@@ -11,13 +11,9 @@ public class Util {
 
     private static Unsafe unsafe;
 
-    private static Field address;
-
     static {
         try{
             Field f = Unsafe.class.getDeclaredField("theUnsafe");
-            Field address = Buffer.class.getDeclaredField("address");
-
             f.setAccessible(true);
             unsafe = (Unsafe) f.get(null);
         }catch (Exception e){
