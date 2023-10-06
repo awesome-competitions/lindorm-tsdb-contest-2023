@@ -10,42 +10,39 @@ import java.util.concurrent.ConcurrentHashMap;
 public class Block {
 
     // block size
-    private final long[] timestamps;
+    private final List<Long> timestamps;
 
-    private final Map<String, ColumnValue[]> values;
+    private final Map<String, List<ColumnValue>> values;
 
     private final int size;
 
     private final Data data;
 
-    private int index;
-
     public Block(Data data){
         this.size = Const.BLOCK_SIZE;
-        this.timestamps = new long[size];
+        this.timestamps = new ArrayList<>(this.size);
         this.data = data;
         this.values = new ConcurrentHashMap<>(60);
     }
 
     public synchronized void insert(long timestamp, Map<String, ColumnValue> columns){
-        timestamps[index] = timestamp;
+        this.timestamps.add(timestamp);
         for (Map.Entry<String, ColumnValue> e: columns.entrySet()){
-            ColumnValue[] values = this.values.computeIfAbsent(e.getKey(), k -> new ColumnValue[this.size]);
-            values[index] = e.getValue();
+            List<ColumnValue> values = this.values.computeIfAbsent(e.getKey(), k -> new ArrayList<>(this.size));
+            values.add(e.getValue());
         }
-        index ++;
     }
 
     public int remaining(){
-        return size - index - 1;
+        return size - this.timestamps.size() - 1;
     }
 
-    public long[] getTimestamps() {
+    public List<Long> getTimestamps() {
         return timestamps;
     }
 
     public long flush() throws IOException {
-        ByteBuffer dataBuffer = Context.getBlockWriteBuffer();
+        ByteBuffer dataBuffer = Context.getBlockDataBuffer();
         dataBuffer.clear();
 
         ByteBuffer headerBuffer = Context.getBlockHeaderBuffer();
@@ -53,17 +50,20 @@ public class Block {
 
         for (String columnKey: Const.SORTED_COLUMNS){
             headerBuffer.putInt(dataBuffer.position());
-            ColumnValue[] values = this.values.get(columnKey);
+            List<ColumnValue> values = this.values.get(columnKey);
             for (ColumnValue value: values){
                 switch (value.getColumnType()){
                     case COLUMN_TYPE_DOUBLE_FLOAT:
                         dataBuffer.putDouble(value.getDoubleFloatValue());
+                        break;
                     case COLUMN_TYPE_INTEGER:
                         dataBuffer.putInt(value.getIntegerValue());
+                        break;
                     case COLUMN_TYPE_STRING:
                         byte[] bs = value.getStringValue().array();
                         dataBuffer.put((byte) bs.length);
                         dataBuffer.put(bs);
+                        break;
                 }
             }
         }
@@ -88,14 +88,14 @@ public class Block {
     public Map<Long, Map<String, ColumnValue>> read(Set<Long> requestedTimestamps, Set<String> requestedColumns) {
         Map<Long, Map<String, ColumnValue>> results = new HashMap<>();
         for (String requestedColumn: requestedColumns){
-            ColumnValue[] columnValues = this.values.get(requestedColumn);
-            for (int i = 0; i < timestamps.length; i++) {
-                long timestamp = timestamps[i];
+            List<ColumnValue> columnValues = this.values.get(requestedColumn);
+            for (int i = 0; i < timestamps.size(); i++) {
+                long timestamp = timestamps.get(i);
                 if (! requestedTimestamps.contains(timestamp)){
                     continue;
                 }
                 Map<String, ColumnValue> values = results.computeIfAbsent(timestamp, k -> new HashMap<>());
-                values.put(requestedColumn, columnValues[i]);
+                values.put(requestedColumn, columnValues.get(i));
             }
         }
         return results;

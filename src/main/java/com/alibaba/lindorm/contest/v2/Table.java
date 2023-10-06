@@ -62,6 +62,10 @@ public class Table {
     }
 
     public Index getVinIndex(Vin vin){
+        Integer id = vinIds.get(vin);
+        if (id == null){
+            return null;
+        }
         return indexes.get(vinIds.get(vin));
     }
 

@@ -22,7 +22,7 @@ public class Index {
     public Index(Data data, int vin){
         this.vin = vin;
         this.data = data;
-        this.positions = new long[Const.INDEX_POSITIONS_SIZE];
+        this.positions = new long[Const.TIME_SPAN];
         Arrays.fill(this.positions, -1);
     }
 
