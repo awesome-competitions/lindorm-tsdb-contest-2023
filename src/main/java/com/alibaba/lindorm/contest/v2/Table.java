@@ -1,6 +1,7 @@
 package com.alibaba.lindorm.contest.v2;
 
 import com.alibaba.lindorm.contest.structs.*;
+import com.alibaba.lindorm.contest.util.Util;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

@@ -1,4 +1,4 @@
-package com.alibaba.lindorm.contest.v2;
+package com.alibaba.lindorm.contest.util;
 
 import com.alibaba.lindorm.contest.structs.Vin;
 import com.alibaba.lindorm.contest.v1.Const;

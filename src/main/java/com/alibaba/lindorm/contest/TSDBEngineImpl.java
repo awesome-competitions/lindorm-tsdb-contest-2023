@@ -8,6 +8,7 @@
 package com.alibaba.lindorm.contest;
 
 import com.alibaba.lindorm.contest.structs.*;
+import com.alibaba.lindorm.contest.util.Monitor;
 import com.alibaba.lindorm.contest.v2.Table;
 
 import java.io.File;
@@ -49,7 +50,7 @@ public class TSDBEngineImpl extends TSDBEngine {
     try {
       this.table = new Table(getDataPath().getAbsolutePath(), tableName);
       this.table.setSchema(schema);
-//      Monitor.start(table);
+      Monitor.start();
     } catch (Throwable e) {
       e.printStackTrace();
       throw new RuntimeException(e);
