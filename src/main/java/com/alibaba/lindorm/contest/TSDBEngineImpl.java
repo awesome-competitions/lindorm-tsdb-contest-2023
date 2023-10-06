@@ -8,7 +8,7 @@
 package com.alibaba.lindorm.contest;
 
 import com.alibaba.lindorm.contest.structs.*;
-import com.alibaba.lindorm.contest.v1.Table;
+import com.alibaba.lindorm.contest.v2.Table;
 
 import java.io.File;
 import java.io.IOException;

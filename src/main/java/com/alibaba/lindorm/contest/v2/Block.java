@@ -40,6 +40,10 @@ public class Block {
         return size - index - 1;
     }
 
+    public long[] getTimestamps() {
+        return timestamps;
+    }
+
     public long flush() throws IOException {
         ByteBuffer dataBuffer = Context.getBlockWriteBuffer();
         dataBuffer.clear();

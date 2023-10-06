@@ -54,4 +54,8 @@ public class Data {
     public void move(Path newPath) throws IOException {
         Files.move(path, newPath);
     }
+
+    public void force() throws IOException {
+        this.channel.force(false);
+    }
 }

@@ -7,7 +7,6 @@ import java.util.Set;
 
 public class TestRange {
 
-
     public static void main(String[] args) {
         long start = System.currentTimeMillis();
         int batch = 7_0000;

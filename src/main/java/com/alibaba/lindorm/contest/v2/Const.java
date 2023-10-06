@@ -1,5 +1,7 @@
 package com.alibaba.lindorm.contest.v2;
 
+import com.alibaba.lindorm.contest.structs.Row;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -11,6 +13,9 @@ public interface Const {
     int M = 1024 * K;
     int G = 1024 * M;
     int BYTE_BUFFER_SIZE = 512 * K;
+
+    // vin
+    int VIN_COUNT = 5000;
 
     // column
     int COLUMN_COUNT = 60;
@@ -24,5 +29,6 @@ public interface Const {
 
     int INDEX_POSITIONS_SIZE = TIME_SPAN / BLOCK_SIZE;
 
+    ArrayList<Row> EMPTY_ROWS = new ArrayList<>();
 
 }

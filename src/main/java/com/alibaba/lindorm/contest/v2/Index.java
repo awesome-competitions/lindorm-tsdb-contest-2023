@@ -1,12 +1,9 @@
 package com.alibaba.lindorm.contest.v2;
 
 import com.alibaba.lindorm.contest.structs.ColumnValue;
-import com.alibaba.lindorm.contest.structs.Row;
-import com.alibaba.lindorm.contest.v2.function.ThConsumer;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.function.BiConsumer;
 
 public class Index {
 
@@ -36,16 +33,28 @@ public class Index {
         if (oldestTimestamp == 0L || timestamp < oldestTimestamp){
             oldestTimestamp = timestamp;
         }
-
-        int index = getIndex(timestamp);
         if (block == null){
             block = new Block(data);
         }
         if (block.remaining() == 0){
-            positions[index] = block.flush();
+            this.flush();
             block = new Block(data);
         }
         block.insert(timestamp, columns);
+    }
+
+    public long get(long timestamp) {
+        return this.positions[getIndex(timestamp)];
+    }
+
+    public void insert(long timestamp, long position){
+        if(timestamp > latestTimestamp){
+            latestTimestamp = timestamp;
+        }
+        if (oldestTimestamp == 0L || timestamp < oldestTimestamp){
+            oldestTimestamp = timestamp;
+        }
+        positions[getIndex(timestamp)] = position;
     }
 
     public Map<String, ColumnValue> get(long timestamp, Set<String> requestedColumns) throws IOException {
@@ -81,6 +90,15 @@ public class Index {
         return results;
     }
 
+    public void flush() throws IOException {
+        if (block != null){
+            long pos = block.flush();
+            for (long ts: block.getTimestamps()){
+                positions[getIndex(ts)] = pos;
+            }
+        }
+    }
+
     public long getLatestTimestamp() {
         return latestTimestamp;
     }
@@ -99,5 +117,9 @@ public class Index {
 
     private static int getIndex(int seconds){
         return seconds % Const.TIME_SPAN;
+    }
+
+    public int getVin() {
+        return vin;
     }
 }
