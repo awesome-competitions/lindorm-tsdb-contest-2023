@@ -69,6 +69,7 @@ public class Index {
         for (int i = left; i <= right; i++) {
             int index = getIndex(i);
             long pos = this.positions[index];
+            // todo fix memory block query
             if (pos == -1){
                 continue;
             }

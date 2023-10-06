@@ -115,12 +115,23 @@ public class TestExample {
       tsdbEngineSample.write(new WriteRequest("test", rowList));
       Set<String> requestedColumns = new HashSet<>(Arrays.asList("col1", "col2", "col3"));
 
+      // before shutdown
+      System.out.println("=========== before shutdown ===========");
+      ArrayList<Row> resultSet = tsdbEngineSample.executeLatestQuery(new LatestQueryRequest("test", vinList, requestedColumns));
+      showResult("executeLatestQuery", resultSet);
+      resultSet = tsdbEngineSample.executeTimeRangeQuery(new TimeRangeQueryRequest("test", new Vin(str.getBytes(StandardCharsets.UTF_8)), requestedColumns, 1689091210000L, 1689091311000L));
+      showResult("executeTimeRangeQuery", resultSet);
+
+
+
       tsdbEngineSample.shutdown();
 
       tsdbEngineSample = new TSDBEngineImpl(dataDir);
       tsdbEngineSample.connect();
 
-      ArrayList<Row> resultSet = tsdbEngineSample.executeLatestQuery(new LatestQueryRequest("test", vinList, requestedColumns));
+      // after shutdown
+      System.out.println("=========== after shutdown ===========");
+      resultSet = tsdbEngineSample.executeLatestQuery(new LatestQueryRequest("test", vinList, requestedColumns));
       showResult("executeLatestQuery", resultSet);
       resultSet = tsdbEngineSample.executeTimeRangeQuery(new TimeRangeQueryRequest("test", new Vin(str.getBytes(StandardCharsets.UTF_8)), requestedColumns, 1689091210000L, 1689091311000L));
       showResult("executeTimeRangeQuery", resultSet);
