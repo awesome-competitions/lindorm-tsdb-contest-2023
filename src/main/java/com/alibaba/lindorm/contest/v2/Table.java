@@ -87,12 +87,11 @@ public class Table {
             if(index == null){
                 continue;
             }
-            long lastTimestamp = index.getLatestTimestamp();
-            Map<String, ColumnValue> columnValue = index.get(lastTimestamp, requestedColumns);
+            Map<String, ColumnValue> columnValue = index.getLatest(requestedColumns);
             if (columnValue == null){
                 continue;
             }
-            rows.add(new Row(vin, lastTimestamp, columnValue));
+            rows.add(new Row(vin, index.getLatestTimestamp(), columnValue));
         }
         return rows;
     }
@@ -329,6 +328,8 @@ public class Table {
                     index.insert(i, pos);
                 }
             }
+            // load latest
+            index.getLatest(Const.EMPTY_COLUMNS);
         }
     }
 

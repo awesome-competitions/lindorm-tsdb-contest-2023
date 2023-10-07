@@ -2,14 +2,14 @@ package com.alibaba.lindorm.contest.v2;
 
 import com.alibaba.lindorm.contest.structs.Row;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public interface Const {
 
     // settings
     ArrayList<Row> EMPTY_ROWS = new ArrayList<>();
+    Set<String> EMPTY_COLUMNS = new HashSet<>();
+
     int K = 1024;
     int M = 1024 * K;
     int G = 1024 * M;

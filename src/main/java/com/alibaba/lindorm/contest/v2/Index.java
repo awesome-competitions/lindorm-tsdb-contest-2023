@@ -1,9 +1,11 @@
 package com.alibaba.lindorm.contest.v2;
 
 import com.alibaba.lindorm.contest.structs.ColumnValue;
+import com.alibaba.lindorm.contest.structs.Row;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class Index {
 
@@ -16,6 +18,8 @@ public class Index {
     private long oldestTimestamp;
 
     private final Data data;
+
+    private Row latestRow;
 
     private Block block;
 
@@ -55,6 +59,19 @@ public class Index {
     public Map<String, ColumnValue> get(long timestamp, Set<String> requestedColumns) throws IOException {
         Map<Long, Map<String, ColumnValue>> results = range(timestamp, timestamp + 1, requestedColumns);
         return results.get(timestamp);
+    }
+
+    public Map<String, ColumnValue> getLatest(Set<String> requestedColumns) throws IOException {
+        if (latestRow == null || latestRow.getTimestamp() != latestTimestamp) {
+            Map<String, ColumnValue> columnValue = this.get(latestTimestamp, Const.EMPTY_COLUMNS);
+            this.latestRow = new Row(null, latestTimestamp, columnValue);
+        }
+        if (requestedColumns.isEmpty() || requestedColumns.size() == this.latestRow.getColumns().size()){
+            return this.latestRow.getColumns();
+        }
+        return this.latestRow.getColumns().entrySet().stream()
+                .filter(entry -> requestedColumns.contains(entry.getKey()))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     public Map<Long, Map<String, ColumnValue>> range(long start, long end, Set<String> requestedColumns) throws IOException {
