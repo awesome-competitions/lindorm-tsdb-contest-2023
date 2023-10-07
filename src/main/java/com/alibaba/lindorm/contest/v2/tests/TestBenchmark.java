@@ -24,7 +24,7 @@ package com.alibaba.lindorm.contest.v2.tests;
 import com.alibaba.lindorm.contest.TSDBEngine;
 import com.alibaba.lindorm.contest.TSDBEngineImpl;
 import com.alibaba.lindorm.contest.structs.*;
-import com.alibaba.lindorm.contest.v1.Const;
+import com.alibaba.lindorm.contest.v2.Const;
 
 import java.io.File;
 import java.io.IOException;
@@ -47,6 +47,8 @@ import java.util.*;
  */
 
 public class TestBenchmark {
+
+  static final int vinCount = 500;
 
   public static void main(String[] args) {
     File dataDir = new File(Const.TEST_DATA_DIR);
@@ -78,28 +80,60 @@ public class TestBenchmark {
       columnTypes.put("col3", ColumnValue.ColumnType.COLUMN_TYPE_STRING);
       Schema schema = new Schema(columnTypes);
       tsdbEngineSample.createTable("test", schema);
-      String vin = "LSVNV2182E0200001";
+      int vinId = 200001;
+
 
       int startIntVal = 1;
       double startDoubleVal = 1.1;
-      ByteBuffer stringVal = ByteBuffer.wrap(new byte[1024]);
+      ByteBuffer stringVal = ByteBuffer.wrap(new byte[100]);
       long startTimestamp = 1689091210000L;
 
       long s = System.currentTimeMillis();
-
-      ArrayList<Row> rowList = new ArrayList<>();
-      for (int i = 0; i < 10000; i ++){
-        Map<String, ColumnValue> columns = new HashMap<>();
-        columns.put("col1", new ColumnValue.IntegerColumn(startIntVal++));
-        columns.put("col2", new ColumnValue.DoubleFloatColumn(startDoubleVal ++));
-        columns.put("col3", new ColumnValue.StringColumn(stringVal));
-        rowList.add(new Row(new Vin(vin.getBytes(StandardCharsets.UTF_8)), startTimestamp += 1000, columns));
-      }
-      for (int j = 0; j < 1000; j ++){
-        tsdbEngineSample.write(new WriteRequest("test", rowList));
+      for (int j = 0; j < vinCount; j ++){
+        String vin = "LSVNV2182E0" + (vinId + j);
+        startTimestamp = 1689091210000L;
+        for (int k = 0; k < 360; k ++){
+          ArrayList<Row> rowList = new ArrayList<>();
+          for (int i = 0; i < 100; i ++){
+            Map<String, ColumnValue> columns = new HashMap<>();
+            columns.put("col1", new ColumnValue.IntegerColumn(startIntVal++));
+            columns.put("col2", new ColumnValue.DoubleFloatColumn(startDoubleVal ++));
+            columns.put("col3", new ColumnValue.StringColumn(stringVal));
+            rowList.add(new Row(new Vin(vin.getBytes(StandardCharsets.UTF_8)), startTimestamp += 1000, columns));
+          }
+          tsdbEngineSample.write(new WriteRequest("test", rowList));
+        }
       }
       tsdbEngineSample.shutdown();
       System.out.println("write time:" + (System.currentTimeMillis() - s));
+
+      // reload
+      tsdbEngineSample = new TSDBEngineImpl(dataDir);
+      tsdbEngineSample.connect();
+
+      // latest query
+      ArrayList<Vin> vinList = new ArrayList<>();
+
+      s = System.currentTimeMillis();
+      for (int i = 0; i < vinCount; i ++){
+        String vin = "LSVNV2182E0" + (vinId + i);
+        vinList.clear();
+        vinList.add(new Vin(vin.getBytes(StandardCharsets.UTF_8)));
+        tsdbEngineSample.executeLatestQuery(new LatestQueryRequest("test", vinList, Const.EMPTY_COLUMNS));
+      }
+      System.out.println("latest query time:" + (System.currentTimeMillis() - s));
+
+      // range query
+      s = System.currentTimeMillis();
+      for (int j = 0; j < vinCount; j ++){
+        String vin = "LSVNV2182E0" + (vinId + j);
+        startTimestamp = 1689091210000L;
+        for (int k = 0; k < 360; k ++){
+            ArrayList<Row> rows = tsdbEngineSample.executeTimeRangeQuery(new TimeRangeQueryRequest("test", new Vin(vin.getBytes(StandardCharsets.UTF_8)), Const.EMPTY_COLUMNS, startTimestamp, startTimestamp + 100 * 1000));
+            startTimestamp += 100 * 1000;
+        }
+      }
+      System.out.println("range query time:" + (System.currentTimeMillis() - s));
 
     } catch (IOException e) {
       e.printStackTrace();

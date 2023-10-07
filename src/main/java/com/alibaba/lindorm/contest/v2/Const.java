@@ -7,6 +7,7 @@ import java.util.*;
 public interface Const {
 
     // settings
+    String TEST_DATA_DIR = "/Users/nico/workspace/nico/test/lindorm-tsdb/";
     ArrayList<Row> EMPTY_ROWS = new ArrayList<>();
     Set<String> EMPTY_COLUMNS = new HashSet<>();
 
