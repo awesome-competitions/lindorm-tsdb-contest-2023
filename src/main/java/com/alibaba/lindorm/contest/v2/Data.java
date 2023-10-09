@@ -1,6 +1,5 @@
 package com.alibaba.lindorm.contest.v2;
 
-import com.alibaba.lindorm.contest.util.Util;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -8,7 +7,6 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class Data {
 
@@ -16,58 +14,24 @@ public class Data {
 
     private final Path path;
 
-    private long readPosition;
-
-    private long writePosition;
-
-    private final ByteBuffer writeBuffer;
-
-    private final ReentrantReadWriteLock lock;
+    private long position;
 
     public Data(Path path, OpenOption... options) throws IOException {
         this.path = path;
         this.channel = FileChannel.open(path, options);
-        this.readPosition = this.channel.size();
-        this.writePosition = this.readPosition;
-        this.writeBuffer = ByteBuffer.allocateDirect(Const.DATA_BUFFER_SIZE);
-        this.lock = new ReentrantReadWriteLock();
+        this.position = this.channel.position();
     }
 
-    public long write(ByteBuffer buffer) throws IOException {
-        try{
-            this.lock.writeLock().lock();
-            long prev = this.readPosition;
-            if (this.writeBuffer.remaining() < buffer.remaining()){
-                this.writeBuffer.flip();
-                this.writePosition += this.writeBuffer.remaining();
-                this.channel.write(this.writeBuffer);
-                this.writeBuffer.clear();
-            }
-            this.readPosition += buffer.remaining();
-            this.writeBuffer.put(buffer);
-            return prev;
-        }finally {
-            this.lock.writeLock().unlock();
-        }
+    public synchronized long write(ByteBuffer buffer) throws IOException {
+        long pos = this.position;
+        this.position += buffer.remaining();
+        this.channel.write(buffer);
+        return pos;
     }
 
-    public int read(ByteBuffer dst, long position, int limit) throws IOException {
-        try{
-            this.lock.readLock().lock();
-            dst.limit(limit);
-            if (this.writePosition > position){
-                return this.channel.read(dst, position);
-            }else if(this.readPosition > position){
-                long srcAddress = Util.getAddress(this.writeBuffer);
-                long dstAddress = Util.getAddress(dst);
-                Util.copyMemory(srcAddress + position - this.writePosition, dstAddress, dst.limit());
-                dst.position(dst.limit());
-                return limit;
-            }
-            return 0;
-        }finally {
-            this.lock.readLock().unlock();
-        }
+    public int read(ByteBuffer dst, long position, int size) throws IOException {
+        dst.limit(size);
+        return this.channel.read(dst, position);
     }
 
     public void close() throws IOException {
@@ -88,10 +52,6 @@ public class Data {
     }
 
     public void force() throws IOException {
-        this.writeBuffer.flip();
-        this.writePosition += this.writeBuffer.remaining();
-        this.channel.write(this.writeBuffer);
         this.channel.force(false);
-        this.writeBuffer.clear();
     }
 }

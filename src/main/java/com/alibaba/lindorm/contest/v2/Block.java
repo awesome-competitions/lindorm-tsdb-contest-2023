@@ -1,6 +1,7 @@
 package com.alibaba.lindorm.contest.v2;
 
 import com.alibaba.lindorm.contest.structs.ColumnValue;
+import com.alibaba.lindorm.contest.util.FilterMap;
 import com.alibaba.lindorm.contest.util.Tuple;
 import com.alibaba.lindorm.contest.util.Util;
 
@@ -11,10 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class Block {
 
-    // block size
-    private final List<Long> timestamps;
-
-    private final Map<String, List<ColumnValue>> values;
+    private final Map<Long, Map<String, ColumnValue>> values;
 
     private final int size;
 
@@ -22,25 +20,20 @@ public class Block {
 
     public Block(Data data){
         this.size = Const.BLOCK_SIZE;
-        this.timestamps = new ArrayList<>(this.size);
         this.data = data;
-        this.values = new ConcurrentHashMap<>(60);
+        this.values = new HashMap<>();
     }
 
-    public synchronized void insert(long timestamp, Map<String, ColumnValue> columns){
-        this.timestamps.add(timestamp);
-        for (Map.Entry<String, ColumnValue> e: columns.entrySet()){
-            List<ColumnValue> values = this.values.computeIfAbsent(e.getKey(), k -> new ArrayList<>(this.size));
-            values.add(e.getValue());
-        }
+    public void insert(long timestamp, Map<String, ColumnValue> columns){
+        values.put(timestamp, columns);
     }
 
     public int remaining(){
-        return size - this.timestamps.size() - 1;
+        return size - this.values.size() - 1;
     }
 
-    public List<Long> getTimestamps() {
-        return timestamps;
+    public Set<Long> getTimestamps() {
+        return values.keySet();
     }
 
     public long flush() throws IOException {
@@ -50,10 +43,12 @@ public class Block {
         ByteBuffer headerBuffer = Context.getBlockHeaderBuffer();
         headerBuffer.clear();
 
+        Set<Long> timestamps = values.keySet();
+
         for (String columnKey: Const.SORTED_COLUMNS){
             headerBuffer.putInt(dataBuffer.position());
-            List<ColumnValue> values = this.values.get(columnKey);
-            for (ColumnValue value: values){
+            for (Map.Entry<Long, Map<String, ColumnValue>> e: values.entrySet()){
+                ColumnValue value = e.getValue().get(columnKey);
                 switch (value.getColumnType()){
                     case COLUMN_TYPE_DOUBLE_FLOAT:
                         dataBuffer.putDouble(value.getDoubleFloatValue());
@@ -69,7 +64,6 @@ public class Block {
                 }
             }
         }
-
         for (long timestamp: timestamps){
             headerBuffer.putLong(timestamp);
         }
@@ -80,7 +74,7 @@ public class Block {
         ByteBuffer writerBuffer = Context.getBlockWriteBuffer();
         writerBuffer.clear();
         // header
-        writerBuffer.putInt(timestamps.size());
+        writerBuffer.putInt(values.size());
         writerBuffer.putInt(dataBuffer.remaining());
         writerBuffer.put(headerBuffer);
         writerBuffer.put(dataBuffer);
@@ -92,29 +86,18 @@ public class Block {
 
     public Map<Long, Map<String, ColumnValue>> read(Set<Long> requestedTimestamps, Set<String> requestedColumns) {
         Map<Long, Map<String, ColumnValue>> results = new HashMap<>();
-        for (String requestedColumn: requestedColumns){
-            List<ColumnValue> columnValues = this.values.get(requestedColumn);
-            for (int i = 0; i < timestamps.size(); i++) {
-                long timestamp = timestamps.get(i);
-                if (! requestedTimestamps.contains(timestamp)){
-                    continue;
-                }
-                Map<String, ColumnValue> values = results.computeIfAbsent(timestamp, k -> new HashMap<>());
-                values.put(requestedColumn, columnValues.get(i));
-            }
+        for (long requiredTimestamp: requestedTimestamps){
+            Map<String, ColumnValue> columnValues = this.values.get(requiredTimestamp);
+            results.put(requiredTimestamp, new FilterMap<>(columnValues, requestedColumns));
         }
         return results;
     }
 
     public Map<Long, ColumnValue> read(Set<Long> requestedTimestamps, String requestedColumn) {
         Map<Long, ColumnValue> results = new HashMap<>();
-        List<ColumnValue> columnValues = this.values.get(requestedColumn);
-        for (int i = 0; i < timestamps.size(); i++) {
-            long timestamp = timestamps.get(i);
-            if (! requestedTimestamps.contains(timestamp)){
-                continue;
-            }
-            results.put(timestamp, columnValues.get(i));
+        for (long requiredTimestamp: requestedTimestamps){
+            Map<String, ColumnValue> columnValues = this.values.get(requiredTimestamp);
+            results.put(requiredTimestamp, columnValues.get(requestedColumn));
         }
         return results;
     }

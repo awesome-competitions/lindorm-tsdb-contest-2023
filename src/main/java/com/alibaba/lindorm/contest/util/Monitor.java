@@ -10,6 +10,10 @@ public class Monitor {
         return "heap max: " + runtime.maxMemory() / Const.M + ", heap used: " + (runtime.totalMemory() - runtime.freeMemory()) / Const.M + ", index size: " + table.getIndexes().size();
     }
 
+    public static String simpleInformation(){
+        return runtime.maxMemory() / Const.M + "," + (runtime.totalMemory() - runtime.freeMemory()) / Const.M;
+    }
+
     public static void start(Table table){
         new Thread(()->{
             for (;;){
