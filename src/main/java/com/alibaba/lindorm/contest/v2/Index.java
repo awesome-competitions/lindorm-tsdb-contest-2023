@@ -20,6 +20,8 @@ public class Index {
 
     private final Data data;
 
+    private Row latestRow;
+
     private Block block;
 
     public Index(Data data, int vin){
@@ -61,7 +63,11 @@ public class Index {
     }
 
     public Map<String, ColumnValue> getLatest(Set<String> requestedColumns) throws IOException {
-        return get(latestTimestamp, requestedColumns);
+        if (latestRow == null || latestRow.getTimestamp() != latestTimestamp) {
+            Map<String, ColumnValue> columnValue = this.get(latestTimestamp, Const.EMPTY_COLUMNS);
+            this.latestRow = new Row(null, latestTimestamp, columnValue);
+        }
+        return new FilterMap<>(this.latestRow.getColumns(), requestedColumns);
     }
 
     public Map<Long, Map<String, ColumnValue>> range(long start, long end, Set<String> requestedColumns) throws IOException {

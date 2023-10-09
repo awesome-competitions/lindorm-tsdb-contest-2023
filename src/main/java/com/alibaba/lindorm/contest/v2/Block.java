@@ -190,9 +190,8 @@ public class Block {
                 case COLUMN_TYPE_STRING:
                     ByteBuffer[] stringValues = Context.getBlockStringValues();
                     for (int i = 0; i < tsCount; i++) {
-                        ByteBuffer val = stringValues[i];
-                        val.clear();
-                        val.limit(readBuffer.get());
+                        ByteBuffer val = ByteBuffer.allocate(readBuffer.get());
+                        stringValues[i] = val;
                         readBuffer.get(val.array(), 0, val.limit());
                     }
                     for (Map.Entry<Long, Integer> e: timestampIndex.entrySet()){
@@ -274,9 +273,8 @@ public class Block {
             case COLUMN_TYPE_STRING:
                 ByteBuffer[] stringValues = Context.getBlockStringValues();
                 for (int i = 0; i < tsCount; i++) {
-                    ByteBuffer val = stringValues[i];
-                    val.clear();
-                    val.limit(readBuffer.get());
+                    ByteBuffer val = ByteBuffer.allocate(readBuffer.get());
+                    stringValues[i] = val;
                     readBuffer.get(val.array(), 0, val.limit());
                 }
                 for (Map.Entry<Long, Integer> e: timestampIndex.entrySet()){

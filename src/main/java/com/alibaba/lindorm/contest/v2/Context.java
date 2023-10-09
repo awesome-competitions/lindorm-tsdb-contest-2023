@@ -56,7 +56,6 @@ public class Context {
         this.blockIntValues = new int[Const.BLOCK_SIZE];
         this.blockDoubleValues = new double[Const.BLOCK_SIZE];
         this.blockStringValues = new ByteBuffer[Const.BLOCK_SIZE];
-        Arrays.fill(this.blockStringValues, ByteBuffer.allocate(100));
     }
 
     public static ByteBuffer getDataWriteBuffer() {
