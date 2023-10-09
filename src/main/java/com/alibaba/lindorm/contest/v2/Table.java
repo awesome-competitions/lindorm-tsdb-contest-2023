@@ -122,7 +122,7 @@ public class Table {
         if (results.size() == 0){
             return Const.EMPTY_ROWS;
         }
-        System.out.println(timeLowerBound + "-" + timeUpperBound + ", " + columnName + ", " + type + ", " + results.size() + ", " + Monitor.simpleInformation());
+//        System.out.println(timeLowerBound + "-" + timeUpperBound + ", " + columnName + ", " + type + ", " + results.size() + ", " + Monitor.simpleInformation());
 
         ArrayList<Row> rows = new ArrayList<>();
         rows.add(handleAggregate(vin, timeLowerBound, results.values(), type, columnName, aggregator, null));

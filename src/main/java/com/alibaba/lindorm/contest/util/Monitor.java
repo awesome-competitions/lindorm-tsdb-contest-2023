@@ -26,4 +26,17 @@ public class Monitor {
             }
         }).start();
     }
+
+    public static void startSimple(){
+        new Thread(()->{
+            for (;;){
+                try {
+                    Thread.sleep(1000 * 10);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                System.out.print(simpleInformation() + ";");
+            }
+        }).start();
+    }
 }
