@@ -10,6 +10,7 @@ public interface Const {
     String TEST_DATA_DIR = "D:\\Workspace\\tests\\test-tsdb\\";
     ArrayList<Row> EMPTY_ROWS = new ArrayList<>();
     Set<String> EMPTY_COLUMNS = new HashSet<>();
+    int DATA_FILE_COUNT = 4;
 
     int K = 1024;
     int M = 1024 * K;
