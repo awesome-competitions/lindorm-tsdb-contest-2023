@@ -1,6 +1,7 @@
 package com.alibaba.lindorm.contest.v2;
 
 import com.alibaba.lindorm.contest.structs.ColumnValue;
+import com.alibaba.lindorm.contest.util.Util;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -78,13 +79,14 @@ public class Block {
         ByteBuffer writerBuffer = Context.getBlockWriteBuffer();
         writerBuffer.clear();
         // header
-        writerBuffer.putInt(headerBuffer.remaining());
-        writerBuffer.putInt(dataBuffer.remaining());
         writerBuffer.putInt(timestamps.size());
+        writerBuffer.putInt(dataBuffer.remaining());
         writerBuffer.put(headerBuffer);
         writerBuffer.put(dataBuffer);
         writerBuffer.flip();
-        return this.data.write(writerBuffer);
+        int size = writerBuffer.remaining();
+        long pos = this.data.write(writerBuffer);
+        return Util.assemblePosLen(size, pos);
     }
 
     public Map<Long, Map<String, ColumnValue>> read(Set<Long> requestedTimestamps, Set<String> requestedColumns) {
@@ -107,30 +109,33 @@ public class Block {
         ByteBuffer readBuffer = Context.getBlockReadBuffer();
         readBuffer.clear();
 
-        int readBytes = data.read(readBuffer, position, 12);
-        if (readBytes != 12){
+        int len = Util.parseLen(position);
+        position = Util.parsePos(position);
+
+        int readBytes = data.read(readBuffer, position, len);
+        if (readBytes != len){
             throw new IOException("read bytes not enough");
         }
-
         readBuffer.flip();
-        int headerSize = readBuffer.getInt();
-        int dataSize = readBuffer.getInt();
+
         int tsCount = readBuffer.getInt();
+        int dataSize = readBuffer.getInt();
 
-        readBuffer.clear();
-        data.read(readBuffer, position + 12, headerSize);
-        readBuffer.flip();
-
-        int[] positions = new int[Const.SORTED_COLUMNS.size()];
+        int[] positions = Context.getBlockPositions();
         for (int i = 0; i < positions.length; i++) {
             positions[i] = readBuffer.getInt();
         }
 
-        long[] timestamps = new long[tsCount];
+        long[] timestamps = Context.getBlockTimestamps();
+        Map<Long, Integer> timestampIndex = new HashMap<>();
         for (int i = 0; i < tsCount; i++) {
             timestamps[i] = readBuffer.getLong();
+            if (requestedTimestamps.contains(timestamps[i])){
+                timestampIndex.put(timestamps[i], i);
+            }
         }
 
+        int readPos = readBuffer.position();
         Map<Long, Map<String, ColumnValue>> results = new HashMap<>();
         for (String requestedColumn: requestedColumns){
             Colum column = Const.COLUMNS_INDEX.get(requestedColumn);
@@ -142,44 +147,46 @@ public class Block {
                 latestPos = positions[index + 1];
             }
             int currentPos = positions[index];
-            int currentSize = latestPos - currentPos;
 
             readBuffer.clear();
-            data.read(readBuffer, position + 12 + headerSize + currentPos, currentSize);
-            readBuffer.flip();
+            readBuffer.position(readPos + currentPos);
+            readBuffer.limit(readPos + latestPos);
 
-            for (long timestamp: timestamps){
-                if (! requestedTimestamps.contains(timestamp)){
-                    switch (type){
-                        case COLUMN_TYPE_DOUBLE_FLOAT:
-                            readBuffer.position(readBuffer.position() + 8);
-                            break;
-                        case COLUMN_TYPE_INTEGER:
-                            readBuffer.position(readBuffer.position() + 4);
-                            break;
-                        case COLUMN_TYPE_STRING:
-                            byte len = readBuffer.get();
-                            readBuffer.position(readBuffer.position() + len);
-                            break;
+            switch (type){
+                case COLUMN_TYPE_DOUBLE_FLOAT:
+                    double[] doubleValues = Context.getBlockDoubleValues();
+                    for (int i = 0; i < tsCount; i++) {
+                        doubleValues[i] = readBuffer.getDouble();
                     }
-                    continue;
-                }
-
-                Map<String, ColumnValue> values = results.computeIfAbsent(timestamp, k -> new HashMap<>());
-                switch (type){
-                    case COLUMN_TYPE_DOUBLE_FLOAT:
-                        values.put(requestedColumn, new ColumnValue.DoubleFloatColumn(readBuffer.getDouble()));
-                        break;
-                    case COLUMN_TYPE_INTEGER:
-                        values.put(requestedColumn, new ColumnValue.IntegerColumn(readBuffer.getInt()));
-                        break;
-                    case COLUMN_TYPE_STRING:
-                        byte len = readBuffer.get();
-                        byte[] bs = new byte[len];
-                        readBuffer.get(bs);
-                        values.put(requestedColumn, new ColumnValue.StringColumn(ByteBuffer.wrap(bs)));
-                        break;
-                }
+                    for (Map.Entry<Long, Integer> e: timestampIndex.entrySet()){
+                        Map<String, ColumnValue> values = results.computeIfAbsent(e.getKey(), k -> new HashMap<>());
+                        values.put(requestedColumn, new ColumnValue.DoubleFloatColumn(doubleValues[e.getValue()]));
+                    }
+                    break;
+                case COLUMN_TYPE_INTEGER:
+                    int[] intValues = Context.getBlockIntValues();
+                    for (int i = 0; i < tsCount; i++) {
+                        intValues[i] = readBuffer.getInt();
+                    }
+                    for (Map.Entry<Long, Integer> e: timestampIndex.entrySet()){
+                        Map<String, ColumnValue> values = results.computeIfAbsent(e.getKey(), k -> new HashMap<>());
+                        values.put(requestedColumn, new ColumnValue.IntegerColumn(intValues[e.getValue()]));
+                    }
+                    break;
+                case COLUMN_TYPE_STRING:
+                    ByteBuffer[] stringValues = Context.getBlockStringValues();
+                    for (int i = 0; i < tsCount; i++) {
+                        ByteBuffer val = stringValues[i];
+                        val.clear();
+                        val.limit(readBuffer.get());
+                        val.put(readBuffer);
+                        val.flip();
+                    }
+                    for (Map.Entry<Long, Integer> e: timestampIndex.entrySet()){
+                        Map<String, ColumnValue> values = results.computeIfAbsent(e.getKey(), k -> new HashMap<>());
+                        values.put(requestedColumn, new ColumnValue.StringColumn(stringValues[e.getValue()]));
+                    }
+                    break;
             }
         }
         return results;

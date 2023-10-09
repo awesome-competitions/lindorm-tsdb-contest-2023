@@ -45,4 +45,16 @@ public class Util {
         return vinId;
     }
 
+    public static long assemblePosLen(int len, long position){
+        return ((long)len << 44) | position;
+    }
+
+    public static int parseLen(long lenAndPos){
+        return (int) (lenAndPos >>> 44);
+    }
+
+    public static long parsePos(long lenAndPos){
+        return lenAndPos & 0x00000FFFFFFFFFFFL;
+    }
+
 }
