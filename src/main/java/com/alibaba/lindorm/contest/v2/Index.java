@@ -2,6 +2,7 @@ package com.alibaba.lindorm.contest.v2;
 
 import com.alibaba.lindorm.contest.structs.ColumnValue;
 import com.alibaba.lindorm.contest.structs.Row;
+import com.alibaba.lindorm.contest.util.FilterMap;
 
 import java.io.IOException;
 import java.util.*;
@@ -66,12 +67,7 @@ public class Index {
             Map<String, ColumnValue> columnValue = this.get(latestTimestamp, Const.EMPTY_COLUMNS);
             this.latestRow = new Row(null, latestTimestamp, columnValue);
         }
-        if (requestedColumns.isEmpty() || requestedColumns.size() == this.latestRow.getColumns().size()){
-            return this.latestRow.getColumns();
-        }
-        return this.latestRow.getColumns().entrySet().stream()
-                .filter(entry -> requestedColumns.contains(entry.getKey()))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        return new FilterMap<>(this.latestRow.getColumns(), requestedColumns);
     }
 
     public Map<Long, Map<String, ColumnValue>> range(long start, long end, Set<String> requestedColumns) throws IOException {

@@ -179,8 +179,7 @@ public class Block {
                         ByteBuffer val = stringValues[i];
                         val.clear();
                         val.limit(readBuffer.get());
-                        val.put(readBuffer);
-                        val.flip();
+                        readBuffer.put(val.array(), 0, val.limit());
                     }
                     for (Map.Entry<Long, Integer> e: timestampIndex.entrySet()){
                         Map<String, ColumnValue> values = results.computeIfAbsent(e.getKey(), k -> new HashMap<>());
