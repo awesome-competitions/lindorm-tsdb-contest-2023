@@ -191,8 +191,8 @@ public class Block {
                     ByteBuffer[] stringValues = Context.getBlockStringValues();
                     for (int i = 0; i < tsCount; i++) {
                         ByteBuffer val = ByteBuffer.allocate(readBuffer.get());
-                        stringValues[i] = val;
                         readBuffer.get(val.array(), 0, val.limit());
+                        stringValues[i] = val;
                     }
                     for (Map.Entry<Long, Integer> e: timestampIndex.entrySet()){
                         Map<String, ColumnValue> values = results.computeIfAbsent(e.getKey(), k -> new HashMap<>());
@@ -274,8 +274,8 @@ public class Block {
                 ByteBuffer[] stringValues = Context.getBlockStringValues();
                 for (int i = 0; i < tsCount; i++) {
                     ByteBuffer val = ByteBuffer.allocate(readBuffer.get());
-                    stringValues[i] = val;
                     readBuffer.get(val.array(), 0, val.limit());
+                    stringValues[i] = val;
                 }
                 for (Map.Entry<Long, Integer> e: timestampIndex.entrySet()){
                     results.put(e.getKey(), new ColumnValue.StringColumn(stringValues[e.getValue()]));
