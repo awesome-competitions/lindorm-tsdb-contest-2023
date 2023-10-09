@@ -1,6 +1,7 @@
 package com.alibaba.lindorm.contest.v2;
 
 import com.alibaba.lindorm.contest.structs.ColumnValue;
+import com.alibaba.lindorm.contest.util.Tuple;
 import com.alibaba.lindorm.contest.util.Util;
 
 import java.io.IOException;
@@ -105,6 +106,19 @@ public class Block {
         return results;
     }
 
+    public Map<Long, ColumnValue> read(Set<Long> requestedTimestamps, String requestedColumn) {
+        Map<Long, ColumnValue> results = new HashMap<>();
+        List<ColumnValue> columnValues = this.values.get(requestedColumn);
+        for (int i = 0; i < timestamps.size(); i++) {
+            long timestamp = timestamps.get(i);
+            if (! requestedTimestamps.contains(timestamp)){
+                continue;
+            }
+            results.put(timestamp, columnValues.get(i));
+        }
+        return results;
+    }
+
     public static Map<Long, Map<String, ColumnValue>> read(Data data, long position, Set<Long> requestedTimestamps, Set<String> requestedColumns) throws IOException {
         ByteBuffer readBuffer = Context.getBlockReadBuffer();
         readBuffer.clear();
@@ -179,7 +193,7 @@ public class Block {
                         ByteBuffer val = stringValues[i];
                         val.clear();
                         val.limit(readBuffer.get());
-                        readBuffer.put(val.array(), 0, val.limit());
+                        readBuffer.get(val.array(), 0, val.limit());
                     }
                     for (Map.Entry<Long, Integer> e: timestampIndex.entrySet()){
                         Map<String, ColumnValue> values = results.computeIfAbsent(e.getKey(), k -> new HashMap<>());
@@ -187,6 +201,88 @@ public class Block {
                     }
                     break;
             }
+        }
+        return results;
+    }
+
+
+    public static Map<Long, ColumnValue> read(Data data, long position, Set<Long> requestedTimestamps, String requestedColumn) throws IOException {
+        ByteBuffer readBuffer = Context.getBlockReadBuffer();
+        readBuffer.clear();
+
+        int len = Util.parseLen(position);
+        position = Util.parsePos(position);
+
+        int readBytes = data.read(readBuffer, position, len);
+        if (readBytes != len){
+            throw new IOException("read bytes not enough");
+        }
+        readBuffer.flip();
+
+        int tsCount = readBuffer.getInt();
+        int dataSize = readBuffer.getInt();
+
+        int[] positions = Context.getBlockPositions();
+        for (int i = 0; i < positions.length; i++) {
+            positions[i] = readBuffer.getInt();
+        }
+
+        long[] timestamps = Context.getBlockTimestamps();
+        Map<Long, Integer> timestampIndex = new HashMap<>();
+        for (int i = 0; i < tsCount; i++) {
+            timestamps[i] = readBuffer.getLong();
+            if (requestedTimestamps.contains(timestamps[i])){
+                timestampIndex.put(timestamps[i], i);
+            }
+        }
+
+        int readPos = readBuffer.position();
+        Map<Long, ColumnValue> results = new HashMap<>();
+        Colum column = Const.COLUMNS_INDEX.get(requestedColumn);
+        int index = column.getIndex();
+        ColumnValue.ColumnType type = column.getType();
+
+        int latestPos = dataSize;
+        if (index < positions.length - 1){
+            latestPos = positions[index + 1];
+        }
+        int currentPos = positions[index];
+
+        readBuffer.clear();
+        readBuffer.position(readPos + currentPos);
+        readBuffer.limit(readPos + latestPos);
+
+        switch (type){
+            case COLUMN_TYPE_DOUBLE_FLOAT:
+                double[] doubleValues = Context.getBlockDoubleValues();
+                for (int i = 0; i < tsCount; i++) {
+                    doubleValues[i] = readBuffer.getDouble();
+                }
+                for (Map.Entry<Long, Integer> e: timestampIndex.entrySet()){
+                    results.put(e.getKey(), new ColumnValue.DoubleFloatColumn(doubleValues[e.getValue()]));
+                }
+                break;
+            case COLUMN_TYPE_INTEGER:
+                int[] intValues = Context.getBlockIntValues();
+                for (int i = 0; i < tsCount; i++) {
+                    intValues[i] = readBuffer.getInt();
+                }
+                for (Map.Entry<Long, Integer> e: timestampIndex.entrySet()){
+                    results.put(e.getKey(), new ColumnValue.IntegerColumn(intValues[e.getValue()]));
+                }
+                break;
+            case COLUMN_TYPE_STRING:
+                ByteBuffer[] stringValues = Context.getBlockStringValues();
+                for (int i = 0; i < tsCount; i++) {
+                    ByteBuffer val = stringValues[i];
+                    val.clear();
+                    val.limit(readBuffer.get());
+                    readBuffer.get(val.array(), 0, val.limit());
+                }
+                for (Map.Entry<Long, Integer> e: timestampIndex.entrySet()){
+                    results.put(e.getKey(), new ColumnValue.StringColumn(stringValues[e.getValue()]));
+                }
+                break;
         }
         return results;
     }

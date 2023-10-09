@@ -20,8 +20,6 @@ public class Index {
 
     private final Data data;
 
-    private Row latestRow;
-
     private Block block;
 
     public Index(Data data, int vin){
@@ -63,11 +61,7 @@ public class Index {
     }
 
     public Map<String, ColumnValue> getLatest(Set<String> requestedColumns) throws IOException {
-        if (latestRow == null || latestRow.getTimestamp() != latestTimestamp) {
-            Map<String, ColumnValue> columnValue = this.get(latestTimestamp, Const.EMPTY_COLUMNS);
-            this.latestRow = new Row(null, latestTimestamp, columnValue);
-        }
-        return new FilterMap<>(this.latestRow.getColumns(), requestedColumns);
+        return get(latestTimestamp, requestedColumns);
     }
 
     public Map<Long, Map<String, ColumnValue>> range(long start, long end, Set<String> requestedColumns) throws IOException {
@@ -100,6 +94,37 @@ public class Index {
             }
             // read from disk
             results.putAll(Block.read(this.data, pos, requestedTimestamps, requestedColumns));
+        }
+        return results;
+    }
+
+    public Map<Long, ColumnValue> range(long start, long end, String requestedColumn) throws IOException {
+        int left = getSec(Math.max(start, this.oldestTimestamp));
+        int right = getSec(Math.min(end, this.latestTimestamp));
+        Map<Long, Set<Long>> timestamps = new HashMap<>();
+        for (int i = left; i <= right; i++) {
+            int index = getIndex(i);
+            long pos = this.positions[index];
+            if (pos == -1){
+                continue;
+            }
+            long t = i * 1000L;
+            if (t < end && t >= start){
+                timestamps.computeIfAbsent(pos, k -> new HashSet<>()).add(t);
+            }
+        }
+
+        Map<Long, ColumnValue> results = new HashMap<>();
+        for (Map.Entry<Long, Set<Long>> e: timestamps.entrySet()){
+            long pos = e.getKey();
+            Set<Long> requestedTimestamps = e.getValue();
+            // read from memory
+            if (pos == -2 && block != null){
+                results.putAll(block.read(requestedTimestamps, requestedColumn));
+                continue;
+            }
+            // read from disk
+            results.putAll(Block.read(this.data, pos, requestedTimestamps, requestedColumn));
         }
         return results;
     }

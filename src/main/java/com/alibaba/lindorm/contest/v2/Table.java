@@ -113,19 +113,14 @@ public class Table {
             return Const.EMPTY_ROWS;
         }
 
-        Set<String> requestedColumns = Collections.singleton(columnName);
         ColumnValue.ColumnType type = this.schema.getColumnTypeMap().get(columnName);
-
-        Map<Long, Map<String, ColumnValue>> results = index.range(timeLowerBound, timeUpperBound, requestedColumns);
+        Map<Long, ColumnValue> results = index.range(timeLowerBound, timeUpperBound, columnName);
         if (results.size() == 0){
             return Const.EMPTY_ROWS;
         }
 
-        List<ColumnValue> columnValues = new ArrayList<>();
-        results.forEach((timestamp, values) -> columnValues.add(values.get(columnName)));
-
         ArrayList<Row> rows = new ArrayList<>();
-        rows.add(handleAggregate(vin, timeLowerBound, columnValues, type, columnName, aggregator, null));
+        rows.add(handleAggregate(vin, timeLowerBound, results.values(), type, columnName, aggregator, null));
         return rows;
     }
 
@@ -134,10 +129,8 @@ public class Table {
         if(index == null){
             return Const.EMPTY_ROWS;
         }
-        Set<String> requestedColumns = Collections.singleton(columnName);
         ColumnValue.ColumnType type = this.schema.getColumnTypeMap().get(columnName);
-
-        Map<Long, Map<String, ColumnValue>> results = index.range(timeLowerBound, timeUpperBound, requestedColumns);
+        Map<Long, ColumnValue> results = index.range(timeLowerBound, timeUpperBound, columnName);
         if (results.size() == 0){
             return Const.EMPTY_ROWS;
         }
@@ -148,8 +141,7 @@ public class Table {
             group.add(new ArrayList<>());
         }
 
-        results.forEach((timestamp, values) -> {
-            ColumnValue value = values.get(columnName);
+        results.forEach((timestamp, value) -> {
             int groupIndex = (int) ((timestamp - timeLowerBound)/interval);
             List<ColumnValue> columnValues = group.get(groupIndex);
             columnValues.add(value);
@@ -167,7 +159,7 @@ public class Table {
         return rows;
     }
 
-    private Row handleAggregate(Vin vin, long timeLowerBound, List<ColumnValue> columnValues, ColumnValue.ColumnType type, String columnName, Aggregator aggregator, CompareExpression columnFilter) {
+    private Row handleAggregate(Vin vin, long timeLowerBound, Collection<ColumnValue> columnValues, ColumnValue.ColumnType type, String columnName, Aggregator aggregator, CompareExpression columnFilter) {
         if (columnValues == null || columnValues.size() == 0){
             return null;
         }

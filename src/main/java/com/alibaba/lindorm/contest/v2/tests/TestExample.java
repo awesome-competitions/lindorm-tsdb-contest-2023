@@ -73,11 +73,7 @@ public class TestExample {
       tsdbEngineSample.connect();
 
 
-      ByteBuffer buffer = ByteBuffer.allocate(3);
-      buffer.put((byte) 70);
-      buffer.put((byte) 71);
-      buffer.put((byte) 72);
-      buffer.flip();
+      ByteBuffer buffer = ByteBuffer.wrap("S\\#CiSO.08i&u&i0eu&u'C'qmS48mimmu'G.KO#eWae4'Ky#aW8W8C-0&iKq#uGm[e8'm'4CGCiuSaW0[G-0y[qy-8#\\#Cu\\\\me4".getBytes());
       ArrayList<Vin> vinList = new ArrayList<>();
 
       Map<String, ColumnValue> columns = new HashMap<>();

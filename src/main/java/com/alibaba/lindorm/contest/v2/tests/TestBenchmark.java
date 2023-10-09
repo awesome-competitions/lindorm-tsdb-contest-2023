@@ -48,7 +48,7 @@ import java.util.*;
 
 public class TestBenchmark {
 
-  static final int vinCount = 500;
+  static final int vinCount = 100;
 
   public static void main(String[] args) {
     File dataDir = new File(Const.TEST_DATA_DIR);
@@ -129,11 +129,23 @@ public class TestBenchmark {
         String vin = "LSVNV2182E0" + (vinId + j);
         startTimestamp = 1689091210000L;
         for (int k = 0; k < 360; k ++){
-            ArrayList<Row> rows = tsdbEngineSample.executeTimeRangeQuery(new TimeRangeQueryRequest("test", new Vin(vin.getBytes(StandardCharsets.UTF_8)), Const.EMPTY_COLUMNS, startTimestamp, startTimestamp + 100 * 1000));
+            tsdbEngineSample.executeTimeRangeQuery(new TimeRangeQueryRequest("test", new Vin(vin.getBytes(StandardCharsets.UTF_8)), Const.EMPTY_COLUMNS, startTimestamp, startTimestamp + 100 * 1000));
             startTimestamp += 100 * 1000;
         }
       }
       System.out.println("range query time:" + (System.currentTimeMillis() - s));
+
+      // agg query
+      s = System.currentTimeMillis();
+      for (int j = 0; j < vinCount; j ++){
+        String vin = "LSVNV2182E0" + (vinId + j);
+        startTimestamp = 1689091210000L;
+        for (int k = 0; k < 360; k ++){
+          tsdbEngineSample.executeAggregateQuery(new TimeRangeAggregationRequest("test", new Vin(vin.getBytes(StandardCharsets.UTF_8)), "col2", startTimestamp, startTimestamp + 100 * 1000, Aggregator.AVG));
+          startTimestamp += 100 * 1000;
+        }
+      }
+      System.out.println("agg query time:" + (System.currentTimeMillis() - s));
 
     } catch (IOException e) {
       e.printStackTrace();
