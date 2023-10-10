@@ -27,7 +27,7 @@ public interface Const {
     Map<String, Colum> COLUMNS_INDEX = new java.util.HashMap<>(Const.COLUMN_COUNT);
 
     // block size
-    int BLOCK_SIZE = 60 * 2;
+    int BLOCK_SIZE = 20;
     // the time span of all the data
     int TIME_SPAN = 60 * 60 * 10;
 
