@@ -25,17 +25,14 @@ public class Table {
 
     private final Map<Vin, Integer> vinIds;
 
-    private final Data[] data;
+    private final Data data;
 
     public Table(String basePath, String tableName) throws IOException {
         this.name = tableName;
         this.basePath = basePath;
         this.indexes = new ConcurrentHashMap<>(Const.VIN_COUNT, 0.65F);
         this.vinIds = new ConcurrentHashMap<>();
-        this.data = new Data[Const.DATA_FILE_COUNT];
-        for (int i = 0; i < Const.DATA_FILE_COUNT; i++){
-            this.data[i] = new Data(Path.of(basePath, tableName + ".data." + i), StandardOpenOption.WRITE, StandardOpenOption.READ, StandardOpenOption.CREATE);
-        }
+        this.data = new Data(Path.of(basePath, tableName + ".data"), StandardOpenOption.WRITE, StandardOpenOption.READ, StandardOpenOption.CREATE);
     }
 
     public void setSchema(Schema schema) {
@@ -66,7 +63,7 @@ public class Table {
     }
 
     public Index getOrCreateVinIndex(Integer vinId){
-        return indexes.computeIfAbsent(vinId, k -> new Index(this.data[vinId%Const.DATA_FILE_COUNT], vinId));
+        return indexes.computeIfAbsent(vinId, k -> new Index(this.data, vinId));
     }
 
     public Index getOrCreateVinIndex(Vin vin){
@@ -122,7 +119,6 @@ public class Table {
         if (results.size() == 0){
             return Const.EMPTY_ROWS;
         }
-//        System.out.println(timeLowerBound + "-" + timeUpperBound + ", " + columnName + ", " + type + ", " + results.size() + ", " + Monitor.simpleInformation());
 
         ArrayList<Row> rows = new ArrayList<>();
         rows.add(handleAggregate(vin, timeLowerBound, results.values(), type, columnName, aggregator, null));
@@ -223,25 +219,17 @@ public class Table {
         for (Index index: indexes.values()){
             index.flush();
         }
-        for (Data f: data){
-            f.force();
-        }
+        this.data.force();
         this.flushSchema();
         this.flushIndex();
     }
 
     public long size() throws IOException {
-        long size = 0;
-        for (Data f: data){
-            size += f.size();
-        }
-        return size;
+        return this.data.size();
     }
 
     public void close() throws IOException {
-        for (Data f: data){
-            f.close();
-        }
+        this.data.close();
     }
 
     public void flushSchema() throws IOException {

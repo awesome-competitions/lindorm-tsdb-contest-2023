@@ -30,7 +30,7 @@ public class TSDBEngineImpl extends TSDBEngine {
 
   @Override
   public void connect() throws IOException {
-    Monitor.startSimple();
+//    Monitor.startSimple();
     File directory = getDataPath();
     File[] children = directory.listFiles(f -> f.getName().endsWith(".schema"));
     if (children != null) {

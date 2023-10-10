@@ -181,9 +181,9 @@ public class TestBenchmark {
     for (int j = 0; j < vinCount; j ++){
       String vin = "LSVNV2182E0" + (vinId + j);
       startTimestamp = 1689091210000L;
-      for (int k = 0; k < 360; k ++){
-        tsdbEngineSample.executeAggregateQuery(new TimeRangeAggregationRequest("test", new Vin(vin.getBytes(StandardCharsets.UTF_8)), "col2", startTimestamp, startTimestamp + 100 * 1000, Aggregator.AVG));
-        startTimestamp += 100 * 1000;
+      for (int k = 0; k < 3; k ++){
+        tsdbEngineSample.executeAggregateQuery(new TimeRangeAggregationRequest("test", new Vin(vin.getBytes(StandardCharsets.UTF_8)), "col2", startTimestamp, startTimestamp + 10800 * 1000, Aggregator.AVG));
+        startTimestamp += 10800 * 1000;
       }
     }
     System.out.println("agg query time:" + (System.currentTimeMillis() - s));
