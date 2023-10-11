@@ -72,7 +72,7 @@ public class AggregateConsumer implements Consumer<Double> {
         switch (type){
             case COLUMN_TYPE_INTEGER:
                 if (aggregator.equals(Aggregator.AVG)) {
-                    return new ColumnValue.IntegerColumn((int) sum / count);
+                    return new ColumnValue.DoubleFloatColumn(sum / count);
                 }
                 return new ColumnValue.IntegerColumn(max.intValue());
             case COLUMN_TYPE_DOUBLE_FLOAT:

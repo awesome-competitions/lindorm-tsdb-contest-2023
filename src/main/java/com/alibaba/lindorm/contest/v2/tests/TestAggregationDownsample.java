@@ -48,13 +48,13 @@ import java.util.Objects;
  *  have to worry about incompatibility with our evaluation program.
  */
 
-public class TestAggregation {
+public class TestAggregationDownsample {
 
     static String str = "LSVNV2182E0200001";
 
-    static Row newRow(long timestamp, int v){
+    static Row newRow(long timestamp, double v){
         Map<String, ColumnValue> columns = new HashMap<>();
-        columns.put("col", new ColumnValue.IntegerColumn(v));
+        columns.put("col", new ColumnValue.DoubleFloatColumn(v));
         return new Row(new Vin(str.getBytes(StandardCharsets.UTF_8)), timestamp, columns);
     }
 
@@ -83,7 +83,7 @@ public class TestAggregation {
             tsdbEngineSample.connect();
 
             Map<String, ColumnValue.ColumnType> columnTypes = new HashMap<>();
-            columnTypes.put("col", ColumnValue.ColumnType.COLUMN_TYPE_INTEGER);
+            columnTypes.put("col", ColumnValue.ColumnType.COLUMN_TYPE_DOUBLE_FLOAT);
             Schema schema = new Schema(columnTypes);
             tsdbEngineSample.createTable("test", schema);
 
@@ -104,8 +104,14 @@ public class TestAggregation {
             tsdbEngineSample = new TSDBEngineImpl(dataDir);
             tsdbEngineSample.connect();
 
-            ArrayList<Row> resultSet = tsdbEngineSample.executeAggregateQuery(new TimeRangeAggregationRequest("test", new Vin(str.getBytes(StandardCharsets.UTF_8)), "col",
-                    1693274400183L, 1693274410183L, Aggregator.AVG));
+            ArrayList<Row> resultSet = tsdbEngineSample.executeDownsampleQuery(new TimeRangeDownsampleRequest("test", new Vin(str.getBytes(StandardCharsets.UTF_8)), "col",
+                    1693274400183L, 1693274410183L, Aggregator.AVG, 5000, new CompareExpression(new ColumnValue.DoubleFloatColumn(11), CompareExpression.CompareOp.GREATER)));
+            showResult("executeDownsampleQuery", resultSet);
+            resultSet = tsdbEngineSample.executeDownsampleQuery(new TimeRangeDownsampleRequest("test", new Vin(str.getBytes(StandardCharsets.UTF_8)), "col",
+                    1693274400183L, 1693274410183L, Aggregator.AVG, 5000, new CompareExpression(new ColumnValue.DoubleFloatColumn(20), CompareExpression.CompareOp.EQUAL)));
+            showResult("executeDownsampleQuery", resultSet);
+            resultSet = tsdbEngineSample.executeDownsampleQuery(new TimeRangeDownsampleRequest("test", new Vin(str.getBytes(StandardCharsets.UTF_8)), "col",
+                    1693274410000L, 1693274420000L, Aggregator.AVG, 5000, new CompareExpression(new ColumnValue.DoubleFloatColumn(10), CompareExpression.CompareOp.GREATER)));
             showResult("executeDownsampleQuery", resultSet);
         } catch (IOException e) {
             e.printStackTrace();
