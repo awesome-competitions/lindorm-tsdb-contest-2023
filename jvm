@@ -1,5 +1,5 @@
 -Xms512m
--Xmx6144m
--XX:ParallelGCThreads=4
+-Xmx7168m
+-XX:ParallelGCThreads=8
 -XX:+UseParallelGC
 -XX:PretenureSizeThreshold=1048576
