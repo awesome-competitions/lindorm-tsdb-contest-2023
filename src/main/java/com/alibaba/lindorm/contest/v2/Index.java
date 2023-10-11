@@ -6,7 +6,7 @@ import com.alibaba.lindorm.contest.util.FilterMap;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
+import java.util.function.Consumer;
 
 public class Index {
 
@@ -71,24 +71,7 @@ public class Index {
     }
 
     public Map<Long, Map<String, ColumnValue>> range(long start, long end, Set<String> requestedColumns) throws IOException {
-        int left = getSec(Math.max(start, this.oldestTimestamp));
-        int right = getSec(Math.min(end, this.latestTimestamp));
-        Map<Long, Set<Long>> timestamps = new HashMap<>();
-        for (int i = left; i <= right; i++) {
-            int index = getIndex(i);
-            long pos = this.positions[index];
-            if (pos == -1){
-                continue;
-            }
-            long t = i * 1000L;
-            if (t < end && t >= start){
-                timestamps.computeIfAbsent(pos, k -> new HashSet<>()).add(t);
-            }
-        }
-
-        if (requestedColumns.isEmpty()){
-            requestedColumns = Const.COLUMNS_INDEX.keySet();
-        }
+        Map<Long, Set<Long>> timestamps = searchTimestamps(start, end);
         Map<Long, Map<String, ColumnValue>> results = new HashMap<>();
         for (Map.Entry<Long, Set<Long>> e: timestamps.entrySet()){
             long pos = e.getKey();
@@ -104,7 +87,22 @@ public class Index {
         return results;
     }
 
-    public Map<Long, ColumnValue> range(long start, long end, String requestedColumn) throws IOException {
+    public void aggregate(long start, long end, String requestedColumn, Consumer<Double> consumer) throws IOException {
+        Map<Long, Set<Long>> timestamps = searchTimestamps(start, end);
+        for (Map.Entry<Long, Set<Long>> e: timestamps.entrySet()){
+            long pos = e.getKey();
+            Set<Long> requestedTimestamps = e.getValue();
+            // read from memory
+            if (pos == -2 && block != null){
+                block.aggregate(requestedTimestamps, requestedColumn, consumer);
+                continue;
+            }
+            // read from disk
+            Block.aggregate(this.data, pos, requestedTimestamps, requestedColumn, consumer);
+        }
+    }
+
+    public Map<Long, Set<Long>> searchTimestamps(long start, long end) {
         int left = getSec(Math.max(start, this.oldestTimestamp));
         int right = getSec(Math.min(end, this.latestTimestamp));
         Map<Long, Set<Long>> timestamps = new HashMap<>();
@@ -119,20 +117,7 @@ public class Index {
                 timestamps.computeIfAbsent(pos, k -> new HashSet<>()).add(t);
             }
         }
-
-        Map<Long, ColumnValue> results = new HashMap<>();
-        for (Map.Entry<Long, Set<Long>> e: timestamps.entrySet()){
-            long pos = e.getKey();
-            Set<Long> requestedTimestamps = e.getValue();
-            // read from memory
-            if (pos == -2 && block != null){
-                results.putAll(block.read(requestedTimestamps, requestedColumn));
-                continue;
-            }
-            // read from disk
-            results.putAll(Block.read(this.data, pos, requestedTimestamps, requestedColumn));
-        }
-        return results;
+        return timestamps;
     }
 
     public void flush() throws IOException {

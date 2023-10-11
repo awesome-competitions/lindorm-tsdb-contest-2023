@@ -115,13 +115,14 @@ public class Table {
         }
 
         ColumnValue.ColumnType type = this.schema.getColumnTypeMap().get(columnName);
-        Map<Long, ColumnValue> results = index.range(timeLowerBound, timeUpperBound, columnName);
-        if (results.size() == 0){
+        AggregateConsumer consumer = new AggregateConsumer(type, aggregator, null);
+        index.aggregate(timeLowerBound, timeUpperBound, columnName, consumer);
+        if (consumer.getCount() == 0){
             return Const.EMPTY_ROWS;
         }
 
         ArrayList<Row> rows = new ArrayList<>();
-        rows.add(handleAggregate(vin, timeLowerBound, results.values(), type, columnName, aggregator, null));
+        rows.add(new Row(vin, timeLowerBound, Map.of(columnName, consumer.value())));
         return rows;
     }
 
@@ -130,89 +131,17 @@ public class Table {
         if(index == null){
             return Const.EMPTY_ROWS;
         }
-        ColumnValue.ColumnType type = this.schema.getColumnTypeMap().get(columnName);
-        Map<Long, ColumnValue> results = index.range(timeLowerBound, timeUpperBound, columnName);
-        if (results.size() == 0){
-            return Const.EMPTY_ROWS;
-        }
-
-        int size = (int) ((timeUpperBound - timeLowerBound)/interval);
-        List<List<ColumnValue>> group = new ArrayList<>(size);
-        for (int i= 0; i < size; i++){
-            group.add(new ArrayList<>());
-        }
-
-        results.forEach((timestamp, value) -> {
-            int groupIndex = (int) ((timestamp - timeLowerBound)/interval);
-            List<ColumnValue> columnValues = group.get(groupIndex);
-            columnValues.add(value);
-        });
-
         ArrayList<Row> rows = new ArrayList<>();
-        long subTimeLowerBound = timeLowerBound;
-        for(List<ColumnValue> numbers: group){
-            Row row = handleAggregate(vin, subTimeLowerBound, numbers, type, columnName, aggregator, columnFilter);
-            if (row != null){
-                rows.add(row);
+        for (long start = timeLowerBound; start < timeUpperBound; start += interval){
+            ColumnValue.ColumnType type = this.schema.getColumnTypeMap().get(columnName);
+            AggregateConsumer consumer = new AggregateConsumer(type, aggregator, columnFilter);
+            index.aggregate(start, start + interval, columnName, consumer);
+            if (consumer.getCount() == 0 && consumer.getFilteredCount() == 0){
+                continue;
             }
-            subTimeLowerBound += interval;
+            rows.add(new Row(vin, start, Map.of(columnName, consumer.value())));
         }
         return rows;
-    }
-
-    private Row handleAggregate(Vin vin, long timeLowerBound, Collection<ColumnValue> columnValues, ColumnValue.ColumnType type, String columnName, Aggregator aggregator, CompareExpression columnFilter) {
-        if (columnValues == null || columnValues.size() == 0){
-            return null;
-        }
-
-        Double d = null;
-        if(aggregator.equals(Aggregator.AVG)){
-            double sum = 0;
-            int count = 0;
-            for(ColumnValue v: columnValues){
-                if(columnFilter != null && !columnFilter.doCompare(v)){
-                    continue;
-                }
-                count ++;
-                if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_INTEGER)){
-                    sum += v.getIntegerValue();
-                }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_DOUBLE_FLOAT)){
-                    sum += v.getDoubleFloatValue();
-                }
-            }
-            if(count > 0){
-                d = sum/count;
-            }
-        }else if (aggregator.equals(Aggregator.MAX)){
-            for(ColumnValue v: columnValues){
-                if(columnFilter != null && !columnFilter.doCompare(v)){
-                    continue;
-                }
-                double t = 0;
-                if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_INTEGER)){
-                    t = v.getIntegerValue();
-                }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_DOUBLE_FLOAT)){
-                    t = v.getDoubleFloatValue();
-                }
-                if (d == null || d < t){
-                    d = t;
-                }
-            }
-        }
-        if (d == null){
-            d = Double.NEGATIVE_INFINITY;
-        }
-        Map<String, ColumnValue> result = new HashMap<>();
-        if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_INTEGER)){
-            if(aggregator.equals(Aggregator.AVG)){
-                result.put(columnName, new ColumnValue.DoubleFloatColumn(d));
-            }else{
-                result.put(columnName, new ColumnValue.IntegerColumn((int)d.doubleValue()));
-            }
-        }else if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_DOUBLE_FLOAT)) {
-            result.put(columnName, new ColumnValue.DoubleFloatColumn(d));
-        }
-        return new Row(vin, timeLowerBound, result);
     }
 
     public void force() throws IOException {

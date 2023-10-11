@@ -46,15 +46,24 @@ public class Util {
     }
 
     public static long assemblePosLen(int len, long position){
-        return ((long)len << 44) | position;
+        return ((long)len << 40) | position;
     }
 
     public static int parseLen(long lenAndPos){
-        return (int) (lenAndPos >>> 44);
+        return (int) (lenAndPos >>> 40);
     }
 
     public static long parsePos(long lenAndPos){
-        return lenAndPos & 0x00000FFFFFFFFFFFL;
+        return lenAndPos & 0x000000FFFFFFFFFFL;
+    }
+
+    public static void main(String[] args) {
+        long pos = 500 * 1024 * 1024 * 1024L;
+        int size = 8388608;
+        long lenAndPos = assemblePosLen(size, pos);
+        System.out.println(parseLen(lenAndPos));
+        System.out.println(parsePos(lenAndPos));
+
     }
 
 }
