@@ -1,21 +1,21 @@
 package com.alibaba.lindorm.contest.util;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.logging.Filter;
 import java.util.stream.Collectors;
 
 public class FilterMap<K, V> extends HashMap<K, V> implements Map<K, V> {
 
-    private final Map<K, V> source;
+    private Map<K, V> source;
 
     private final Set<K> filter;
 
     public FilterMap(Map<K, V> source, Set<K> filter) {
         this.source = source;
         this.filter = filter;
+        if (source == null){
+            this.source = Map.of();
+        }
     }
 
     @Override
@@ -65,7 +65,6 @@ public class FilterMap<K, V> extends HashMap<K, V> implements Map<K, V> {
         }
         return source.entrySet().stream().filter(e -> filter.contains(e.getKey())).collect(Collectors.toSet());
     }
-
 
 
 }
