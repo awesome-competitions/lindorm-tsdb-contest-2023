@@ -66,16 +66,19 @@ public class AggregateConsumer implements Consumer<Double> {
     }
 
     public ColumnValue value(){
-        if (count == 0){
-            return new ColumnValue.DoubleFloatColumn(Double.NEGATIVE_INFINITY);
-        }
         switch (type){
             case COLUMN_TYPE_INTEGER:
+                if (count == 0){
+                    return new ColumnValue.IntegerColumn((int) Double.NEGATIVE_INFINITY);
+                }
                 if (aggregator.equals(Aggregator.AVG)) {
                     return new ColumnValue.DoubleFloatColumn(sum / count);
                 }
                 return new ColumnValue.IntegerColumn(max.intValue());
             case COLUMN_TYPE_DOUBLE_FLOAT:
+                if (count == 0){
+                    return new ColumnValue.DoubleFloatColumn(Double.NEGATIVE_INFINITY);
+                }
                 if (aggregator.equals(Aggregator.AVG)) {
                     return new ColumnValue.DoubleFloatColumn(sum / count);
                 }
