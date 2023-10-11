@@ -1,12 +1,11 @@
 package com.alibaba.lindorm.contest.v2;
 
-import com.alibaba.lindorm.contest.structs.Aggregator;
 import com.alibaba.lindorm.contest.structs.ColumnValue;
 import com.alibaba.lindorm.contest.structs.CompareExpression;
 
 import java.util.function.Consumer;
 
-public class AggregateConsumer implements Consumer<Double> {
+public class Aggregator implements Consumer<Double> {
 
     private double sum;
 
@@ -18,11 +17,11 @@ public class AggregateConsumer implements Consumer<Double> {
 
     private final ColumnValue.ColumnType type;
 
-    private final Aggregator aggregator;
+    private final com.alibaba.lindorm.contest.structs.Aggregator aggregator;
 
     private final CompareExpression columnFilter;
 
-    public AggregateConsumer(ColumnValue.ColumnType type, Aggregator aggregator, CompareExpression columnFilter) {
+    public Aggregator(ColumnValue.ColumnType type, com.alibaba.lindorm.contest.structs.Aggregator aggregator, CompareExpression columnFilter) {
         this.aggregator = aggregator;
         this.columnFilter = columnFilter;
         this.type = type;
@@ -68,12 +67,12 @@ public class AggregateConsumer implements Consumer<Double> {
     public ColumnValue value(){
         switch (type){
             case COLUMN_TYPE_INTEGER:
-                if (aggregator.equals(Aggregator.AVG)) {
+                if (aggregator.equals(com.alibaba.lindorm.contest.structs.Aggregator.AVG)) {
                     return new ColumnValue.DoubleFloatColumn(count == 0 ? Double.NEGATIVE_INFINITY : sum / count);
                 }
                 return new ColumnValue.IntegerColumn(count == 0 ? (int) Double.NEGATIVE_INFINITY : max.intValue());
             case COLUMN_TYPE_DOUBLE_FLOAT:
-                if (aggregator.equals(Aggregator.AVG)) {
+                if (aggregator.equals(com.alibaba.lindorm.contest.structs.Aggregator.AVG)) {
                     return new ColumnValue.DoubleFloatColumn(count == 0 ? Double.NEGATIVE_INFINITY : sum / count);
                 }
                 return new ColumnValue.DoubleFloatColumn(count == 0 ? Double.NEGATIVE_INFINITY: max);

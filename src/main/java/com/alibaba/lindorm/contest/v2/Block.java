@@ -1,20 +1,19 @@
 package com.alibaba.lindorm.contest.v2;
 
 import com.alibaba.lindorm.contest.structs.ColumnValue;
-import com.alibaba.lindorm.contest.util.FilterMap;
 import com.alibaba.lindorm.contest.util.Util;
+import com.alibaba.lindorm.contest.v2.util.Column;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 public class Block {
 
     private final long[] timestamps;
 
-    private final Map<String, ColumnValue[]> values;
+    private final ColumnValue[][] values;
 
     private final Data data;
 
@@ -23,13 +22,18 @@ public class Block {
     public Block(Data data){
         this.data = data;
         this.timestamps = new long[Const.BLOCK_SIZE];
-        this.values = new HashMap<>(Const.COLUMN_COUNT);
+        this.values = new ColumnValue[Const.COLUMNS.size()][];
     }
 
     public void insert(long timestamp, Map<String, ColumnValue> columns){
         this.timestamps[size] = timestamp;
         for (Map.Entry<String, ColumnValue> e: columns.entrySet()){
-            ColumnValue[] values = this.values.computeIfAbsent(e.getKey(), k -> new ColumnValue[Const.BLOCK_SIZE]);
+            Column column = Const.COLUMNS_INDEX.get(e.getKey());
+            ColumnValue[] values = this.values[column.getIndex()];
+            if (values == null){
+                values = new ColumnValue[Const.BLOCK_SIZE];
+                this.values[column.getIndex()] = values;
+            }
             values[size] = e.getValue();
         }
         size ++;
@@ -56,9 +60,10 @@ public class Block {
         ByteBuffer headerBuffer = Context.getBlockHeaderBuffer();
         headerBuffer.clear();
 
-        for (String columnKey: Const.SORTED_COLUMNS){
+        for (String columnKey: Const.COLUMNS){
             headerBuffer.putInt(dataBuffer.position());
-            ColumnValue[] values = this.values.get(columnKey);
+            Column column = Const.COLUMNS_INDEX.get(columnKey);
+            ColumnValue[] values = this.values[column.getIndex()];
             for (int i = 0; i < size; i ++){
                 ColumnValue value = values[i];
                 switch (value.getColumnType()){
@@ -106,7 +111,8 @@ public class Block {
         }
 
         for (String requestedColumn: requestedColumns){
-            ColumnValue[] columnValues = this.values.get(requestedColumn);
+            Column column = Const.COLUMNS_INDEX.get(requestedColumn);
+            ColumnValue[] columnValues = this.values[column.getIndex()];
             timestampIndex.forEach((timestamp, index) -> {
                 Map<String, ColumnValue> values = results.computeIfAbsent(timestamp, k -> new HashMap<>());
                 values.put(requestedColumn, columnValues[index]);
@@ -148,7 +154,7 @@ public class Block {
         int readPos = readBuffer.position();
         Map<Long, Map<String, ColumnValue>> results = new HashMap<>();
         for (String requestedColumn: requestedColumns){
-            Colum column = Const.COLUMNS_INDEX.get(requestedColumn);
+            Column column = Const.COLUMNS_INDEX.get(requestedColumn);
             int index = column.getIndex();
             ColumnValue.ColumnType type = column.getType();
 
@@ -202,10 +208,10 @@ public class Block {
 
 
     public void aggregate(Set<Long> requestedTimestamps, String requestedColumn, Consumer<Double> consumer) {
-        Colum column = Const.COLUMNS_INDEX.get(requestedColumn);
+        Column column = Const.COLUMNS_INDEX.get(requestedColumn);
         ColumnValue.ColumnType type = column.getType();
 
-        ColumnValue[] values = this.values.get(requestedColumn);
+        ColumnValue[] values = this.values[column.getIndex()];
         for (int i = 0; i < size; i++) {
             if (! requestedTimestamps.contains(timestamps[i])){
                 continue;
@@ -250,7 +256,7 @@ public class Block {
         }
 
         int readPos = readBuffer.position();
-        Colum column = Const.COLUMNS_INDEX.get(requestedColumn);
+        Column column = Const.COLUMNS_INDEX.get(requestedColumn);
         int index = column.getIndex();
         ColumnValue.ColumnType type = column.getType();
 

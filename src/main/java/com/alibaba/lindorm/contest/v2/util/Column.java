@@ -1,14 +1,14 @@
-package com.alibaba.lindorm.contest.v2;
+package com.alibaba.lindorm.contest.v2.util;
 
 import com.alibaba.lindorm.contest.structs.ColumnValue;
 
-public class Colum {
+public class Column {
 
     private final int index;
 
     private final ColumnValue.ColumnType type;
 
-    public Colum(int index, ColumnValue.ColumnType type) {
+    public Column(int index, ColumnValue.ColumnType type) {
         this.index = index;
         this.type = type;
     }

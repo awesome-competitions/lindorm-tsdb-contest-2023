@@ -29,10 +29,12 @@ public class Index {
         this.data = data;
         this.positions = new long[Const.TIME_SPAN];
         Arrays.fill(this.positions, -1);
-        this.block = new Block(data);
     }
 
     public synchronized void insert(long timestamp, Map<String, ColumnValue> columns) throws IOException {
+        if (block == null){
+            block = new Block(data);
+        }
         if (block.remaining() == 0){
             this.flush();
         }
@@ -118,6 +120,9 @@ public class Index {
     }
 
     public void flush() throws IOException {
+        if (block == null){
+            return;
+        }
         long pos = block.flush();
         block.foreachTimestamps(ts -> positions[getIndex(ts)] = pos);
         block.clear();

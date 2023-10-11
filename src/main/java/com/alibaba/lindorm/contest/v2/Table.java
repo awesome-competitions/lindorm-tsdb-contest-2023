@@ -1,8 +1,8 @@
 package com.alibaba.lindorm.contest.v2;
 
 import com.alibaba.lindorm.contest.structs.*;
-import com.alibaba.lindorm.contest.util.Monitor;
 import com.alibaba.lindorm.contest.util.Util;
+import com.alibaba.lindorm.contest.v2.util.Column;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -36,14 +36,14 @@ public class Table {
     }
 
     public void setSchema(Schema schema) {
-        Const.SORTED_COLUMNS.clear();
+        Const.COLUMNS.clear();
         Const.COLUMNS_INDEX.clear();
 
         this.schema = schema;
-        this.schema.getColumnTypeMap().keySet().stream().sorted().forEach(Const.SORTED_COLUMNS::add);
-        for (int i = 0; i < Const.SORTED_COLUMNS.size(); i++) {
-            String columnName = Const.SORTED_COLUMNS.get(i);
-            Const.COLUMNS_INDEX.put(Const.SORTED_COLUMNS.get(i), new Colum(i, schema.getColumnTypeMap().get(columnName)));
+        this.schema.getColumnTypeMap().keySet().stream().sorted().forEach(Const.COLUMNS::add);
+        for (int i = 0; i < Const.COLUMNS.size(); i++) {
+            String columnName = Const.COLUMNS.get(i);
+            Const.COLUMNS_INDEX.put(Const.COLUMNS.get(i), new Column(i, schema.getColumnTypeMap().get(columnName)));
         }
     }
 
@@ -108,14 +108,14 @@ public class Table {
         return rows;
     }
 
-    public ArrayList<Row> executeAggregateQuery(Vin vin, long timeLowerBound, long timeUpperBound, String columnName, Aggregator aggregator) throws IOException {
+    public ArrayList<Row> executeAggregateQuery(Vin vin, long timeLowerBound, long timeUpperBound, String columnName, com.alibaba.lindorm.contest.structs.Aggregator aggregator) throws IOException {
         Index index = this.getVinIndex(vin);
         if(index == null){
             return Const.EMPTY_ROWS;
         }
 
         ColumnValue.ColumnType type = this.schema.getColumnTypeMap().get(columnName);
-        AggregateConsumer consumer = new AggregateConsumer(type, aggregator, null);
+        Aggregator consumer = new Aggregator(type, aggregator, null);
         index.aggregate(timeLowerBound, timeUpperBound, columnName, consumer);
         if (consumer.getCount() == 0){
             return Const.EMPTY_ROWS;
@@ -126,7 +126,7 @@ public class Table {
         return rows;
     }
 
-    public ArrayList<Row> executeDownsampleQuery(Vin vin, long timeLowerBound, long timeUpperBound, String columnName, Aggregator aggregator, long interval, CompareExpression columnFilter) throws IOException {
+    public ArrayList<Row> executeDownsampleQuery(Vin vin, long timeLowerBound, long timeUpperBound, String columnName, com.alibaba.lindorm.contest.structs.Aggregator aggregator, long interval, CompareExpression columnFilter) throws IOException {
         Index index = this.getVinIndex(vin);
         if(index == null){
             return Const.EMPTY_ROWS;
@@ -134,7 +134,7 @@ public class Table {
         ArrayList<Row> rows = new ArrayList<>();
         for (long start = timeLowerBound; start < timeUpperBound; start += interval){
             ColumnValue.ColumnType type = this.schema.getColumnTypeMap().get(columnName);
-            AggregateConsumer consumer = new AggregateConsumer(type, aggregator, columnFilter);
+            Aggregator consumer = new Aggregator(type, aggregator, columnFilter);
             index.aggregate(start, start + interval, columnName, consumer);
             if (consumer.getCount() == 0 && consumer.getFilteredCount() == 0){
                 continue;

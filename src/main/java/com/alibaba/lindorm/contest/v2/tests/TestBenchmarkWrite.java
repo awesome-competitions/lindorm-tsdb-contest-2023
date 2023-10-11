@@ -52,8 +52,10 @@ import java.util.concurrent.CountDownLatch;
 
 public class TestBenchmarkWrite {
 
-  static final int vinCount = 100;
-  static final int parallel = 4;
+
+  static final int parallel = 1;
+
+  static final int vinCount = 150;
 
   public static void main(String[] args) {
     File dataDir = new File(Const.TEST_DATA_DIR);
@@ -80,9 +82,15 @@ public class TestBenchmarkWrite {
       tsdbEngineSample.connect();
 
       Map<String, ColumnValue.ColumnType> columnTypes = new HashMap<>();
-      columnTypes.put("col1", ColumnValue.ColumnType.COLUMN_TYPE_INTEGER);
-      columnTypes.put("col2", ColumnValue.ColumnType.COLUMN_TYPE_DOUBLE_FLOAT);
-      columnTypes.put("col3", ColumnValue.ColumnType.COLUMN_TYPE_STRING);
+      for (int i = 0; i < 40; i ++){
+        columnTypes.put("col_int_" + i, ColumnValue.ColumnType.COLUMN_TYPE_INTEGER);
+      }
+      for (int i = 0; i < 10; i ++){
+        columnTypes.put("col_double_" + i, ColumnValue.ColumnType.COLUMN_TYPE_DOUBLE_FLOAT);
+      }
+      for (int i = 0; i < 10; i ++){
+        columnTypes.put("col_str_" + i, ColumnValue.ColumnType.COLUMN_TYPE_STRING);
+      }
       Schema schema = new Schema(columnTypes);
       tsdbEngineSample.createTable("test", schema);
 
@@ -102,6 +110,8 @@ public class TestBenchmarkWrite {
       cdl.await();
       tsdbEngineSample.shutdown();
       System.out.println("write time:" + (System.currentTimeMillis() - s));
+      System.out.println("wait for dump heap....");
+      Thread.sleep(100000000);
 
     } catch (IOException e) {
       e.printStackTrace();
@@ -113,20 +123,28 @@ public class TestBenchmarkWrite {
   public static void write(TSDBEngine tsdbEngineSample, int vinId) throws IOException {
     int startIntVal = 1;
     double startDoubleVal = 1.1;
-    ByteBuffer stringVal = ByteBuffer.wrap(new byte[100]);
+    ByteBuffer stringVal = ByteBuffer.wrap(new byte[21]);
     long startTimestamp = 1689091210000L;
 
-    for (int j = 0; j < vinCount; j ++){
-      String vin = "LSVNV2182E0" + (vinId + j);
-      startTimestamp = 1689091210000L;
-      for (int k = 0; k < 360; k ++){
+    for (int k = 0; k < 36000; k ++){
+      startTimestamp += 1000;
+      int f = 0;
+      for (int n1 = 0; n1 < vinCount / 50; n1 ++){
         ArrayList<Row> rowList = new ArrayList<>();
-        for (int i = 0; i < 100; i ++){
-          Map<String, ColumnValue> columns = new HashMap<>();
-          columns.put("col1", new ColumnValue.IntegerColumn(startIntVal++));
-          columns.put("col2", new ColumnValue.DoubleFloatColumn(startDoubleVal ++));
-          columns.put("col3", new ColumnValue.StringColumn(stringVal));
-          rowList.add(new Row(new Vin(vin.getBytes(StandardCharsets.UTF_8)), startTimestamp += 1000, columns));
+        Map<String, ColumnValue> columns = new HashMap<>();
+        for (int n = 0; n < 40; n ++){
+          columns.put("col_int_" + n, new ColumnValue.IntegerColumn(startIntVal++));
+        }
+        for (int n = 0; n < 10; n ++){
+          columns.put("col_double_" + n, new ColumnValue.DoubleFloatColumn(startDoubleVal ++));
+        }
+        for (int n = 0; n < 10;n ++){
+          columns.put("col_str_" + n, new ColumnValue.StringColumn(stringVal));
+        }
+        for (int j = 0; j < 50; j ++){
+          f ++;
+          String vin = "LSVNV2182E0" + (vinId + f);
+          rowList.add(new Row(new Vin(vin.getBytes(StandardCharsets.UTF_8)), startTimestamp, columns));
         }
         tsdbEngineSample.write(new WriteRequest("test", rowList));
       }

@@ -1,7 +1,6 @@
 package com.alibaba.lindorm.contest.v2;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 
 public class Context {
 
@@ -51,7 +50,7 @@ public class Context {
         this.blockHeaderBuffer = ByteBuffer.allocateDirect(Const.BYTE_BUFFER_SIZE);
         this.blockDataBuffer = ByteBuffer.allocateDirect(Const.BYTE_BUFFER_SIZE);
         this.blockReadBuffer = ByteBuffer.allocateDirect(Const.BYTE_BUFFER_SIZE);
-        this.blockPositions = new int[Const.SORTED_COLUMNS.size()];
+        this.blockPositions = new int[Const.COLUMNS.size()];
         this.blockTimestamps = new long[Const.BLOCK_SIZE];
         this.blockIntValues = new int[Const.BLOCK_SIZE];
         this.blockDoubleValues = new double[Const.BLOCK_SIZE];

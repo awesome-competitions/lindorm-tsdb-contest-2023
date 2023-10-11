@@ -49,8 +49,10 @@ import java.util.concurrent.CountDownLatch;
 
 public class TestBenchmark {
 
-  static final int vinCount = 100;
-  static final int parallel = 4;
+
+  static final int parallel = 1;
+
+  static final int vinCount = 100 / parallel;
 
   public static void main(String[] args) {
     File dataDir = new File(Const.TEST_DATA_DIR);
