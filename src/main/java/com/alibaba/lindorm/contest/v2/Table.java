@@ -246,9 +246,10 @@ public class Table {
             Index index = getOrCreateVinIndex(vinId);
             for (long i = oldest; i < oldest + size * 1000L; i += 1000){
                 long pos = buffer.getLong();
-                if (pos != -1){
-                    index.insert(i, pos);
+                if (pos == -1){
+                   continue;
                 }
+                index.mark(i, pos);
             }
             // load latest
             index.getLatest(Const.EMPTY_COLUMNS);

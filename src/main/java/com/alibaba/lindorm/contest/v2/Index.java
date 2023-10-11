@@ -29,25 +29,22 @@ public class Index {
         this.data = data;
         this.positions = new long[Const.TIME_SPAN];
         Arrays.fill(this.positions, -1);
+        this.block = new Block(data);
     }
 
     public synchronized void insert(long timestamp, Map<String, ColumnValue> columns) throws IOException {
-        if (block == null){
-            block = new Block(data);
-        }
         if (block.remaining() == 0){
             this.flush();
-            block = new Block(data);
         }
         block.insert(timestamp, columns);
-        this.insert(timestamp, -2);
+        this.mark(timestamp, -2);
     }
 
     public long get(long timestamp) {
         return this.positions[getIndex(timestamp)];
     }
 
-    public void insert(long timestamp, long position){
+    public void mark(long timestamp, long position){
         if(timestamp > latestTimestamp){
             latestTimestamp = timestamp;
         }
@@ -121,12 +118,9 @@ public class Index {
     }
 
     public void flush() throws IOException {
-        if (block != null){
-            long pos = block.flush();
-            for (long ts: block.getTimestamps()){
-                positions[getIndex(ts)] = pos;
-            }
-        }
+        long pos = block.flush();
+        block.foreachTimestamps(ts -> positions[getIndex(ts)] = pos);
+        block.clear();
     }
 
     public long getLatestTimestamp() {
