@@ -1,8 +1,9 @@
 package com.alibaba.lindorm.contest.v2;
 
 import com.alibaba.lindorm.contest.structs.*;
+import com.alibaba.lindorm.contest.util.Tuple;
 import com.alibaba.lindorm.contest.util.Util;
-import com.alibaba.lindorm.contest.v2.util.Column;
+import com.alibaba.lindorm.contest.util.Column;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -103,8 +104,8 @@ public class Table {
             return Const.EMPTY_ROWS;
         }
         ArrayList<Row> rows = new ArrayList<>();
-        Map<Long, Map<String, ColumnValue>> results = index.range(timeLowerBound, timeUpperBound, requestedColumns);
-        results.forEach((timestamp, columnValues) -> rows.add(new Row(vin, timestamp, columnValues)));
+        List<Tuple<Long, Map<String, ColumnValue>>> results = index.range(timeLowerBound, timeUpperBound, requestedColumns);
+        results.forEach((tuple) -> rows.add(new Row(vin, tuple.K(), tuple.V())));
         return rows;
     }
 
@@ -208,8 +209,17 @@ public class Table {
             buffer.putInt(index.getVin());
             int size = singleIndex.size();
             buffer.putInt(size);
+            buffer.putShort((short) index.getHeaders().size());
             for (long i = oldest; i < oldest + size * 1000L; i += 1000){
                 buffer.putLong(index.get(i));
+            }
+            for (Block.Header header: index.getHeaders().values()){
+                buffer.putInt(header.getSize());
+                buffer.putLong(header.getPosition());
+                buffer.putInt(header.getLength());
+                for (int pos: header.getPositions()){
+                    buffer.putInt(pos);
+                }
             }
             buffer.flip();
             ch.write(buffer);
@@ -228,16 +238,17 @@ public class Table {
         long oldest = buffer.getLong();
         while (true){
             buffer.clear();
-            buffer.limit(4 + 4);
+            buffer.limit(4 + 4 + 2);
             if (ch.read(buffer) != buffer.limit()){
                 break;
             }
             buffer.flip();
             int vinId = buffer.getInt();
             int size = buffer.getInt();
+            int blockSize = buffer.getShort();
 
             buffer.clear();
-            buffer.limit(size * 8);
+            buffer.limit(size * 8 + (4 + 8 + 4 + Const.COLUMNS.size() * 4) * blockSize);
             if (ch.read(buffer) != buffer.limit()){
                 break;
             }
@@ -251,6 +262,19 @@ public class Table {
                 }
                 index.mark(i, pos);
             }
+
+            for (int i = 0; i < blockSize; i ++){
+                int headerSize = buffer.getInt();
+                long headerPosition = buffer.getLong();
+                int headerLength = buffer.getInt();
+                int[] headerPositions = new int[Const.COLUMNS.size()];
+                for (int j = 0; j < headerPositions.length; j ++){
+                    headerPositions[j] = buffer.getInt();
+                }
+                Block.Header header = new Block.Header(headerSize, headerPosition, headerLength, headerPositions);
+                index.getHeaders().put(headerPosition, header);
+            }
+
             // load latest
             index.getLatest(Const.EMPTY_COLUMNS);
         }

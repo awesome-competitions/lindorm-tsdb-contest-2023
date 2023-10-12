@@ -1,7 +1,7 @@
 package com.alibaba.lindorm.contest.v2;
 
 import com.alibaba.lindorm.contest.structs.Row;
-import com.alibaba.lindorm.contest.v2.util.Column;
+import com.alibaba.lindorm.contest.util.Column;
 
 import java.util.*;
 

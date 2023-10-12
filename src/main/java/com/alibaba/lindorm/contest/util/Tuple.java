@@ -1,5 +1,7 @@
 package com.alibaba.lindorm.contest.util;
 
+import java.util.function.Function;
+
 public class Tuple<K,V> {
 
     private K k;
@@ -18,4 +20,5 @@ public class Tuple<K,V> {
     public V V() {
         return v;
     }
+
 }

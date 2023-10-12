@@ -1,17 +1,20 @@
 package com.alibaba.lindorm.contest.v2;
 
 import com.alibaba.lindorm.contest.structs.ColumnValue;
-import com.alibaba.lindorm.contest.util.Util;
-import com.alibaba.lindorm.contest.v2.util.Column;
+import com.alibaba.lindorm.contest.util.Column;
+import com.alibaba.lindorm.contest.util.Tuple;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 public class Block {
 
     private final long[] timestamps;
+
+    private final int[] positions;
 
     private final ColumnValue[][] values;
 
@@ -23,272 +26,289 @@ public class Block {
         this.data = data;
         this.timestamps = new long[Const.BLOCK_SIZE];
         this.values = new ColumnValue[Const.COLUMNS.size()][];
+        this.positions = new int[Const.COLUMNS.size()];
     }
 
-    public void insert(long timestamp, Map<String, ColumnValue> columns){
+    public int insert(long timestamp, Map<String, ColumnValue> columns){
         this.timestamps[size] = timestamp;
-        for (Map.Entry<String, ColumnValue> e: columns.entrySet()){
-            Column column = Const.COLUMNS_INDEX.get(e.getKey());
-            ColumnValue[] values = this.values[column.getIndex()];
+        for (int i = 0; i < Const.COLUMNS.size(); i ++){
+            ColumnValue[] values = this.values[i];
             if (values == null){
                 values = new ColumnValue[Const.BLOCK_SIZE];
-                this.values[column.getIndex()] = values;
+                this.values[i] = values;
             }
-            values[size] = e.getValue();
+            values[size] = columns.get(Const.COLUMNS.get(i));
         }
-        size ++;
+        return size ++;
     }
 
     public int remaining(){
         return Const.BLOCK_SIZE - size;
     }
 
-    public void foreachTimestamps(Consumer<Long> consumer){
+    public void foreachTimestamps(BiConsumer<Integer, Long> consumer){
         for (int i = 0; i < size; i ++){
-            consumer.accept(timestamps[i]);
+            consumer.accept(i, timestamps[i]);
         }
     }
+
+    public void foreachPositions(Consumer<Integer> consumer){
+        for (int i = 0; i < size; i ++){
+            consumer.accept(positions[i]);
+        }
+    }
+
 
     public void clear(){
         this.size = 0;
     }
 
-    public long flush() throws IOException {
-        ByteBuffer dataBuffer = Context.getBlockDataBuffer();
-        dataBuffer.clear();
+    public Header flush() throws IOException {
+        ByteBuffer writeBuffer = Context.getBlockWriteBuffer();
+        writeBuffer.clear();
 
-        ByteBuffer headerBuffer = Context.getBlockHeaderBuffer();
-        headerBuffer.clear();
-
-        for (String columnKey: Const.COLUMNS){
-            headerBuffer.putInt(dataBuffer.position());
-            Column column = Const.COLUMNS_INDEX.get(columnKey);
+        for (int i = 0; i < Const.COLUMNS.size(); i ++){
+            String columnName = Const.COLUMNS.get(i);
+            positions[i] = writeBuffer.position();
+            Column column = Const.COLUMNS_INDEX.get(columnName);
             ColumnValue[] values = this.values[column.getIndex()];
-            for (int i = 0; i < size; i ++){
-                ColumnValue value = values[i];
+            for (int k = 0; k < size; k ++){
+                ColumnValue value = values[k];
                 switch (value.getColumnType()){
                     case COLUMN_TYPE_DOUBLE_FLOAT:
-                        dataBuffer.putDouble(value.getDoubleFloatValue());
+                        writeBuffer.putDouble(value.getDoubleFloatValue());
                         break;
                     case COLUMN_TYPE_INTEGER:
-                        dataBuffer.putInt(value.getIntegerValue());
+                        writeBuffer.putInt(value.getIntegerValue());
                         break;
                     case COLUMN_TYPE_STRING:
                         byte[] bs = value.getStringValue().array();
-                        dataBuffer.put((byte) bs.length);
-                        dataBuffer.put(bs);
+                        writeBuffer.put((byte) bs.length);
+                        writeBuffer.put(bs);
                         break;
                 }
             }
         }
-        for (int i = 0; i < size; i ++){
-            headerBuffer.putLong(timestamps[i]);
-        }
-
-        headerBuffer.flip();
-        dataBuffer.flip();
-
-        ByteBuffer writerBuffer = Context.getBlockWriteBuffer();
-        writerBuffer.clear();
-        // header
-        writerBuffer.putInt(this.size);
-        writerBuffer.putInt(dataBuffer.remaining());
-        writerBuffer.put(headerBuffer);
-        writerBuffer.put(dataBuffer);
-        writerBuffer.flip();
-        int size = writerBuffer.remaining();
-        long pos = this.data.write(writerBuffer);
-        return Util.assemblePosLen(size, pos);
+        writeBuffer.flip();
+        int length = writeBuffer.remaining();
+        long pos = this.data.write(writeBuffer);
+        return new Header(size, pos, length, positions);
     }
 
-    public Map<Long, Map<String, ColumnValue>> read(Set<Long> requestedTimestamps, Set<String> requestedColumns) {
-        Map<Long, Map<String, ColumnValue>> results = new HashMap<>();
-        Map<Long, Integer> timestampIndex = new HashMap<>();
-        for (int i = 0; i < size; i++) {
-            if (requestedTimestamps.contains(timestamps[i])){
-                timestampIndex.put(timestamps[i], i);
-            }
-        }
-
+    public List<Tuple<Long, Map<String, ColumnValue>>> read(List<Tuple<Long, Integer>> requestedTimestamps, Collection<String> requestedColumns) {
+        Tuple<Long, Map<String, ColumnValue>>[] results = new Tuple[requestedTimestamps.size()];
         for (String requestedColumn: requestedColumns){
             Column column = Const.COLUMNS_INDEX.get(requestedColumn);
             ColumnValue[] columnValues = this.values[column.getIndex()];
-            timestampIndex.forEach((timestamp, index) -> {
-                Map<String, ColumnValue> values = results.computeIfAbsent(timestamp, k -> new HashMap<>());
-                values.put(requestedColumn, columnValues[index]);
-            });
+
+            for(int i = 0; i < requestedTimestamps.size(); i ++){
+                Tuple<Long, Integer> tuple = requestedTimestamps.get(i);
+                long timestamp = tuple.K();
+                int index = tuple.V();
+
+                Tuple<Long, Map<String, ColumnValue>> result = results[i];
+                if (result == null){
+                    result = new Tuple<>(timestamp, new HashMap<>());
+                    results[i] = result;
+                }
+                result.V().put(requestedColumn, columnValues[index]);
+            }
         }
-        return results;
+        return Arrays.asList(results);
     }
 
-    public static Map<Long, Map<String, ColumnValue>> read(Data data, long position, Set<Long> requestedTimestamps, Set<String> requestedColumns) throws IOException {
+    public static List<Tuple<Long, Map<String, ColumnValue>>> read(Data data, Header header, List<Tuple<Long, Integer>> requestedTimestamps, Collection<String> requestedColumns) throws IOException {
         ByteBuffer readBuffer = Context.getBlockReadBuffer();
         readBuffer.clear();
 
-        int len = Util.parseLen(position);
-        position = Util.parsePos(position);
-
-        int readBytes = data.read(readBuffer, position, len);
-        if (readBytes != len){
+        int readBytes = data.read(readBuffer, header.position, header.length);
+        if (readBytes != header.length){
             throw new IOException("read bytes not enough");
         }
         readBuffer.flip();
 
-        int tsCount = readBuffer.getInt();
-        int dataSize = readBuffer.getInt();
+        int size = header.size;
+        int[] positions = header.positions;
 
-        int[] positions = Context.getBlockPositions();
-        for (int i = 0; i < positions.length; i++) {
-            positions[i] = readBuffer.getInt();
-        }
-
-        long[] timestamps = Context.getBlockTimestamps();
-        Map<Long, Integer> timestampIndex = new HashMap<>();
-        for (int i = 0; i < tsCount; i++) {
-            timestamps[i] = readBuffer.getLong();
-            if (requestedTimestamps.contains(timestamps[i])){
-                timestampIndex.put(timestamps[i], i);
-            }
-        }
-
-        int readPos = readBuffer.position();
-        Map<Long, Map<String, ColumnValue>> results = new HashMap<>();
+        Tuple<Long, Map<String, ColumnValue>>[] results = new Tuple[requestedTimestamps.size()];
         for (String requestedColumn: requestedColumns){
             Column column = Const.COLUMNS_INDEX.get(requestedColumn);
             int index = column.getIndex();
             ColumnValue.ColumnType type = column.getType();
 
-            int latestPos = dataSize;
+            int latestPos = header.length;
             if (index < positions.length - 1){
                 latestPos = positions[index + 1];
             }
             int currentPos = positions[index];
 
             readBuffer.clear();
-            readBuffer.position(readPos + currentPos);
-            readBuffer.limit(readPos + latestPos);
+            readBuffer.position(currentPos);
+            readBuffer.limit(latestPos);
 
             switch (type){
                 case COLUMN_TYPE_DOUBLE_FLOAT:
                     double[] doubleValues = Context.getBlockDoubleValues();
-                    for (int i = 0; i < tsCount; i++) {
+                    for (int i = 0; i < size; i++) {
                         doubleValues[i] = readBuffer.getDouble();
                     }
-                    for (Map.Entry<Long, Integer> e: timestampIndex.entrySet()){
-                        Map<String, ColumnValue> values = results.computeIfAbsent(e.getKey(), k -> new HashMap<>());
-                        values.put(requestedColumn, new ColumnValue.DoubleFloatColumn(doubleValues[e.getValue()]));
+                    for (int i = 0; i < requestedTimestamps.size(); i ++){
+                        Tuple<Long, Integer> e = requestedTimestamps.get(i);
+                        Tuple<Long, Map<String, ColumnValue>> result = results[i];
+                        if (result == null){
+                            result = new Tuple<>(e.K(), new HashMap<>());
+                            results[i] = result;
+                        }
+                        result.V().put(requestedColumn, new ColumnValue.DoubleFloatColumn(doubleValues[e.V()]));
                     }
                     break;
                 case COLUMN_TYPE_INTEGER:
                     int[] intValues = Context.getBlockIntValues();
-                    for (int i = 0; i < tsCount; i++) {
+                    for (int i = 0; i < size; i++) {
                         intValues[i] = readBuffer.getInt();
                     }
-                    for (Map.Entry<Long, Integer> e: timestampIndex.entrySet()){
-                        Map<String, ColumnValue> values = results.computeIfAbsent(e.getKey(), k -> new HashMap<>());
-                        values.put(requestedColumn, new ColumnValue.IntegerColumn(intValues[e.getValue()]));
+                    for (int i = 0; i < requestedTimestamps.size(); i ++){
+                        Tuple<Long, Integer> e = requestedTimestamps.get(i);
+                        Tuple<Long, Map<String, ColumnValue>> result = results[i];
+                        if (result == null){
+                            result = new Tuple<>(e.K(), new HashMap<>());
+                            results[i] = result;
+                        }
+                        result.V().put(requestedColumn, new ColumnValue.IntegerColumn(intValues[e.V()]));
                     }
                     break;
                 case COLUMN_TYPE_STRING:
                     ByteBuffer[] stringValues = Context.getBlockStringValues();
-                    for (int i = 0; i < tsCount; i++) {
+                    for (int i = 0; i < size; i++) {
                         ByteBuffer val = ByteBuffer.allocate(readBuffer.get());
                         readBuffer.get(val.array(), 0, val.limit());
                         stringValues[i] = val;
                     }
-                    for (Map.Entry<Long, Integer> e: timestampIndex.entrySet()){
-                        Map<String, ColumnValue> values = results.computeIfAbsent(e.getKey(), k -> new HashMap<>());
-                        values.put(requestedColumn, new ColumnValue.StringColumn(stringValues[e.getValue()]));
+                    for (int i = 0; i < requestedTimestamps.size(); i ++){
+                        Tuple<Long, Integer> e = requestedTimestamps.get(i);
+                        Tuple<Long, Map<String, ColumnValue>> result = results[i];
+                        if (result == null){
+                            result = new Tuple<>(e.K(), new HashMap<>());
+                            results[i] = result;
+                        }
+                        result.V().put(requestedColumn, new ColumnValue.StringColumn(stringValues[e.V()]));
                     }
                     break;
             }
         }
-        return results;
+        return Arrays.asList(results);
     }
 
 
-    public void aggregate(Set<Long> requestedTimestamps, String requestedColumn, Consumer<Double> consumer) {
+    public void aggregate(List<Tuple<Long, Integer>> requestedTimestamps, String requestedColumn, Consumer<Double> consumer) {
         Column column = Const.COLUMNS_INDEX.get(requestedColumn);
         ColumnValue.ColumnType type = column.getType();
-
         ColumnValue[] values = this.values[column.getIndex()];
-        for (int i = 0; i < size; i++) {
-            if (! requestedTimestamps.contains(timestamps[i])){
-                continue;
-            }
+        for (Tuple<Long, Integer> e: requestedTimestamps){
             switch (type){
                 case COLUMN_TYPE_DOUBLE_FLOAT:
-                    consumer.accept(values[i].getDoubleFloatValue());
+                    consumer.accept(values[e.V()].getDoubleFloatValue());
                     break;
                 case COLUMN_TYPE_INTEGER:
-                    consumer.accept((double) values[i].getIntegerValue());
+                    consumer.accept((double) values[e.V()].getIntegerValue());
                     break;
             }
         }
     }
 
-    public static void aggregate(Data data, long position, Set<Long> requestedTimestamps, String requestedColumn, Consumer<Double> consumer) throws IOException {
-        ByteBuffer readBuffer = Context.getBlockReadBuffer();
-        readBuffer.clear();
+    public static void aggregate(Data data, Header header, List<Tuple<Long, Integer>> requestedTimestamps, String requestedColumn, Consumer<Double> consumer) throws IOException {
+        int size = header.size;
 
-        int len = Util.parseLen(position);
-        position = Util.parsePos(position);
-
-        int readBytes = data.read(readBuffer, position, len);
-        if (readBytes != len){
-            throw new IOException("read bytes not enough");
-        }
-        readBuffer.flip();
-
-        int tsCount = readBuffer.getInt();
-        int dataSize = readBuffer.getInt();
-
-        int[] positions = Context.getBlockPositions();
-        for (int i = 0; i < positions.length; i++) {
-            positions[i] = readBuffer.getInt();
-        }
-
-        byte[] requestedIndex = new byte[tsCount];
-        for (int i = 0; i < tsCount; i++) {
-            if (requestedTimestamps.contains(readBuffer.getLong())){
-                requestedIndex[i] = 1;
-            }
-        }
-
-        int readPos = readBuffer.position();
         Column column = Const.COLUMNS_INDEX.get(requestedColumn);
         int index = column.getIndex();
         ColumnValue.ColumnType type = column.getType();
 
-        int latestPos = dataSize;
-        if (index < positions.length - 1){
-            latestPos = positions[index + 1];
+        int latestPos = header.length;
+        if (index < header.positions.length - 1){
+            latestPos = header.positions[index + 1];
         }
-        int currentPos = positions[index];
+        int currentPos = header.positions[index];
+        int columnDataSize = latestPos - currentPos;
 
+
+        ByteBuffer readBuffer = Context.getBlockReadBuffer();
         readBuffer.clear();
-        readBuffer.position(readPos + currentPos);
-        readBuffer.limit(readPos + latestPos);
+        int readBytes = data.read(readBuffer, header.position + currentPos, columnDataSize);
+        if (readBytes != columnDataSize){
+            throw new IOException("read bytes not enough");
+        }
+        readBuffer.flip();
 
         switch (type){
             case COLUMN_TYPE_DOUBLE_FLOAT:
-                for (int i = 0; i < tsCount; i++) {
-                    double doubleValue = readBuffer.getDouble();
-                    if (requestedIndex[i] == 0){
-                        continue;
-                    }
-                    consumer.accept(doubleValue);
+                double[] doubleValues = Context.getBlockDoubleValues();
+                for (int i = 0; i < size; i++) {
+                    doubleValues[i] = readBuffer.getDouble();
+                }
+                for (Tuple<Long, Integer> e: requestedTimestamps){
+                    consumer.accept(doubleValues[e.V()]);
                 }
                 break;
             case COLUMN_TYPE_INTEGER:
-                for (int i = 0; i < tsCount; i++) {
-                    int intValue = readBuffer.getInt();
-                    if (requestedIndex[i] == 0){
-                        continue;
-                    }
-                    consumer.accept((double) intValue);
+                int[] intValues = Context.getBlockIntValues();
+                for (int i = 0; i < size; i++) {
+                    intValues[i] = readBuffer.getInt();
+                }
+                for (Tuple<Long, Integer> e: requestedTimestamps){
+                    consumer.accept((double) intValues[e.V()]);
                 }
                 break;
+        }
+    }
+
+    public static class Header {
+
+        private final int size;
+
+        private final long position;
+
+        private final int length;
+
+        private final int[] positions;
+
+        public Header(long position) {
+            this(0,-1,0, null);
+        }
+
+        public Header(int size, long position, int length, int[] positions) {
+            this.size = size;
+            this.position = position;
+            this.length = length;
+            this.positions = positions;
+        }
+
+        public int getSize() {
+            return size;
+        }
+
+        public long getPosition() {
+            return position;
+        }
+
+        public int getLength() {
+            return length;
+        }
+
+        public int[] getPositions() {
+            return positions;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Header header = (Header) o;
+            return position == header.position;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(position);
         }
     }
 }
