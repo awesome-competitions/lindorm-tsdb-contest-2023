@@ -28,7 +28,7 @@ public interface Const {
     Map<String, Column> COLUMNS_INDEX = new HashMap<>(COLUMN_COUNT);
 
     // block size
-    int BLOCK_SIZE = 60;
+    int BLOCK_SIZE = 300;
     // the time span of all the data
     int TIME_SPAN = 60 * 60 * 10;
 
