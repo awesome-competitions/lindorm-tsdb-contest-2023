@@ -45,25 +45,44 @@ public class Util {
         return vinId;
     }
 
-    public static long assemblePosLen(int len, long position){
-        return ((long)len << 40) | position;
+    public static long assemblePosIndex(int index, long position){
+        boolean negative = position < 0;
+        if (negative){
+            position = - position;
+        }
+        position |= ((long) index << 40);
+        if (negative){
+            position = - position;
+        }
+        return position;
     }
 
-    public static int parseLen(long lenAndPos){
-        return (int) (lenAndPos >>> 40);
+    public static long parsePos(long position){
+        boolean negative = position < 0;
+        if (negative){
+            position = - position;
+        }
+        position &= 0x000000FFFFFFFFFFL;
+        if (negative){
+            position = - position;
+        }
+        return position;
     }
 
-    public static long parsePos(long lenAndPos){
-        return lenAndPos & 0x000000FFFFFFFFFFL;
+    public static int parseIndex(long position){
+        if (position < 0){
+            position = - position;
+        }
+        return (int) (position >>> 40);
     }
 
     public static void main(String[] args) {
-        long pos = 100 * 1024 * 1024 * 1024L;
-        int size = 8388608;
-        long lenAndPos = assemblePosLen(size, pos);
-        System.out.println(parseLen(lenAndPos));
-        System.out.println(parsePos(lenAndPos));
+        long pos = -2;
 
+        long newPos = assemblePosIndex(1, pos);
+        System.out.println(newPos);
+        System.out.println(parsePos(newPos));
+        System.out.println(parseIndex(newPos));
     }
 
 }
