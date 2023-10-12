@@ -14,8 +14,6 @@ public class Block {
 
     private final long[] timestamps;
 
-    private final int[] positions;
-
     private final ColumnValue[][] values;
 
     private final Data data;
@@ -26,7 +24,6 @@ public class Block {
         this.data = data;
         this.timestamps = new long[Const.BLOCK_SIZE];
         this.values = new ColumnValue[Const.COLUMNS.size()][];
-        this.positions = new int[Const.COLUMNS.size()];
     }
 
     public int insert(long timestamp, Map<String, ColumnValue> columns){
@@ -52,13 +49,6 @@ public class Block {
         }
     }
 
-    public void foreachPositions(Consumer<Integer> consumer){
-        for (int i = 0; i < size; i ++){
-            consumer.accept(positions[i]);
-        }
-    }
-
-
     public void clear(){
         this.size = 0;
     }
@@ -67,11 +57,10 @@ public class Block {
         ByteBuffer writeBuffer = Context.getBlockWriteBuffer();
         writeBuffer.clear();
 
+        int[] positions = new int[Const.COLUMNS.size()];
         for (int i = 0; i < Const.COLUMNS.size(); i ++){
-            String columnName = Const.COLUMNS.get(i);
             positions[i] = writeBuffer.position();
-            Column column = Const.COLUMNS_INDEX.get(columnName);
-            ColumnValue[] values = this.values[column.getIndex()];
+            ColumnValue[] values = this.values[i];
             for (int k = 0; k < size; k ++){
                 ColumnValue value = values[k];
                 switch (value.getColumnType()){
@@ -229,7 +218,6 @@ public class Block {
         }
         int currentPos = header.positions[index];
         int columnDataSize = latestPos - currentPos;
-
 
         ByteBuffer readBuffer = Context.getBlockReadBuffer();
         readBuffer.clear();

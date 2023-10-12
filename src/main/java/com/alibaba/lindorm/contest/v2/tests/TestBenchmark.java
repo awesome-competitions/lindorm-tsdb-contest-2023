@@ -135,7 +135,7 @@ public class TestBenchmark {
   public static void write(TSDBEngine tsdbEngineSample, int vinId) throws IOException {
     int startIntVal = 1;
     double startDoubleVal = 1.1;
-    ByteBuffer stringVal = ByteBuffer.wrap(new byte[100]);
+    ByteBuffer stringVal = ByteBuffer.wrap(new byte[22]);
     long startTimestamp = 1689091210000L;
 
     for (int j = 0; j < vinCount; j ++){

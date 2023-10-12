@@ -121,7 +121,7 @@ public class Index {
             }
             long t = i * 1000L;
             if (t < end && t >= start){
-                timestamps.computeIfAbsent(Util.parsePos(pos), k -> new ArrayList<>(Const.BLOCK_SIZE))
+                timestamps.computeIfAbsent(Util.parsePos(pos), k -> new ArrayList<>())
                         .add(new Tuple<>(t, Util.parseIndex(pos)));
             }
         }
