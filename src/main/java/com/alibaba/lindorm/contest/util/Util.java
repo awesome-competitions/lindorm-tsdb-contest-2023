@@ -58,7 +58,7 @@ public class Util {
     }
 
     public static void main(String[] args) {
-        long pos = 500 * 1024 * 1024 * 1024L;
+        long pos = 100 * 1024 * 1024 * 1024L;
         int size = 8388608;
         long lenAndPos = assemblePosLen(size, pos);
         System.out.println(parseLen(lenAndPos));
