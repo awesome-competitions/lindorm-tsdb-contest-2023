@@ -58,17 +58,31 @@ public class Block {
         writeBuffer.clear();
 
         int[] positions = new int[Const.COLUMNS.size()];
+        double[] maxValues = new double[Const.COLUMNS.size()];
+        double[] sumValues = new double[Const.COLUMNS.size()];
         for (int i = 0; i < Const.COLUMNS.size(); i ++){
             positions[i] = writeBuffer.position();
             ColumnValue[] values = this.values[i];
+            double max = Long.MIN_VALUE;
+            double sum = 0;
             for (int k = 0; k < size; k ++){
                 ColumnValue value = values[k];
                 switch (value.getColumnType()){
                     case COLUMN_TYPE_DOUBLE_FLOAT:
-                        writeBuffer.putDouble(value.getDoubleFloatValue());
+                        double doubleVal = value.getDoubleFloatValue();
+                        sum += doubleVal;
+                        if (doubleVal > max){
+                            max = doubleVal;
+                        }
+                        writeBuffer.putDouble(doubleVal);
                         break;
                     case COLUMN_TYPE_INTEGER:
-                        writeBuffer.putInt(value.getIntegerValue());
+                        int intVal = value.getIntegerValue();
+                        sum += intVal;
+                        if (intVal > max){
+                            max = intVal;
+                        }
+                        writeBuffer.putInt(intVal);
                         break;
                     case COLUMN_TYPE_STRING:
                         byte[] bs = value.getStringValue().array();
@@ -77,11 +91,13 @@ public class Block {
                         break;
                 }
             }
+            maxValues[i] = max;
+            sumValues[i] = sum;
         }
         writeBuffer.flip();
         int length = writeBuffer.remaining();
         long pos = this.data.write(writeBuffer);
-        return new Header(size, pos, length, positions);
+        return new Header(size, pos, length, positions, maxValues, sumValues);
     }
 
     public List<Tuple<Long, Map<String, ColumnValue>>> read(List<Tuple<Long, Integer>> requestedTimestamps, Collection<String> requestedColumns) {
@@ -189,7 +205,7 @@ public class Block {
     }
 
 
-    public void aggregate(List<Tuple<Long, Integer>> requestedTimestamps, String requestedColumn, Consumer<Double> consumer) {
+    public void aggregate(List<Tuple<Long, Integer>> requestedTimestamps, String requestedColumn, Aggregator consumer) {
         Column column = Const.COLUMNS_INDEX.get(requestedColumn);
         ColumnValue.ColumnType type = column.getType();
         ColumnValue[] values = this.values[column.getIndex()];
@@ -205,12 +221,25 @@ public class Block {
         }
     }
 
-    public static void aggregate(Data data, Header header, List<Tuple<Long, Integer>> requestedTimestamps, String requestedColumn, Consumer<Double> consumer) throws IOException {
+    public static void aggregate(Data data, Header header, List<Tuple<Long, Integer>> requestedTimestamps, String requestedColumn, Aggregator aggregator) throws IOException {
         int size = header.size;
 
         Column column = Const.COLUMNS_INDEX.get(requestedColumn);
         int index = column.getIndex();
         ColumnValue.ColumnType type = column.getType();
+
+        if (aggregator.getColumnFilter() == null && requestedTimestamps.size() == size){
+            // return first
+            switch (aggregator.getAggregator()){
+                case MAX:
+                    aggregator.accept(header.maxValues[index]);
+                    break;
+                case AVG:
+                    aggregator.accept(header.sumValues[index], size);
+                    break;
+            }
+            return;
+        }
 
         int latestPos = header.length;
         if (index < header.positions.length - 1){
@@ -234,7 +263,7 @@ public class Block {
                     doubleValues[i] = readBuffer.getDouble();
                 }
                 for (Tuple<Long, Integer> e: requestedTimestamps){
-                    consumer.accept(doubleValues[e.V()]);
+                    aggregator.accept(doubleValues[e.V()]);
                 }
                 break;
             case COLUMN_TYPE_INTEGER:
@@ -243,7 +272,7 @@ public class Block {
                     intValues[i] = readBuffer.getInt();
                 }
                 for (Tuple<Long, Integer> e: requestedTimestamps){
-                    consumer.accept((double) intValues[e.V()]);
+                    aggregator.accept((double) intValues[e.V()]);
                 }
                 break;
         }
@@ -259,15 +288,17 @@ public class Block {
 
         private final int[] positions;
 
-        public Header(long position) {
-            this(0,-1,0, null);
-        }
+        private final double[] maxValues;
 
-        public Header(int size, long position, int length, int[] positions) {
+        private final double[] sumValues;
+
+        public Header(int size, long position, int length, int[] positions, double[] maxValues, double[] sumValues) {
             this.size = size;
             this.position = position;
             this.length = length;
             this.positions = positions;
+            this.maxValues = maxValues;
+            this.sumValues = sumValues;
         }
 
         public int getSize() {
@@ -284,6 +315,14 @@ public class Block {
 
         public int[] getPositions() {
             return positions;
+        }
+
+        public double[] getMaxValues() {
+            return maxValues;
+        }
+
+        public double[] getSumValues() {
+            return sumValues;
         }
 
         @Override

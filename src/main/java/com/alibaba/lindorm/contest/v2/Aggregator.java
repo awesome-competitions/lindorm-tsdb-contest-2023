@@ -3,9 +3,10 @@ package com.alibaba.lindorm.contest.v2;
 import com.alibaba.lindorm.contest.structs.ColumnValue;
 import com.alibaba.lindorm.contest.structs.CompareExpression;
 
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-public class Aggregator implements Consumer<Double> {
+public class Aggregator implements BiConsumer<Double, Integer> {
 
     private double sum;
 
@@ -50,17 +51,21 @@ public class Aggregator implements Consumer<Double> {
         }
     }
 
+    public void accept(Double val){
+        this.accept(val, 1);
+    }
+
     @Override
-    public void accept(Double d) {
-        if(columnFilter != null && ! doCompare(d)){
+    public void accept(Double val, Integer count) {
+        if(columnFilter != null && ! doCompare(val)){
             filteredCount ++;
             return;
         }
-        this.count ++;
-        this.sum += d;
+        this.count += count;
+        this.sum += val;
 
-        if (max == null || max < d){
-            max = d;
+        if (max == null || max < val){
+            max = val;
         }
     }
 
@@ -80,11 +85,19 @@ public class Aggregator implements Consumer<Double> {
         return null;
     }
 
+    public CompareExpression getColumnFilter() {
+        return columnFilter;
+    }
+
     public int getCount() {
         return count;
     }
 
     public int getFilteredCount() {
         return filteredCount;
+    }
+
+    public com.alibaba.lindorm.contest.structs.Aggregator getAggregator() {
+        return aggregator;
     }
 }

@@ -94,7 +94,7 @@ public class Index {
         return results;
     }
 
-    public void aggregate(long start, long end, String requestedColumn, Consumer<Double> consumer) throws IOException {
+    public void aggregate(long start, long end, String requestedColumn, Aggregator consumer) throws IOException {
         Map<Long, List<Tuple<Long, Integer>>> timestamps = searchTimestamps(start, end);
         for (Map.Entry<Long, List<Tuple<Long, Integer>>> e: timestamps.entrySet()){
             long pos = e.getKey();

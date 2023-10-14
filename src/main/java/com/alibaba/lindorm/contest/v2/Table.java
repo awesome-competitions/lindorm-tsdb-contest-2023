@@ -220,6 +220,12 @@ public class Table {
                 for (int pos: header.getPositions()){
                     buffer.putInt(pos);
                 }
+                for (double maxVal: header.getMaxValues()){
+                    buffer.putDouble(maxVal);
+                }
+                for (double sumVal: header.getSumValues()){
+                    buffer.putDouble(sumVal);
+                }
             }
             buffer.flip();
             ch.write(buffer);
@@ -248,7 +254,7 @@ public class Table {
             int blockSize = buffer.getShort();
 
             buffer.clear();
-            buffer.limit(size * 8 + (4 + 8 + 4 + Const.COLUMNS.size() * 4) * blockSize);
+            buffer.limit(size * 8 + (4 + 8 + 4 + Const.COLUMNS.size() * (4+8+8)) * blockSize);
             if (ch.read(buffer) != buffer.limit()){
                 break;
             }
@@ -268,10 +274,18 @@ public class Table {
                 long headerPosition = buffer.getLong();
                 int headerLength = buffer.getInt();
                 int[] headerPositions = new int[Const.COLUMNS.size()];
+                double[] maxValues = new double[Const.COLUMNS.size()];
+                double[] sumValues = new double[Const.COLUMNS.size()];
                 for (int j = 0; j < headerPositions.length; j ++){
                     headerPositions[j] = buffer.getInt();
                 }
-                Block.Header header = new Block.Header(headerSize, headerPosition, headerLength, headerPositions);
+                for (int j = 0; j < maxValues.length; j ++){
+                    maxValues[j] = buffer.getDouble();
+                }
+                for (int j = 0; j < sumValues.length; j ++){
+                    sumValues[j] = buffer.getDouble();
+                }
+                Block.Header header = new Block.Header(headerSize, headerPosition, headerLength, headerPositions, maxValues, sumValues);
                 index.getHeaders().put(headerPosition, header);
             }
 
