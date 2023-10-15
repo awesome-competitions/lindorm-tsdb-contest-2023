@@ -48,3 +48,4 @@ index:
 - 写入时需要保证timestamp顺序
 
 
+https://www.cnblogs.com/taosdata/p/16385388.html
