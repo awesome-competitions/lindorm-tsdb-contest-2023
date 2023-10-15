@@ -9,9 +9,12 @@ import java.util.Arrays;
 
 public class DeltaIntCodec extends Codec<Integer>{
 
+    private final int deltaSize;
+
     private final int deltaSizeBits;
 
     public DeltaIntCodec(int deltaSize) {
+        this.deltaSize = deltaSize;
         this.deltaSizeBits = Util.parseBits(deltaSize, false);
     }
 
@@ -21,6 +24,9 @@ public class DeltaIntCodec extends Codec<Integer>{
         buffer.putInt(data[0]);
         for (int i = 1; i < data.length; i++) {
             int diff = data[i] - data[i - 1];
+            if (Math.abs(diff) > deltaSize ){
+                throw new RuntimeException("delta size is too small," + deltaSize + " < " + Math.abs(diff) + " at " + i + "th");
+            }
             buffer.put(diff, deltaSizeBits);
         }
         buffer.flip();

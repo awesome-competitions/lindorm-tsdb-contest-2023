@@ -55,8 +55,8 @@ public interface Const {
         put("NXCR", Codec.runLengthIntCodec(15));
         put("OZSM", Codec.deltaOfDeltaIntCodec(7));
         put("SYMN", Codec.deltaOfDeltaIntCodec(3));
-        put("UAPJ", Codec.runLengthIntCodec(15));
-        put("PQRQ", Codec.deltaOfDeltaIntCodec(3));
+        put("UAPJ", Codec.deltaOfDeltaIntCodec(3));
+        put("PQRQ", Codec.deltaOfDeltaIntCodec(7));
         put("UICP", Codec.deltaOfDeltaIntCodec(7));
         put("KFGP", Codec.varIntCodec());
         put("ZZBE", Codec.varIntCodec());
