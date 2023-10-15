@@ -76,13 +76,17 @@ public class Util {
         return (int) (position >>> 40);
     }
 
-    public static void main(String[] args) {
-        long pos = -2;
+    public static int parseBits(long n, boolean unsigned) {
+        int b = unsigned ? 0 : 1;
+        while (n > 0){
+            n >>= 1;
+            b ++;
+        }
+        return b;
+    }
 
-        long newPos = assemblePosIndex(1, pos);
-        System.out.println(newPos);
-        System.out.println(parsePos(newPos));
-        System.out.println(parseIndex(newPos));
+    public static void main(String[] args) {
+        System.out.println(parseBits(3, false));
     }
 
 }

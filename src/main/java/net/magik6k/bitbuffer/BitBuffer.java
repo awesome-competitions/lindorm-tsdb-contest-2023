@@ -900,7 +900,9 @@ public abstract class BitBuffer {
 	 * @return This buffer
 	 */
 	public BitBuffer putToByteBuffer(ByteBuffer bb){
-		bb.put(asByteArray());
+		for (int i = 0; i < (this.limit() + 7)/8; i++) {
+			bb.put(this.getByte());
+		}
 		return this;
 	}
 	

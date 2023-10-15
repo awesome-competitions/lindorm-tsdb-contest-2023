@@ -2,6 +2,9 @@ package com.alibaba.lindorm.contest.v2;
 
 import com.alibaba.lindorm.contest.structs.Row;
 import com.alibaba.lindorm.contest.util.Column;
+import com.alibaba.lindorm.contest.v2.codec.Codec;
+import com.alibaba.lindorm.contest.v2.codec.Codec;
+import com.alibaba.lindorm.contest.v2.codec.CodecType;
 
 import java.util.*;
 
@@ -22,16 +25,81 @@ public interface Const {
     // vin
     int VIN_COUNT = 5000;
 
-    // column
-    int COLUMN_COUNT = 60;
-    List<String> COLUMNS = new ArrayList<>(COLUMN_COUNT);
-    Map<String, Column> COLUMNS_INDEX = new HashMap<>(COLUMN_COUNT);
-
     // block size
     int BLOCK_SIZE = 200;
     // the time span of all the data
     int TIME_SPAN = 60 * 60 * 10;
 
-    int INDEX_POSITIONS_SIZE = TIME_SPAN / BLOCK_SIZE;
+    // column
+    int COLUMN_COUNT = 60;
+    List<String> COLUMNS = new ArrayList<>(COLUMN_COUNT);
+    Map<String, Column> COLUMNS_INDEX = new HashMap<>(COLUMN_COUNT);
+
+    // coding
+    Map<String, Codec<?>> COLUMNS_CODING_CONFIG = new HashMap<>(COLUMN_COUNT){{
+        // Integer
+        put("GMVS", Codec.runLengthIntCodec(15));
+        put("LIOS", Codec.runLengthIntCodec(15));
+        put("LFZG", Codec.runLengthIntCodec(15));
+        put("WLYQ", Codec.runLengthIntCodec(15));
+        put("ZTGP", Codec.runLengthIntCodec(15));
+        put("GMNR", Codec.runLengthIntCodec(15));
+        put("BTJH", Codec.runLengthIntCodec(15));
+        put("XCDQ", Codec.runLengthIntCodec(15));
+        put("JKZL", Codec.runLengthIntCodec(15));
+        put("MLBY", Codec.deltaOfDeltaIntCodec(3));
+        put("DSKQ", Codec.runLengthIntCodec(15));
+        put("EQLU", Codec.runLengthIntCodec(15));
+        put("KACE", Codec.runLengthIntCodec(15));
+        put("YDXB", Codec.runLengthIntCodec(15));
+        put("NXCR", Codec.runLengthIntCodec(15));
+        put("OZSM", Codec.deltaOfDeltaIntCodec(7));
+        put("SYMN", Codec.deltaOfDeltaIntCodec(3));
+        put("UAPJ", Codec.runLengthIntCodec(15));
+        put("PQRQ", Codec.deltaOfDeltaIntCodec(3));
+        put("UICP", Codec.deltaOfDeltaIntCodec(7));
+        put("KFGP", Codec.varIntCodec());
+        put("ZZBE", Codec.varIntCodec());
+        put("HJPZ", Codec.varIntCodec());
+        put("JDOE", Codec.varIntCodec());
+        put("KWET", Codec.varIntCodec());
+        put("WNHB", Codec.varIntCodec());
+        put("ENVH", Codec.varIntCodec());
+        put("CSRC", Codec.varIntCodec());
+        put("GONE", Codec.varIntCodec());
+        put("BZPV", Codec.varIntCodec());
+        put("AOAO", Codec.deltaIntCodec(3));
+        put("EXGV", Codec.deltaIntCodec(3));
+        put("JCGU", Codec.deltaIntCodec(3));
+        put("TFGW", Codec.deltaIntCodec(3));
+        put("MUBC", Codec.deltaIntCodec(3));
+        put("JHET", Codec.deltaIntCodec(3));
+        put("WKUZ", Codec.runLengthIntCodec(15));
+        put("YCTI", Codec.deltaIntCodec(7));
+        put("BBPX", Codec.deltaIntCodec(15));
+        put("HRXI", Codec.deltaIntCodec(15));
+//        // Double
+//        put("FWKW", new Codec());
+//        put("BDPO", new Codec());
+//        put("FQTH", new Codec());
+//        put("SBXA", new Codec());
+//        put("XRTP", new Codec());
+//        put("ZIKG", new Codec());
+//        put("LMLK", new Codec());
+//        put("TEDW", new Codec());
+//        put("UVGJ", new Codec());
+//        put("LYLI", new Codec());
+//        // String
+//        put("FVXS", new Codec());
+//        put("LIYD", new Codec());
+//        put("ZEBY", new Codec());
+//        put("UFPI", new Codec());
+//        put("UZSV", new Codec());
+//        put("FLLY", new Codec());
+//        put("JUBK", new Codec());
+//        put("ORNI", new Codec());
+//        put("SCHU", new Codec());
+//        put("GLNG", new Codec());
+    }};
 
 }
