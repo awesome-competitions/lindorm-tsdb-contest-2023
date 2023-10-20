@@ -280,9 +280,6 @@ public class Block {
             case COLUMN_TYPE_INTEGER:
                 Codec<int[]> codec = Const.COLUMNS_CODEC.getOrDefault(requestedColumn, Const.DEFAULT_INT_CODEC);
                 int[] intValues = codec.decode(readBuffer, size);
-                for (int i = 0; i < size; i++) {
-                    intValues[i] = readBuffer.getInt();
-                }
                 for (Tuple<Long, Integer> e: requestedTimestamps){
                     aggregator.accept((double) intValues[e.V()]);
                 }
