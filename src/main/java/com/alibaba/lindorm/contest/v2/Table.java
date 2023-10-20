@@ -45,6 +45,7 @@ public class Table {
         for (int i = 0; i < Const.COLUMNS.size(); i++) {
             String columnName = Const.COLUMNS.get(i);
             Const.COLUMNS_INDEX.put(Const.COLUMNS.get(i), new Column(i, schema.getColumnTypeMap().get(columnName)));
+            System.out.println("column:" + columnName + ", type:" + schema.getColumnTypeMap().get(columnName));
         }
     }
 
