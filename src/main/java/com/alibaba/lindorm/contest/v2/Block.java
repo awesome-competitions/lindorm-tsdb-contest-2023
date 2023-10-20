@@ -278,7 +278,8 @@ public class Block {
                 }
                 break;
             case COLUMN_TYPE_INTEGER:
-                int[] intValues = Context.getBlockIntValues();
+                Codec<int[]> codec = Const.COLUMNS_CODEC.getOrDefault(requestedColumn, Const.DEFAULT_INT_CODEC);
+                int[] intValues = codec.decode(readBuffer, size);
                 for (int i = 0; i < size; i++) {
                     intValues[i] = readBuffer.getInt();
                 }
