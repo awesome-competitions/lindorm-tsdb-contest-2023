@@ -3,11 +3,12 @@ package com.alibaba.lindorm.contest.v2.codec;
 import com.alibaba.lindorm.contest.util.Util;
 import net.magik6k.bitbuffer.ArrayBitBuffer;
 import net.magik6k.bitbuffer.BitBuffer;
+import net.magik6k.bitbuffer.DirectBitBuffer;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-public class RunLengthIntCodec extends Codec<Integer>{
+public class RunLengthIntCodec extends Codec<int[]>{
 
     private final int runLengthMaxSize;
 
@@ -19,7 +20,7 @@ public class RunLengthIntCodec extends Codec<Integer>{
     }
 
     @Override
-    public void encode(ByteBuffer src, Integer[] data) {
+    public void encode(ByteBuffer src, int[] data) {
         BitBuffer buffer = new ArrayBitBuffer(data.length * 32L);
         int v = data[0];
         int len = 1;
@@ -40,9 +41,9 @@ public class RunLengthIntCodec extends Codec<Integer>{
     }
 
     @Override
-    public Integer[] decode(ByteBuffer src, int size) {
-        Integer[] data = new Integer[size];
-        BitBuffer buffer = new ArrayBitBuffer(src.array());
+    public int[] decode(ByteBuffer src, int size) {
+        int[] data = new int[size];
+        BitBuffer buffer = new DirectBitBuffer(src);
         int index = 0;
         while (index < size){
             int v = buffer.getInt();
@@ -52,6 +53,15 @@ public class RunLengthIntCodec extends Codec<Integer>{
             }
         }
         return data;
+    }
+
+    public static void main(String[] args) {
+        Codec<int[]> compressor = new RunLengthIntCodec(6);
+        ByteBuffer src = ByteBuffer.allocate(10);
+        compressor.encode(src, new int[]{1,1,1,1,1,2,2,2,2,2,2});
+        src.flip();
+        int[] data = compressor.decode(src, 11);
+        System.out.println(Arrays.toString(data));
     }
 
 }

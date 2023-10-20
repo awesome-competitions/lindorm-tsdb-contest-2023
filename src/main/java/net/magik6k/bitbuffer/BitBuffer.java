@@ -8,7 +8,6 @@ import java.nio.charset.StandardCharsets;
  * The BitBuffer, useful to store data in bit-aligned format
  * All multi-byte data structures are saved in Java byte order i.e. big endian
  * @see #allocate(long)
- * @see #allocateDirect(long)
  */
 public abstract class BitBuffer {
 	protected abstract long rawLength();
@@ -960,17 +959,6 @@ public abstract class BitBuffer {
 		return new AutomaticBitBuffer(preallocateBits);
 	}
 	
-	/**
-	 * Wraps bitbuffer around given array instance.
-	 * Any operation on this bitBuffer will modify the array
-	 * @param array A byte array to wrap this buffer around
-	 * @return Newly created instance of BitBuffer wrapped around array
-	 */
-	public static BitBuffer wrap(byte[] array){
-		return new ArrayBitBuffer(array);
-	}
-
-
 	public static void main(String[] args) {
 		BitBuffer buffer = BitBuffer.allocate(121);
 		buffer.putLong(Long.MIN_VALUE);

@@ -2,9 +2,8 @@ package com.alibaba.lindorm.contest.v2;
 
 import com.alibaba.lindorm.contest.structs.Row;
 import com.alibaba.lindorm.contest.util.Column;
+import com.alibaba.lindorm.contest.v2.codec.*;
 import com.alibaba.lindorm.contest.v2.codec.Codec;
-import com.alibaba.lindorm.contest.v2.codec.Codec;
-import com.alibaba.lindorm.contest.v2.codec.CodecType;
 
 import java.util.*;
 
@@ -36,7 +35,7 @@ public interface Const {
     Map<String, Column> COLUMNS_INDEX = new HashMap<>(COLUMN_COUNT);
 
     // coding
-    Map<String, Codec<?>> COLUMNS_CODING_CONFIG = new HashMap<>(COLUMN_COUNT){{
+    Map<String, Codec<int[]>> COLUMNS_CODEC = new HashMap<>(COLUMN_COUNT){{
         // Integer
         put("GMVS", Codec.runLengthIntCodec(15));
         put("LIOS", Codec.runLengthIntCodec(15));
@@ -101,5 +100,8 @@ public interface Const {
 //        put("SCHU", new Codec());
 //        put("GLNG", new Codec());
     }};
+
+    Codec<int[]> DEFAULT_INT_CODEC = new DefaultIntCodec();
+
 
 }

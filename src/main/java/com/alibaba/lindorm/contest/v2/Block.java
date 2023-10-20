@@ -3,6 +3,7 @@ package com.alibaba.lindorm.contest.v2;
 import com.alibaba.lindorm.contest.structs.ColumnValue;
 import com.alibaba.lindorm.contest.util.Column;
 import com.alibaba.lindorm.contest.util.Tuple;
+import com.alibaba.lindorm.contest.v2.codec.Codec;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -65,31 +66,43 @@ public class Block {
             ColumnValue[] values = this.values[i];
             double max = Long.MIN_VALUE;
             double sum = 0;
-            for (int k = 0; k < size; k ++){
-                ColumnValue value = values[k];
-                switch (value.getColumnType()){
-                    case COLUMN_TYPE_DOUBLE_FLOAT:
+
+            String name = Const.COLUMNS.get(i);
+            Column column = Const.COLUMNS_INDEX.get(name);
+            switch (column.getType()){
+                case COLUMN_TYPE_DOUBLE_FLOAT:
+                    for (int k = 0; k < size; k ++){
+                        ColumnValue value = values[k];
                         double doubleVal = value.getDoubleFloatValue();
                         sum += doubleVal;
                         if (doubleVal > max){
                             max = doubleVal;
                         }
                         writeBuffer.putDouble(doubleVal);
-                        break;
-                    case COLUMN_TYPE_INTEGER:
+                    }
+                    break;
+                case COLUMN_TYPE_INTEGER:
+                    Codec<int[]> codec = Const.COLUMNS_CODEC.getOrDefault(name, Const.DEFAULT_INT_CODEC);
+                    int[] intValues = new int[size];
+                    for (int k = 0; k < size; k ++){
+                        ColumnValue value = values[k];
                         int intVal = value.getIntegerValue();
                         sum += intVal;
                         if (intVal > max){
                             max = intVal;
                         }
-                        writeBuffer.putInt(intVal);
-                        break;
-                    case COLUMN_TYPE_STRING:
+                        intValues[k] = intVal;
+                    }
+                    codec.encode(writeBuffer, intValues);
+                    break;
+                case COLUMN_TYPE_STRING:
+                    for (int k = 0; k < size; k ++){
+                        ColumnValue value = values[k];
                         byte[] bs = value.getStringValue().array();
                         writeBuffer.put((byte) bs.length);
                         writeBuffer.put(bs);
-                        break;
-                }
+                    }
+                    break;
             }
             maxValues[i] = max;
             sumValues[i] = sum;
@@ -168,10 +181,8 @@ public class Block {
                     }
                     break;
                 case COLUMN_TYPE_INTEGER:
-                    int[] intValues = Context.getBlockIntValues();
-                    for (int i = 0; i < size; i++) {
-                        intValues[i] = readBuffer.getInt();
-                    }
+                    Codec<int[]> codec = Const.COLUMNS_CODEC.getOrDefault(requestedColumn, Const.DEFAULT_INT_CODEC);
+                    int[] intValues = codec.decode(readBuffer, size);
                     for (int i = 0; i < requestedTimestamps.size(); i ++){
                         Tuple<Long, Integer> e = requestedTimestamps.get(i);
                         Tuple<Long, Map<String, ColumnValue>> result = results[i];

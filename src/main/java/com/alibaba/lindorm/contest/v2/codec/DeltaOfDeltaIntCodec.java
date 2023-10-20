@@ -3,11 +3,12 @@ package com.alibaba.lindorm.contest.v2.codec;
 import com.alibaba.lindorm.contest.util.Util;
 import net.magik6k.bitbuffer.ArrayBitBuffer;
 import net.magik6k.bitbuffer.BitBuffer;
+import net.magik6k.bitbuffer.DirectBitBuffer;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-public class DeltaOfDeltaIntCodec extends Codec<Integer>{
+public class DeltaOfDeltaIntCodec extends Codec<int[]>{
 
     private final int deltaSize;
 
@@ -19,13 +20,13 @@ public class DeltaOfDeltaIntCodec extends Codec<Integer>{
     }
 
     @Override
-    public void encode(ByteBuffer src, Integer[] data) {
+    public void encode(ByteBuffer src, int[] data) {
         BitBuffer buffer = new ArrayBitBuffer(data.length * 32L);
         buffer.putInt(data[0]);
         int preDiff = 0;
         for (int i = 1; i < data.length; i++) {
             int diff = data[i] - data[i - 1];
-            if (Math.abs(diff) > deltaSize ){
+            if (Math.abs(diff - preDiff) > deltaSize ){
                 throw new RuntimeException("delta size is too small," + deltaSize + " < " + Math.abs(diff) + " at " + i + "th");
             }
             buffer.putInt(diff - preDiff, deltaSizeBits);
@@ -36,9 +37,9 @@ public class DeltaOfDeltaIntCodec extends Codec<Integer>{
     }
 
     @Override
-    public Integer[] decode(ByteBuffer src, int size) {
-        Integer[] data = new Integer[size];
-        BitBuffer buffer = new ArrayBitBuffer(src.array());
+    public int[] decode(ByteBuffer src, int size) {
+        int[] data = new int[size];
+        BitBuffer buffer = new DirectBitBuffer(src);
         int v = buffer.getInt();
         data[0] = v;
         int preDiff = 0;
@@ -51,11 +52,11 @@ public class DeltaOfDeltaIntCodec extends Codec<Integer>{
     }
 
     public static void main(String[] args) {
-        Codec<Integer> compressor = new DeltaOfDeltaIntCodec(1);
+        Codec<int[]> compressor = new DeltaOfDeltaIntCodec(1);
         ByteBuffer src = ByteBuffer.allocate(10);
-        compressor.encode(src, new Integer[]{1,1,2,3,4,6,8,10, 13,16,19});
+        compressor.encode(src, new int[]{1,1,2,3,4,6,8,10, 13,16,19});
         src.flip();
-        Integer[] data = compressor.decode(src, 11);
+        int[] data = compressor.decode(src, 11);
         System.out.println(Arrays.toString(data));
     }
 }

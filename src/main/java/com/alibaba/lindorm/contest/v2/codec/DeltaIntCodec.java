@@ -3,11 +3,12 @@ package com.alibaba.lindorm.contest.v2.codec;
 import com.alibaba.lindorm.contest.util.Util;
 import net.magik6k.bitbuffer.ArrayBitBuffer;
 import net.magik6k.bitbuffer.BitBuffer;
+import net.magik6k.bitbuffer.DirectBitBuffer;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-public class DeltaIntCodec extends Codec<Integer>{
+public class DeltaIntCodec extends Codec<int[]>{
 
     private final int deltaSize;
 
@@ -19,7 +20,7 @@ public class DeltaIntCodec extends Codec<Integer>{
     }
 
     @Override
-    public void encode(ByteBuffer src, Integer[] data) {
+    public void encode(ByteBuffer src, int[] data) {
         BitBuffer buffer = new ArrayBitBuffer(data.length * 32L);
         buffer.putInt(data[0]);
         for (int i = 1; i < data.length; i++) {
@@ -34,9 +35,9 @@ public class DeltaIntCodec extends Codec<Integer>{
     }
 
     @Override
-    public Integer[] decode(ByteBuffer src, int size) {
-        Integer[] data = new Integer[size];
-        BitBuffer buffer = new ArrayBitBuffer(src.array());
+    public int[] decode(ByteBuffer src, int size) {
+        int[] data = new int[size];
+        BitBuffer buffer = new DirectBitBuffer(src);
         int v = buffer.getInt();
         data[0] = v;
         for (int i = 1; i < size; i++) {
@@ -47,11 +48,11 @@ public class DeltaIntCodec extends Codec<Integer>{
     }
 
     public static void main(String[] args) {
-        Codec<Integer> compressor = new DeltaIntCodec(1);
+        Codec<int[]> compressor = new DeltaIntCodec(1);
         ByteBuffer src = ByteBuffer.allocate(10);
-        compressor.encode(src, new Integer[]{-1, -2, -3, -4, -5, -6, -7, -8, -9, -10});
+        compressor.encode(src, new int[]{-1, -2, -3, -4, -5, -6, -7, -8, -9, -10});
         src.flip();
-        Integer[] data = compressor.decode(src, 10);
+        int[] data = compressor.decode(src, 10);
         System.out.println(Arrays.toString(data));
     }
 }

@@ -4,28 +4,27 @@ import java.nio.ByteBuffer;
 
 public abstract class Codec<T> {
 
-    public abstract void encode(ByteBuffer src, T[] data);
+    public abstract void encode(ByteBuffer src, T data);
 
-    public abstract T[] decode(ByteBuffer src, int size);
+    public abstract T decode(ByteBuffer src, int size);
 
-
-    public static Codec<Integer> deltaIntCodec(int deltaSize){
+    public static Codec<int[]> deltaIntCodec(int deltaSize){
         return new DeltaIntCodec(deltaSize);
     }
 
-    public static Codec<Integer> deltaOfDeltaIntCodec(int deltaSize){
+    public static Codec<int[]> deltaOfDeltaIntCodec(int deltaSize){
         return new DeltaOfDeltaIntCodec(deltaSize);
     }
 
-    public static Codec<Long> deltaLongCodec(int deltaSize){
+    public static Codec<long[]> deltaLongCodec(int deltaSize){
         return new DeltaLongCodec(deltaSize);
     }
 
-    public static Codec<Integer> runLengthIntCodec(int runLengthMaxSize){
+    public static Codec<int[]> runLengthIntCodec(int runLengthMaxSize){
         return new RunLengthIntCodec(runLengthMaxSize);
     }
 
-    public static Codec<Integer> varIntCodec(){
+    public static Codec<int[]> varIntCodec(){
         return new VarIntCodec();
     }
 
@@ -59,6 +58,5 @@ public abstract class Codec<T> {
             shift += 7;
         }
     }
-
 
 }
