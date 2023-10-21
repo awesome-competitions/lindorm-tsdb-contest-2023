@@ -31,7 +31,6 @@ public class DeltaIntCodec extends Codec<int[]>{
             buffer.put(diff, deltaSizeBits);
         }
         buffer.flip();
-        buffer.putToByteBuffer(src);
     }
 
     @Override

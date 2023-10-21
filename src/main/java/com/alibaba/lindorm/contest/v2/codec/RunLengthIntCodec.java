@@ -21,7 +21,7 @@ public class RunLengthIntCodec extends Codec<int[]>{
 
     @Override
     public void encode(ByteBuffer src, int[] data) {
-        BitBuffer buffer = new ArrayBitBuffer(data.length * 32L);
+        BitBuffer buffer = new DirectBitBuffer(src);
         int v = data[0];
         int len = 1;
         for (int i = 1; i < data.length; i++) {
@@ -37,7 +37,6 @@ public class RunLengthIntCodec extends Codec<int[]>{
         buffer.putInt(v);
         buffer.putInt(len, runLengthSizeBits);
         buffer.flip();
-        buffer.putToByteBuffer(src);
     }
 
     @Override

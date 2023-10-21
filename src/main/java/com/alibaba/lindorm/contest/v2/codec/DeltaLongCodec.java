@@ -24,7 +24,6 @@ public class DeltaLongCodec extends Codec<long[]>{
             buffer.put(diff, deltaSizeBits);
         }
         buffer.flip();
-        buffer.putToByteBuffer(src);
     }
 
     @Override
