@@ -21,7 +21,7 @@ public class DeltaIntCodec extends Codec<int[]>{
 
     @Override
     public void encode(ByteBuffer src, int[] data) {
-        BitBuffer buffer = new ArrayBitBuffer(data.length * 32L);
+        BitBuffer buffer = new DirectBitBuffer(src);
         buffer.putInt(data[0]);
         for (int i = 1; i < data.length; i++) {
             int diff = data[i] - data[i - 1];

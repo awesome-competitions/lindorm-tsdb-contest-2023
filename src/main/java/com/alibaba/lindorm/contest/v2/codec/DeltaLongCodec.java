@@ -17,7 +17,7 @@ public class DeltaLongCodec extends Codec<long[]>{
 
     @Override
     public void encode(ByteBuffer src, long[] data) {
-        BitBuffer buffer = new ArrayBitBuffer(data.length * 64L);
+        BitBuffer buffer = new DirectBitBuffer(src);
         buffer.putLong(data[0]);
         for (int i = 1; i < data.length; i++) {
             long diff = data[i] - data[i - 1];

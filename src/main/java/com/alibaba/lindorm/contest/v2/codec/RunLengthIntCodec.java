@@ -37,6 +37,9 @@ public class RunLengthIntCodec extends Codec<int[]>{
         buffer.putInt(v);
         buffer.putInt(len, runLengthSizeBits);
         buffer.flip();
+        if (buffer.limit() > data.length * 32L){
+            throw new RuntimeException("run length negative lift");
+        }
     }
 
     @Override

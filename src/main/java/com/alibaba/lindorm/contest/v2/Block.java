@@ -83,20 +83,20 @@ public class Block {
                     break;
                 case COLUMN_TYPE_INTEGER:
                     Codec<int[]> codec = Const.COLUMNS_CODEC.getOrDefault(name, Const.DEFAULT_INT_CODEC);
-                    try{
-                        int[] intValues = new int[size];
-                        for (int k = 0; k < size; k ++){
-                            ColumnValue value = values[k];
-                            int intVal = value.getIntegerValue();
-                            sum += intVal;
-                            if (intVal > max){
-                                max = intVal;
-                            }
-                            intValues[k] = intVal;
+                    int[] intValues = new int[size];
+                    for (int k = 0; k < size; k ++){
+                        ColumnValue value = values[k];
+                        int intVal = value.getIntegerValue();
+                        sum += intVal;
+                        if (intVal > max){
+                            max = intVal;
                         }
+                        intValues[k] = intVal;
+                    }
+                    try{
                         codec.encode(writeBuffer, intValues);
                     }catch (Throwable e){
-                        throw new RuntimeException(name + " encode err", e);
+                        throw new RuntimeException(name + " encode err, " + Arrays.toString(intValues), e);
                     }
                     break;
                 case COLUMN_TYPE_STRING:
