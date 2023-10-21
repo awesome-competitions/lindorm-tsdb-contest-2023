@@ -39,12 +39,12 @@ public interface Const {
         // Integer
         put("GMVS", Codec.runLengthIntCodec(15));
         put("LIOS", Codec.runLengthIntCodec(15));
-        put("LFZG", Codec.runLengthIntCodec(15));
-        put("WLYQ", Codec.runLengthIntCodec(15));
-        put("ZTGP", Codec.runLengthIntCodec(15));
-        put("GMNR", Codec.runLengthIntCodec(15));
-        put("BTJH", Codec.runLengthIntCodec(15));
-        put("XCDQ", Codec.runLengthIntCodec(15));
+        put("LFZG", Codec.deltaOfDeltaIntCodec(3));
+        put("WLYQ", Codec.deltaOfDeltaIntCodec(3));
+        put("ZTGP", Codec.deltaOfDeltaIntCodec(3));
+        put("GMNR", Codec.deltaOfDeltaIntCodec(3));
+        put("BTJH", Codec.deltaOfDeltaIntCodec(3));
+        put("XCDQ", Codec.deltaOfDeltaIntCodec(3));
         put("JKZL", Codec.deltaOfDeltaIntCodec(3));
         put("DSKQ", Codec.deltaOfDeltaIntCodec(3));
         put("MLBY", Codec.deltaOfDeltaIntCodec(3));
