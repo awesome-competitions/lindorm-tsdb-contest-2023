@@ -24,18 +24,13 @@ public class Block {
     public Block(Data data){
         this.data = data;
         this.timestamps = new long[Const.BLOCK_SIZE];
-        this.values = new ColumnValue[Const.COLUMNS.size()][];
+        this.values = new ColumnValue[Const.BLOCK_SIZE][Const.COLUMNS.size()];
     }
 
     public int insert(long timestamp, Map<String, ColumnValue> columns){
         this.timestamps[size] = timestamp;
         for (int i = 0; i < Const.COLUMNS.size(); i ++){
-            ColumnValue[] values = this.values[i];
-            if (values == null){
-                values = new ColumnValue[Const.BLOCK_SIZE];
-                this.values[i] = values;
-            }
-            values[size] = columns.get(Const.COLUMNS.get(i));
+            this.values[size][i] = columns.get(Const.COLUMNS.get(i));
         }
         return size ++;
     }
@@ -54,7 +49,26 @@ public class Block {
         this.size = 0;
     }
 
+    // 正序排序
+    public void sort(){
+        for (int i = 0; i < size; i ++){
+            for (int j = i + 1; j < size; j ++){
+                if (timestamps[i] > timestamps[j]){
+                    long tmp = timestamps[i];
+                    timestamps[i] = timestamps[j];
+                    timestamps[j] = tmp;
+
+                    ColumnValue[] tmpValues = values[i];
+                    values[i] = values[j];
+                    values[j] = tmpValues;
+                }
+            }
+        }
+    }
+
     public Header flush() throws IOException {
+        this.sort();
+
         ByteBuffer writeBuffer = Context.getBlockWriteBuffer();
         writeBuffer.clear();
 
@@ -63,7 +77,6 @@ public class Block {
         double[] sumValues = new double[Const.COLUMNS.size()];
         for (int i = 0; i < Const.COLUMNS.size(); i ++){
             positions[i] = writeBuffer.position();
-            ColumnValue[] values = this.values[i];
             double max = Long.MIN_VALUE;
             double sum = 0;
 
@@ -72,7 +85,7 @@ public class Block {
             switch (column.getType()){
                 case COLUMN_TYPE_DOUBLE_FLOAT:
                     for (int k = 0; k < size; k ++){
-                        ColumnValue value = values[k];
+                        ColumnValue value = values[k][i];
                         double doubleVal = value.getDoubleFloatValue();
                         sum += doubleVal;
                         if (doubleVal > max){
@@ -85,7 +98,7 @@ public class Block {
                     Codec<int[]> codec = Const.COLUMNS_CODEC.getOrDefault(name, Const.DEFAULT_INT_CODEC);
                     int[] intValues = new int[size];
                     for (int k = 0; k < size; k ++){
-                        ColumnValue value = values[k];
+                        ColumnValue value = values[k][i];
                         int intVal = value.getIntegerValue();
                         sum += intVal;
                         if (intVal > max){
@@ -101,7 +114,7 @@ public class Block {
                     break;
                 case COLUMN_TYPE_STRING:
                     for (int k = 0; k < size; k ++){
-                        ColumnValue value = values[k];
+                        ColumnValue value = values[k][i];
                         byte[] bs = value.getStringValue().array();
                         writeBuffer.put((byte) bs.length);
                         writeBuffer.put(bs);
@@ -121,8 +134,6 @@ public class Block {
         Tuple<Long, Map<String, ColumnValue>>[] results = new Tuple[requestedTimestamps.size()];
         for (String requestedColumn: requestedColumns){
             Column column = Const.COLUMNS_INDEX.get(requestedColumn);
-            ColumnValue[] columnValues = this.values[column.getIndex()];
-
             for(int i = 0; i < requestedTimestamps.size(); i ++){
                 Tuple<Long, Integer> tuple = requestedTimestamps.get(i);
                 long timestamp = tuple.K();
@@ -133,10 +144,25 @@ public class Block {
                     result = new Tuple<>(timestamp, new HashMap<>());
                     results[i] = result;
                 }
-                result.V().put(requestedColumn, columnValues[index]);
+                result.V().put(requestedColumn, this.values[index][column.getIndex()]);
             }
         }
         return Arrays.asList(results);
+    }
+
+    public void aggregate(List<Tuple<Long, Integer>> requestedTimestamps, String requestedColumn, Aggregator consumer) {
+        Column column = Const.COLUMNS_INDEX.get(requestedColumn);
+        ColumnValue.ColumnType type = column.getType();
+        for (Tuple<Long, Integer> e: requestedTimestamps){
+            switch (type){
+                case COLUMN_TYPE_DOUBLE_FLOAT:
+                    consumer.accept(this.values[column.getIndex()][e.V()].getDoubleFloatValue());
+                    break;
+                case COLUMN_TYPE_INTEGER:
+                    consumer.accept((double) this.values[column.getIndex()][e.V()].getIntegerValue());
+                    break;
+            }
+        }
     }
 
     public static List<Tuple<Long, Map<String, ColumnValue>>> read(Data data, Header header, List<Tuple<Long, Integer>> requestedTimestamps, Collection<String> requestedColumns) throws IOException {
@@ -221,23 +247,6 @@ public class Block {
             }
         }
         return Arrays.asList(results);
-    }
-
-
-    public void aggregate(List<Tuple<Long, Integer>> requestedTimestamps, String requestedColumn, Aggregator consumer) {
-        Column column = Const.COLUMNS_INDEX.get(requestedColumn);
-        ColumnValue.ColumnType type = column.getType();
-        ColumnValue[] values = this.values[column.getIndex()];
-        for (Tuple<Long, Integer> e: requestedTimestamps){
-            switch (type){
-                case COLUMN_TYPE_DOUBLE_FLOAT:
-                    consumer.accept(values[e.V()].getDoubleFloatValue());
-                    break;
-                case COLUMN_TYPE_INTEGER:
-                    consumer.accept((double) values[e.V()].getIntegerValue());
-                    break;
-            }
-        }
     }
 
     public static void aggregate(Data data, Header header, List<Tuple<Long, Integer>> requestedTimestamps, String requestedColumn, Aggregator aggregator) throws IOException {

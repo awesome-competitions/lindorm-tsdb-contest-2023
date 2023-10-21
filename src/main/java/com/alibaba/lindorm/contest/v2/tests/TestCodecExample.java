@@ -83,23 +83,23 @@ public class TestCodecExample {
       long timestamp = 1689091210000L;
       for (int i = 0; i < 1000; i ++){
         Map<String, ColumnValue> columns = new HashMap<>();
-        columns.put("GMVS", new ColumnValue.IntegerColumn(123 + i/100));
+        columns.put("JKZL", new ColumnValue.IntegerColumn(123 + i));
         rowList.add(new Row(new Vin(str.getBytes(StandardCharsets.UTF_8)), timestamp += 1000, columns));
       }
 
       Map<String, ColumnValue.ColumnType> columnTypes = new HashMap<>();
-      columnTypes.put("GMVS", ColumnValue.ColumnType.COLUMN_TYPE_INTEGER);
+      columnTypes.put("JKZL", ColumnValue.ColumnType.COLUMN_TYPE_INTEGER);
       Schema schema = new Schema(columnTypes);
 
       tsdbEngineSample.createTable("test", schema);
       tsdbEngineSample.write(new WriteRequest("test", rowList));
-      Set<String> requestedColumns = new HashSet<>(List.of("GMVS"));
+      Set<String> requestedColumns = new HashSet<>(List.of("JKZL"));
 
       // before shutdown
       System.out.println("=========== before shutdown ===========");
       ArrayList<Row> resultSet = tsdbEngineSample.executeLatestQuery(new LatestQueryRequest("test", vinList, new HashSet<>()));
       showResult("executeLatestQuery", resultSet);
-      resultSet = tsdbEngineSample.executeTimeRangeQuery(new TimeRangeQueryRequest("test", new Vin(str.getBytes(StandardCharsets.UTF_8)), new HashSet<>(Arrays.asList("GMVS")), 1689091210000L, 1690091311000L));
+      resultSet = tsdbEngineSample.executeTimeRangeQuery(new TimeRangeQueryRequest("test", new Vin(str.getBytes(StandardCharsets.UTF_8)), new HashSet<>(Arrays.asList("JKZL")), 1689091210000L, 1690091311000L));
       showResult("executeTimeRangeQuery", resultSet);
 
 
