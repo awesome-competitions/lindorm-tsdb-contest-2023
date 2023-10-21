@@ -83,17 +83,21 @@ public class Block {
                     break;
                 case COLUMN_TYPE_INTEGER:
                     Codec<int[]> codec = Const.COLUMNS_CODEC.getOrDefault(name, Const.DEFAULT_INT_CODEC);
-                    int[] intValues = new int[size];
-                    for (int k = 0; k < size; k ++){
-                        ColumnValue value = values[k];
-                        int intVal = value.getIntegerValue();
-                        sum += intVal;
-                        if (intVal > max){
-                            max = intVal;
+                    try{
+                        int[] intValues = new int[size];
+                        for (int k = 0; k < size; k ++){
+                            ColumnValue value = values[k];
+                            int intVal = value.getIntegerValue();
+                            sum += intVal;
+                            if (intVal > max){
+                                max = intVal;
+                            }
+                            intValues[k] = intVal;
                         }
-                        intValues[k] = intVal;
+                        codec.encode(writeBuffer, intValues);
+                    }catch (Throwable e){
+                        throw new RuntimeException(name + " encode err", e);
                     }
-                    codec.encode(writeBuffer, intValues);
                     break;
                 case COLUMN_TYPE_STRING:
                     for (int k = 0; k < size; k ++){
@@ -182,15 +186,19 @@ public class Block {
                     break;
                 case COLUMN_TYPE_INTEGER:
                     Codec<int[]> codec = Const.COLUMNS_CODEC.getOrDefault(requestedColumn, Const.DEFAULT_INT_CODEC);
-                    int[] intValues = codec.decode(readBuffer, size);
-                    for (int i = 0; i < requestedTimestamps.size(); i ++){
-                        Tuple<Long, Integer> e = requestedTimestamps.get(i);
-                        Tuple<Long, Map<String, ColumnValue>> result = results[i];
-                        if (result == null){
-                            result = new Tuple<>(e.K(), new HashMap<>());
-                            results[i] = result;
+                    try{
+                        int[] intValues = codec.decode(readBuffer, size);
+                        for (int i = 0; i < requestedTimestamps.size(); i ++){
+                            Tuple<Long, Integer> e = requestedTimestamps.get(i);
+                            Tuple<Long, Map<String, ColumnValue>> result = results[i];
+                            if (result == null){
+                                result = new Tuple<>(e.K(), new HashMap<>());
+                                results[i] = result;
+                            }
+                            result.V().put(requestedColumn, new ColumnValue.IntegerColumn(intValues[e.V()]));
                         }
-                        result.V().put(requestedColumn, new ColumnValue.IntegerColumn(intValues[e.V()]));
+                    }catch (Throwable e){
+                        throw new RuntimeException(requestedColumn + " decode err", e);
                     }
                     break;
                 case COLUMN_TYPE_STRING:
@@ -279,9 +287,13 @@ public class Block {
                 break;
             case COLUMN_TYPE_INTEGER:
                 Codec<int[]> codec = Const.COLUMNS_CODEC.getOrDefault(requestedColumn, Const.DEFAULT_INT_CODEC);
-                int[] intValues = codec.decode(readBuffer, size);
-                for (Tuple<Long, Integer> e: requestedTimestamps){
-                    aggregator.accept((double) intValues[e.V()]);
+                try{
+                    int[] intValues = codec.decode(readBuffer, size);
+                    for (Tuple<Long, Integer> e: requestedTimestamps){
+                        aggregator.accept((double) intValues[e.V()]);
+                    }
+                }catch (Throwable e){
+                    throw new RuntimeException(requestedColumn + " decode err", e);
                 }
                 break;
         }
