@@ -96,7 +96,7 @@ public class Block {
                     try{
                         codec.encode(writeBuffer, intValues);
                     }catch (Throwable e){
-                        throw new RuntimeException(name + " encode err, " + Arrays.toString(intValues), e);
+                        throw new RuntimeException(name + " encode err, " + Arrays.toString(intValues) + ", timestamps: " + Arrays.toString(timestamps), e);
                     }
                     break;
                 case COLUMN_TYPE_STRING:
