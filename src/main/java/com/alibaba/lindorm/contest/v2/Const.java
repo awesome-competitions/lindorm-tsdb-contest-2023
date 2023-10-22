@@ -32,12 +32,14 @@ public interface Const {
     // column
     int COLUMN_COUNT = 60;
     List<String> COLUMNS = new ArrayList<>(COLUMN_COUNT);
+    int[] COLUMNS_SIZE = new int[COLUMN_COUNT];
+
     Map<String, Column> COLUMNS_INDEX = new HashMap<>(COLUMN_COUNT);
 
     // coding
     Map<String, Codec<int[]>> COLUMNS_CODEC = new HashMap<>(COLUMN_COUNT){{
         // Integer
-        put("GMVS", Codec.runLengthIntCodec(15));
+        put("GMVS", Codec.runLengthIntCodec(BLOCK_SIZE));
         put("LIOS", Codec.deltaOfDeltaIntCodec(3));
         put("LFZG", Codec.deltaOfDeltaIntCodec(3));
         put("WLYQ", Codec.deltaOfDeltaIntCodec(3));
@@ -52,11 +54,11 @@ public interface Const {
         put("KACE", Codec.deltaOfDeltaIntCodec(3));
         put("YDXB", Codec.deltaOfDeltaIntCodec(3));
         put("NXCR", Codec.deltaOfDeltaIntCodec(3));
-        put("OZSM", Codec.deltaOfDeltaIntCodec(7));
+        put("OZSM", Codec.deltaOfDeltaIntCodec(3));
         put("SYMN", Codec.deltaOfDeltaIntCodec(3));
         put("UAPJ", Codec.deltaOfDeltaIntCodec(3));
-        put("PQRQ", Codec.deltaOfDeltaIntCodec(7));
-        put("UICP", Codec.deltaOfDeltaIntCodec(7));
+        put("PQRQ", Codec.deltaOfDeltaIntCodec(3));
+        put("UICP", Codec.deltaOfDeltaIntCodec(3));
         put("KFGP", Codec.varIntCodec());
         put("ZZBE", Codec.varIntCodec());
         put("HJPZ", Codec.varIntCodec());

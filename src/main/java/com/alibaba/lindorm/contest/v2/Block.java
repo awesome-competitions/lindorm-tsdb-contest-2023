@@ -126,7 +126,10 @@ public class Block {
                         intValues[k] = intVal;
                     }
                     try{
+                        long oldPosition = writeBuffer.position();
                         codec.encode(writeBuffer, intValues);
+                        long newPosition = writeBuffer.position();
+                        Const.COLUMNS_SIZE[i] += (newPosition - oldPosition);
                     }catch (Throwable e){
                         throw new RuntimeException(name + " encode err, " + Arrays.toString(intValues) + ", timestamps: " + Arrays.toString(timestamps), e);
                     }

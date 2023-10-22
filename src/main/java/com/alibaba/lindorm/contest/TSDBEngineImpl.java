@@ -9,6 +9,7 @@ package com.alibaba.lindorm.contest;
 
 import com.alibaba.lindorm.contest.structs.*;
 import com.alibaba.lindorm.contest.util.Monitor;
+import com.alibaba.lindorm.contest.v2.Const;
 import com.alibaba.lindorm.contest.v2.Table;
 
 import java.io.File;
@@ -62,6 +63,9 @@ public class TSDBEngineImpl extends TSDBEngine {
     try {
       table.force();
       System.out.println("shutdown table:" + table.getName() + ", size:" + table.size());
+      for (int i = 0; i < Const.COLUMNS.size(); i ++){
+        System.out.println("column " + Const.COLUMNS.get(i) + " size:" + Const.COLUMNS_SIZE[i]);
+      }
       table.close();
     } catch (Throwable e) {
       e.printStackTrace();
