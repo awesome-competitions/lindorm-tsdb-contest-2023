@@ -37,7 +37,7 @@ public interface Const {
     Map<String, Column> COLUMNS_INDEX = new HashMap<>(COLUMN_COUNT);
 
     // coding
-    Map<String, Codec<int[]>> COLUMNS_CODEC = new HashMap<>(COLUMN_COUNT){{
+    Map<String, Codec<int[]>> COLUMNS_INTEGER_CODEC = new HashMap<>(COLUMN_COUNT){{
         // Integer
         put("GMVS", Codec.runLengthIntCodec(BLOCK_SIZE));
         put("LIOS", Codec.deltaOfDeltaIntCodec(3));
@@ -79,17 +79,6 @@ public interface Const {
         put("YCTI", Codec.deltaIntCodec(7));
         put("BBPX", Codec.deltaIntCodec(15));
         put("HRXI", Codec.deltaIntCodec(15));
-//        // Double
-//        put("FWKW", new Codec());
-//        put("BDPO", new Codec());
-//        put("FQTH", new Codec());
-//        put("SBXA", new Codec());
-//        put("XRTP", new Codec());
-//        put("ZIKG", new Codec());
-//        put("LMLK", new Codec());
-//        put("TEDW", new Codec());
-//        put("UVGJ", new Codec());
-//        put("LYLI", new Codec());
 //        // String
 //        put("FVXS", new Codec());
 //        put("LIYD", new Codec());
@@ -103,7 +92,20 @@ public interface Const {
 //        put("GLNG", new Codec());
     }};
 
-    Codec<int[]> DEFAULT_INT_CODEC = new DefaultIntCodec();
+    Map<String, Codec<double[]>> COLUMNS_DOUBLE_CODEC = new HashMap<>(COLUMN_COUNT){{
+        put("FWKW", Codec.xorDoubleCodec());
+        put("BDPO", Codec.xorDoubleCodec());
+        put("FQTH", Codec.xorDoubleCodec());
+        put("SBXA", Codec.xorDoubleCodec());
+        put("XRTP", Codec.xorDoubleCodec());
+        put("ZIKG", Codec.xorDoubleCodec());
+        put("LMLK", Codec.xorDoubleCodec());
+        put("TEDW", Codec.xorDoubleCodec());
+        put("UVGJ", Codec.xorDoubleCodec());
+        put("LYLI", Codec.xorDoubleCodec());
+    }};
 
+    Codec<int[]> DEFAULT_INT_CODEC = new DefaultIntCodec();
+    Codec<double[]> DEFAULT_DOUBLE_CODEC = new DefaultDoubleCodec();
 
 }
