@@ -1,5 +1,7 @@
 package com.alibaba.lindorm.contest.v2.codec;
 
+import net.magik6k.bitbuffer.BitBuffer;
+
 import java.nio.ByteBuffer;
 
 public abstract class Codec<T> {
@@ -28,6 +30,10 @@ public abstract class Codec<T> {
         return new VarIntCodec();
     }
 
+    public static Codec<int[]> deltaVarIntCodec(){
+        return new DeltaVarIntCodec();
+    }
+
     // zigzag encode
     protected static int encodeZigzag(int n){
          return (n << 1) ^ n >> 31;
@@ -38,7 +44,8 @@ public abstract class Codec<T> {
     }
 
     // varint encode
-    protected void encodeVarInt(ByteBuffer dst, int value) {
+    protected void encodeVarInt(BitBuffer dst, int value) {
+        value = encodeZigzag(value);
         while ((value & 0xFFFFFF80) != 0) {
             dst.put((byte) ((value & 0x7F) | 0x80));
             value >>>= 7;
@@ -46,14 +53,14 @@ public abstract class Codec<T> {
         dst.put((byte) (value & 0x7F));
     }
 
-    protected int decodeVarInt(ByteBuffer src) {
+    protected int decodeVarInt(BitBuffer src) {
         int result = 0;
         int shift = 0;
         while (true) {
-            byte b = src.get();
+            byte b = src.getByte();
             result |= (b & 0x7F) << shift;
             if ((b & 0x80) == 0) {
-                return result;
+                return decodeZigzag(result);
             }
             shift += 7;
         }

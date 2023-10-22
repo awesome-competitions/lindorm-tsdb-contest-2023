@@ -1,16 +1,22 @@
 package com.alibaba.lindorm.contest.v2.codec;
 
+import com.alibaba.lindorm.contest.util.Util;
 import net.magik6k.bitbuffer.BitBuffer;
 import net.magik6k.bitbuffer.DirectBitBuffer;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
-public class VarIntCodec extends Codec<int[]>{
+public class DeltaVarIntCodec extends Codec<int[]>{
+    public DeltaVarIntCodec() {}
+
     @Override
     public void encode(ByteBuffer src, int[] data) {
         BitBuffer buffer = new DirectBitBuffer(src);
-        for (int value : data) {
-            encodeVarInt(buffer, value);
+        buffer.putInt(data[0]);
+        for (int i = 1; i < data.length; i++) {
+            int diff = data[i] - data[i - 1];
+            encodeVarInt(buffer, diff);
         }
         buffer.flip();
     }
@@ -19,14 +25,17 @@ public class VarIntCodec extends Codec<int[]>{
     public int[] decode(ByteBuffer src, int size) {
         int[] data = new int[size];
         BitBuffer buffer = new DirectBitBuffer(src);
-        for (int i = 0; i < size; i++) {
-            data[i] = decodeVarInt(buffer);
+        int v = buffer.getInt();
+        data[0] = v;
+        for (int i = 1; i < size; i++) {
+            int diff = decodeVarInt(buffer);
+            data[i] = data[i-1] + diff;
         }
         return data;
     }
 
     public static void main(String[] args) {
-        VarIntCodec varintCodec = new VarIntCodec();
+        DeltaVarIntCodec varintCodec = new DeltaVarIntCodec();
         int[] numbers = {-13061,-14901,-22085,-13557,-15621,-18085,-16757,-19525,-17285,-15253,-13013,-17045,-20613,-17941,-13285,-19381};
 
         ByteBuffer encodedBuffer = ByteBuffer.allocate(3000);
