@@ -37,9 +37,6 @@ public class RunLengthIntCodec extends Codec<int[]>{
         buffer.putInt(v);
         buffer.putInt(len, runLengthSizeBits);
         buffer.flip();
-        if (buffer.limit() > data.length * 32L){
-            throw new RuntimeException("run length negative lift");
-        }
     }
 
     @Override
@@ -58,11 +55,13 @@ public class RunLengthIntCodec extends Codec<int[]>{
     }
 
     public static void main(String[] args) {
-        Codec<int[]> compressor = new RunLengthIntCodec(6);
-        ByteBuffer src = ByteBuffer.allocate(10);
-        compressor.encode(src, new int[]{1,1,1,1,1,2,2,2,2,2,2});
+        Codec<int[]> compressor = new RunLengthIntCodec(15);
+        ByteBuffer src = ByteBuffer.allocate(1000);
+        int[] ints = new int[]{12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394};
+        compressor.encode(src, ints);
         src.flip();
-        int[] data = compressor.decode(src, 11);
+        System.out.println(src.remaining());
+        int[] data = compressor.decode(src, ints.length);
         System.out.println(Arrays.toString(data));
     }
 

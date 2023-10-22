@@ -38,7 +38,7 @@ public interface Const {
     Map<String, Codec<int[]>> COLUMNS_CODEC = new HashMap<>(COLUMN_COUNT){{
         // Integer
         put("GMVS", Codec.runLengthIntCodec(15));
-        put("LIOS", Codec.runLengthIntCodec(15));
+        put("LIOS", Codec.deltaOfDeltaIntCodec(3));
         put("LFZG", Codec.deltaOfDeltaIntCodec(3));
         put("WLYQ", Codec.deltaOfDeltaIntCodec(3));
         put("ZTGP", Codec.deltaOfDeltaIntCodec(3));

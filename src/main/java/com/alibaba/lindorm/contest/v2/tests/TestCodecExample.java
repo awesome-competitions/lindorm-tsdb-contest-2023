@@ -48,6 +48,12 @@ import java.util.*;
 
 public class TestCodecExample {
 
+  public static Map<String, ColumnValue> newColumnValues(int number){
+    Map<String, ColumnValue> columns = new HashMap<>();
+    columns.put("JKZL", new ColumnValue.IntegerColumn(number));
+    return columns;
+  }
+
   public static void main(String[] args) {
     File dataDir = new File(Const.TEST_DATA_DIR);
     if (dataDir.isFile()) {
@@ -81,11 +87,14 @@ public class TestCodecExample {
       vinList.add(new Vin(str.getBytes(StandardCharsets.UTF_8)));
       ArrayList<Row> rowList = new ArrayList<>();
       long timestamp = 1689091210000L;
-      for (int i = 0; i < 1000; i ++){
-        Map<String, ColumnValue> columns = new HashMap<>();
-        columns.put("JKZL", new ColumnValue.IntegerColumn(123 + i));
-        rowList.add(new Row(new Vin(str.getBytes(StandardCharsets.UTF_8)), timestamp += 1000, columns));
-      }
+      rowList.add(new Row(new Vin(str.getBytes(StandardCharsets.UTF_8)), timestamp + 1000, newColumnValues(1)));
+      rowList.add(new Row(new Vin(str.getBytes(StandardCharsets.UTF_8)), timestamp + 2000, newColumnValues(2)));
+      rowList.add(new Row(new Vin(str.getBytes(StandardCharsets.UTF_8)), timestamp + 3000, newColumnValues(3)));
+      rowList.add(new Row(new Vin(str.getBytes(StandardCharsets.UTF_8)), timestamp + 4000, newColumnValues(4)));
+      rowList.add(new Row(new Vin(str.getBytes(StandardCharsets.UTF_8)), timestamp + 6000, newColumnValues(6)));
+      rowList.add(new Row(new Vin(str.getBytes(StandardCharsets.UTF_8)), timestamp + 5000, newColumnValues(5)));
+      rowList.add(new Row(new Vin(str.getBytes(StandardCharsets.UTF_8)), timestamp + 7000, newColumnValues(7)));
+      rowList.add(new Row(new Vin(str.getBytes(StandardCharsets.UTF_8)), timestamp + 8000, newColumnValues(8)));
 
       Map<String, ColumnValue.ColumnType> columnTypes = new HashMap<>();
       columnTypes.put("JKZL", ColumnValue.ColumnType.COLUMN_TYPE_INTEGER);

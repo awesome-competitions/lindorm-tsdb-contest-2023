@@ -21,6 +21,8 @@ public class Block {
 
     private int size;
 
+    private int flushSize;
+
     public Block(Data data){
         this.data = data;
         this.timestamps = new long[Const.BLOCK_SIZE];
@@ -40,17 +42,23 @@ public class Block {
     }
 
     public void foreachTimestamps(BiConsumer<Integer, Long> consumer){
-        for (int i = 0; i < size; i ++){
+        for (int i = 0; i < flushSize; i ++){
             consumer.accept(i, timestamps[i]);
         }
     }
 
     public void clear(){
-        this.size = 0;
+        int surplusSize = size - flushSize;
+        for (int i = 0; i < surplusSize; i ++){
+            timestamps[i] = timestamps[i + flushSize];
+            values[i] = values[i + flushSize];
+        }
+        this.size = surplusSize;
+        this.flushSize = 0;
     }
 
     // 正序排序
-    public void sort(){
+    public void preFlush(){
         for (int i = 0; i < size; i ++){
             for (int j = i + 1; j < size; j ++){
                 if (timestamps[i] > timestamps[j]){
@@ -64,10 +72,18 @@ public class Block {
                 }
             }
         }
+
+        this.flushSize = 1;
+        for (int i = 1; i < size; i ++){
+           if (timestamps[i] - timestamps[i - 1] > 1000){
+               break;
+           }
+           this.flushSize ++;
+        }
     }
 
     public Header flush() throws IOException {
-        this.sort();
+        this.preFlush();
 
         ByteBuffer writeBuffer = Context.getBlockWriteBuffer();
         writeBuffer.clear();
@@ -84,7 +100,7 @@ public class Block {
             Column column = Const.COLUMNS_INDEX.get(name);
             switch (column.getType()){
                 case COLUMN_TYPE_DOUBLE_FLOAT:
-                    for (int k = 0; k < size; k ++){
+                    for (int k = 0; k < flushSize; k ++){
                         ColumnValue value = values[k][i];
                         double doubleVal = value.getDoubleFloatValue();
                         sum += doubleVal;
@@ -96,8 +112,8 @@ public class Block {
                     break;
                 case COLUMN_TYPE_INTEGER:
                     Codec<int[]> codec = Const.COLUMNS_CODEC.getOrDefault(name, Const.DEFAULT_INT_CODEC);
-                    int[] intValues = new int[size];
-                    for (int k = 0; k < size; k ++){
+                    int[] intValues = new int[flushSize];
+                    for (int k = 0; k < flushSize; k ++){
                         ColumnValue value = values[k][i];
                         int intVal = value.getIntegerValue();
                         sum += intVal;
@@ -113,7 +129,7 @@ public class Block {
                     }
                     break;
                 case COLUMN_TYPE_STRING:
-                    for (int k = 0; k < size; k ++){
+                    for (int k = 0; k < flushSize; k ++){
                         ColumnValue value = values[k][i];
                         byte[] bs = value.getStringValue().array();
                         writeBuffer.put((byte) bs.length);
@@ -127,7 +143,7 @@ public class Block {
         writeBuffer.flip();
         int length = writeBuffer.remaining();
         long pos = this.data.write(writeBuffer);
-        return new Header(size, pos, length, positions, maxValues, sumValues);
+        return new Header(flushSize, pos, length, positions, maxValues, sumValues);
     }
 
     public List<Tuple<Long, Map<String, ColumnValue>>> read(List<Tuple<Long, Integer>> requestedTimestamps, Collection<String> requestedColumns) {
