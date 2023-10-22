@@ -68,7 +68,6 @@ public class Block {
 
     // 正序排序
     public void preFlush(){
-        System.out.println("pre flush");
         for (int i = 0; i < size; i ++){
             for (int j = i + 1; j < size; j ++){
                 if (timestamps[i] > timestamps[j]){
