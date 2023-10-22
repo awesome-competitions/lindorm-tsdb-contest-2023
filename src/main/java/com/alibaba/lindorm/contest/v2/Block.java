@@ -176,10 +176,10 @@ public class Block {
         for (Tuple<Long, Integer> e: requestedTimestamps){
             switch (type){
                 case COLUMN_TYPE_DOUBLE_FLOAT:
-                    consumer.accept(this.values[column.getIndex()][e.V()].getDoubleFloatValue());
+                    consumer.accept(this.values[e.V()][column.getIndex()].getDoubleFloatValue());
                     break;
                 case COLUMN_TYPE_INTEGER:
-                    consumer.accept((double) this.values[column.getIndex()][e.V()].getIntegerValue());
+                    consumer.accept((double) this.values[e.V()][column.getIndex()].getIntegerValue());
                     break;
             }
         }
