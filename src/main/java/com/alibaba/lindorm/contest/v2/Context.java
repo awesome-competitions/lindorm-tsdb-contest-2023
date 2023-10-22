@@ -33,6 +33,10 @@ public class Context {
 
     private final ByteBuffer blockDataBuffer;
 
+    private final ByteBuffer codecEncodeBuffer;
+
+    private final ByteBuffer codecDecodeBuffer;
+
     private final int[] blockPositions;
 
     private final long[] blockTimestamps;
@@ -43,6 +47,7 @@ public class Context {
 
     private final ByteBuffer[] blockStringValues;
 
+
     public Context() {
         this.dataWriteBuffer = ByteBuffer.allocateDirect(Const.BYTE_BUFFER_SIZE);
         this.dataReadBuffer = ByteBuffer.allocateDirect(Const.BYTE_BUFFER_SIZE);
@@ -50,6 +55,8 @@ public class Context {
         this.blockHeaderBuffer = ByteBuffer.allocateDirect(Const.BYTE_BUFFER_SIZE);
         this.blockDataBuffer = ByteBuffer.allocateDirect(Const.BYTE_BUFFER_SIZE);
         this.blockReadBuffer = ByteBuffer.allocateDirect(Const.BYTE_BUFFER_SIZE);
+        this.codecEncodeBuffer = ByteBuffer.allocateDirect(Const.BYTE_BUFFER_SIZE);
+        this.codecDecodeBuffer = ByteBuffer.allocateDirect(Const.BYTE_BUFFER_SIZE);
         this.blockPositions = new int[Const.COLUMNS.size()];
         this.blockTimestamps = new long[Const.BLOCK_SIZE];
         this.blockIntValues = new int[Const.BLOCK_SIZE];
@@ -79,6 +86,14 @@ public class Context {
 
     public static ByteBuffer getBlockReadBuffer() {
         return get().blockReadBuffer;
+    }
+
+    public static ByteBuffer getCodecEncodeBuffer() {
+        return get().codecEncodeBuffer;
+    }
+
+    public static ByteBuffer getCodecDecodeBuffer() {
+        return get().codecDecodeBuffer;
     }
 
     public static int[] getBlockPositions() {

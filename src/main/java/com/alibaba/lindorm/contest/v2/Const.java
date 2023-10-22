@@ -5,6 +5,7 @@ import com.alibaba.lindorm.contest.util.Column;
 import com.alibaba.lindorm.contest.v2.codec.*;
 import com.alibaba.lindorm.contest.v2.codec.Codec;
 
+import java.nio.ByteBuffer;
 import java.util.*;
 
 public interface Const {
@@ -105,7 +106,22 @@ public interface Const {
         put("LYLI", Codec.xorDoubleCodec());
     }};
 
+    Map<String, Codec<ByteBuffer>> COLUMNS_STRING_CODEC = new HashMap<>(COLUMN_COUNT){{
+        put("FWKW", Codec.bytesCodec());
+        put("BDPO", Codec.bytesCodec());
+        put("FQTH", Codec.bytesCodec());
+        put("SBXA", Codec.bytesCodec());
+        put("XRTP", Codec.bytesCodec());
+        put("ZIKG", Codec.bytesCodec());
+        put("LMLK", Codec.bytesCodec());
+        put("TEDW", Codec.bytesCodec());
+        put("UVGJ", Codec.bytesCodec());
+        put("LYLI", Codec.bytesCodec());
+    }};
+
     Codec<int[]> DEFAULT_INT_CODEC = new DefaultIntCodec();
     Codec<double[]> DEFAULT_DOUBLE_CODEC = new DefaultDoubleCodec();
+    Codec<ByteBuffer> DEFAULT_STRING_CODEC = new DefaultBytesCodec();
+
 
 }
