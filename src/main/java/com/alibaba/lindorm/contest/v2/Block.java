@@ -50,25 +50,29 @@ public class Block {
     public void clear(){
         int surplusSize = size - flushSize;
         for (int i = 0; i < surplusSize; i ++){
-            timestamps[i] = timestamps[i + flushSize];
-            values[i] = values[i + flushSize];
+            swap(i, i + flushSize);
         }
         this.size = surplusSize;
         this.flushSize = 0;
     }
 
+    public void swap(int i, int j){
+        long tmp = timestamps[i];
+        timestamps[i] = timestamps[j];
+        timestamps[j] = tmp;
+
+        ColumnValue[] tmpValues = values[i];
+        values[i] = values[j];
+        values[j] = tmpValues;
+    }
+
     // 正序排序
     public void preFlush(){
+        System.out.println("pre flush");
         for (int i = 0; i < size; i ++){
             for (int j = i + 1; j < size; j ++){
                 if (timestamps[i] > timestamps[j]){
-                    long tmp = timestamps[i];
-                    timestamps[i] = timestamps[j];
-                    timestamps[j] = tmp;
-
-                    ColumnValue[] tmpValues = values[i];
-                    values[i] = values[j];
-                    values[j] = tmpValues;
+                    swap(i, j);
                 }
             }
         }

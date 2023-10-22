@@ -92,9 +92,18 @@ public class TestCodecExample {
       rowList.add(new Row(new Vin(str.getBytes(StandardCharsets.UTF_8)), timestamp + 3000, newColumnValues(3)));
       rowList.add(new Row(new Vin(str.getBytes(StandardCharsets.UTF_8)), timestamp + 4000, newColumnValues(4)));
       rowList.add(new Row(new Vin(str.getBytes(StandardCharsets.UTF_8)), timestamp + 6000, newColumnValues(6)));
+
       rowList.add(new Row(new Vin(str.getBytes(StandardCharsets.UTF_8)), timestamp + 5000, newColumnValues(5)));
       rowList.add(new Row(new Vin(str.getBytes(StandardCharsets.UTF_8)), timestamp + 7000, newColumnValues(7)));
       rowList.add(new Row(new Vin(str.getBytes(StandardCharsets.UTF_8)), timestamp + 8000, newColumnValues(8)));
+      rowList.add(new Row(new Vin(str.getBytes(StandardCharsets.UTF_8)), timestamp + 10000, newColumnValues(10)));
+      rowList.add(new Row(new Vin(str.getBytes(StandardCharsets.UTF_8)), timestamp + 12000, newColumnValues(12)));
+
+      rowList.add(new Row(new Vin(str.getBytes(StandardCharsets.UTF_8)), timestamp + 9000, newColumnValues(9)));
+      rowList.add(new Row(new Vin(str.getBytes(StandardCharsets.UTF_8)), timestamp + 13000, newColumnValues(13)));
+      rowList.add(new Row(new Vin(str.getBytes(StandardCharsets.UTF_8)), timestamp + 11000, newColumnValues(11)));
+      rowList.add(new Row(new Vin(str.getBytes(StandardCharsets.UTF_8)), timestamp + 14000, newColumnValues(14)));
+      rowList.add(new Row(new Vin(str.getBytes(StandardCharsets.UTF_8)), timestamp + 15000, newColumnValues(15)));
 
       Map<String, ColumnValue.ColumnType> columnTypes = new HashMap<>();
       columnTypes.put("JKZL", ColumnValue.ColumnType.COLUMN_TYPE_INTEGER);
