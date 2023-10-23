@@ -19,6 +19,10 @@ public abstract class Codec<T> {
         return new XORDoubleCodec();
     }
 
+    public static Codec<double[]> deltaOfDeltaXORDoubleCodec(){
+        return new DeltaOfDeltaXORDoubleCodec();
+    }
+
     public static Codec<ByteBuffer> bytesCodec(){
         return new BytesCodec();
     }

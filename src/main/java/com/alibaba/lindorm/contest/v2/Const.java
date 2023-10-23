@@ -94,11 +94,11 @@ public interface Const {
     }};
 
     Map<String, Codec<double[]>> COLUMNS_DOUBLE_CODEC = new HashMap<>(COLUMN_COUNT){{
-        put("FWKW", Codec.xorDoubleCodec());
-        put("BDPO", Codec.xorDoubleCodec());
-        put("FQTH", Codec.xorDoubleCodec());
-        put("SBXA", Codec.xorDoubleCodec());
-        put("XRTP", Codec.xorDoubleCodec());
+        put("FWKW", Codec.deltaOfDeltaXORDoubleCodec());
+        put("BDPO", Codec.deltaOfDeltaXORDoubleCodec());
+        put("FQTH", Codec.deltaOfDeltaXORDoubleCodec());
+        put("SBXA", Codec.deltaOfDeltaXORDoubleCodec());
+        put("XRTP", Codec.deltaOfDeltaXORDoubleCodec());
         put("ZIKG", Codec.xorDoubleCodec());
         put("LMLK", Codec.xorDoubleCodec());
         put("TEDW", Codec.xorDoubleCodec());
