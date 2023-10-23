@@ -80,17 +80,6 @@ public interface Const {
         put("YCTI", Codec.deltaIntCodec(7));
         put("BBPX", Codec.deltaIntCodec(15));
         put("HRXI", Codec.deltaIntCodec(15));
-//        // String
-//        put("FVXS", new Codec());
-//        put("LIYD", new Codec());
-//        put("ZEBY", new Codec());
-//        put("UFPI", new Codec());
-//        put("UZSV", new Codec());
-//        put("FLLY", new Codec());
-//        put("JUBK", new Codec());
-//        put("ORNI", new Codec());
-//        put("SCHU", new Codec());
-//        put("GLNG", new Codec());
     }};
 
     Map<String, Codec<double[]>> COLUMNS_DOUBLE_CODEC = new HashMap<>(COLUMN_COUNT){{
@@ -107,16 +96,16 @@ public interface Const {
     }};
 
     Map<String, Codec<ByteBuffer>> COLUMNS_STRING_CODEC = new HashMap<>(COLUMN_COUNT){{
-        put("FWKW", Codec.bytesCodec());
-        put("BDPO", Codec.bytesCodec());
-        put("FQTH", Codec.bytesCodec());
-        put("SBXA", Codec.bytesCodec());
-        put("XRTP", Codec.bytesCodec());
-        put("ZIKG", Codec.bytesCodec());
-        put("LMLK", Codec.bytesCodec());
-        put("TEDW", Codec.bytesCodec());
-        put("UVGJ", Codec.bytesCodec());
-        put("LYLI", Codec.bytesCodec());
+        put("FVXS", Codec.bytesCodec());
+        put("LIYD", Codec.bytesCodec());
+        put("ZEBY", Codec.bytesCodec());
+        put("UFPI", Codec.bytesCodec());
+        put("UZSV", Codec.bytesCodec());
+        put("FLLY", Codec.bytesCodec());
+        put("JUBK", Codec.bytesCodec());
+        put("ORNI", Codec.bytesCodec());
+        put("SCHU", Codec.bytesCodec());
+        put("GLNG", Codec.bytesCodec());
     }};
 
     Codec<int[]> DEFAULT_INT_CODEC = new DefaultIntCodec();

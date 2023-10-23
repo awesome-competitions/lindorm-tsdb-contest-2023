@@ -113,14 +113,10 @@ public class Block {
                         }
                         doubleValues[k] = doubleVal;
                     }
-                    try{
-                        long oldPosition = writeBuffer.position();
-                        doubleCodec.encode(writeBuffer, doubleValues);
-                        long newPosition = writeBuffer.position();
-                        Const.COLUMNS_SIZE[i] += (newPosition - oldPosition);
-                    }catch (Throwable e){
-                        throw new RuntimeException(name + " encode err, " + Arrays.toString(doubleValues) + ", timestamps: " + Arrays.toString(timestamps), e);
-                    }
+                    long oldPosition = writeBuffer.position();
+                    doubleCodec.encode(writeBuffer, doubleValues);
+                    long newPosition = writeBuffer.position();
+                    Const.COLUMNS_SIZE[i] += (newPosition - oldPosition);
                     break;
                 case COLUMN_TYPE_INTEGER:
                     Codec<int[]> intCodec = Const.COLUMNS_INTEGER_CODEC.getOrDefault(name, Const.DEFAULT_INT_CODEC);
@@ -134,22 +130,26 @@ public class Block {
                         }
                         intValues[k] = intVal;
                     }
-                    try{
-                        long oldPosition = writeBuffer.position();
-                        intCodec.encode(writeBuffer, intValues);
-                        long newPosition = writeBuffer.position();
-                        Const.COLUMNS_SIZE[i] += (newPosition - oldPosition);
-                    }catch (Throwable e){
-                        throw new RuntimeException(name + " encode err, " + Arrays.toString(intValues) + ", timestamps: " + Arrays.toString(timestamps), e);
-                    }
+                    oldPosition = writeBuffer.position();
+                    intCodec.encode(writeBuffer, intValues);
+                    newPosition = writeBuffer.position();
+                    Const.COLUMNS_SIZE[i] += (newPosition - oldPosition);
                     break;
                 case COLUMN_TYPE_STRING:
+                    Codec<ByteBuffer> stringCodec = Const.COLUMNS_STRING_CODEC.getOrDefault(name, Const.DEFAULT_STRING_CODEC);
+                    ByteBuffer encodeBuffer = Context.getCodecEncodeBuffer();
+                    encodeBuffer.clear();
                     for (int k = 0; k < flushSize; k ++){
                         ColumnValue value = values[k][i];
                         byte[] bs = value.getStringValue().array();
-                        writeBuffer.put((byte) bs.length);
-                        writeBuffer.put(bs);
+                        encodeBuffer.put((byte) bs.length);
+                        encodeBuffer.put(bs);
                     }
+                    encodeBuffer.flip();
+                    oldPosition = writeBuffer.position();
+                    stringCodec.encode(writeBuffer, encodeBuffer);
+                    newPosition = writeBuffer.position();
+                    Const.COLUMNS_SIZE[i] += (newPosition - oldPosition);
                     break;
             }
             maxValues[i] = max;
@@ -228,43 +228,37 @@ public class Block {
             switch (type){
                 case COLUMN_TYPE_DOUBLE_FLOAT:
                     Codec<double[]> doubleCodec = Const.COLUMNS_DOUBLE_CODEC.getOrDefault(requestedColumn, Const.DEFAULT_DOUBLE_CODEC);
-                    try{
-                        double[] doubleValues = doubleCodec.decode(readBuffer, size);
-                        for (int i = 0; i < requestedTimestamps.size(); i ++){
-                            Tuple<Long, Integer> e = requestedTimestamps.get(i);
-                            Tuple<Long, Map<String, ColumnValue>> result = results[i];
-                            if (result == null){
-                                result = new Tuple<>(e.K(), new HashMap<>());
-                                results[i] = result;
-                            }
-                            result.V().put(requestedColumn, new ColumnValue.DoubleFloatColumn(doubleValues[e.V()]));
+                    double[] doubleValues = doubleCodec.decode(readBuffer, size);
+                    for (int i = 0; i < requestedTimestamps.size(); i ++){
+                        Tuple<Long, Integer> e = requestedTimestamps.get(i);
+                        Tuple<Long, Map<String, ColumnValue>> result = results[i];
+                        if (result == null){
+                            result = new Tuple<>(e.K(), new HashMap<>());
+                            results[i] = result;
                         }
-                    }catch (Throwable e){
-                        throw new RuntimeException(requestedColumn + " decode err", e);
+                        result.V().put(requestedColumn, new ColumnValue.DoubleFloatColumn(doubleValues[e.V()]));
                     }
                     break;
                 case COLUMN_TYPE_INTEGER:
                     Codec<int[]> intCodec = Const.COLUMNS_INTEGER_CODEC.getOrDefault(requestedColumn, Const.DEFAULT_INT_CODEC);
-                    try{
-                        int[] intValues = intCodec.decode(readBuffer, size);
-                        for (int i = 0; i < requestedTimestamps.size(); i ++){
-                            Tuple<Long, Integer> e = requestedTimestamps.get(i);
-                            Tuple<Long, Map<String, ColumnValue>> result = results[i];
-                            if (result == null){
-                                result = new Tuple<>(e.K(), new HashMap<>());
-                                results[i] = result;
-                            }
-                            result.V().put(requestedColumn, new ColumnValue.IntegerColumn(intValues[e.V()]));
+                    int[] intValues = intCodec.decode(readBuffer, size);
+                    for (int i = 0; i < requestedTimestamps.size(); i ++){
+                        Tuple<Long, Integer> e = requestedTimestamps.get(i);
+                        Tuple<Long, Map<String, ColumnValue>> result = results[i];
+                        if (result == null){
+                            result = new Tuple<>(e.K(), new HashMap<>());
+                            results[i] = result;
                         }
-                    }catch (Throwable e){
-                        throw new RuntimeException(requestedColumn + " decode err", e);
+                        result.V().put(requestedColumn, new ColumnValue.IntegerColumn(intValues[e.V()]));
                     }
                     break;
                 case COLUMN_TYPE_STRING:
+                    Codec<ByteBuffer> stringCodec = Const.COLUMNS_STRING_CODEC.getOrDefault(requestedColumn, Const.DEFAULT_STRING_CODEC);
+                    ByteBuffer decodeBuffer = stringCodec.decode(readBuffer, 0);
                     ByteBuffer[] stringValues = Context.getBlockStringValues();
                     for (int i = 0; i < size; i++) {
-                        ByteBuffer val = ByteBuffer.allocate(readBuffer.get());
-                        readBuffer.get(val.array(), 0, val.limit());
+                        ByteBuffer val = ByteBuffer.allocate(decodeBuffer.get());
+                        decodeBuffer.get(val.array(), 0, val.limit());
                         stringValues[i] = val;
                     }
                     for (int i = 0; i < requestedTimestamps.size(); i ++){

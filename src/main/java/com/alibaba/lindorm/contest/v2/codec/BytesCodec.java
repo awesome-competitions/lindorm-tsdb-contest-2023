@@ -52,8 +52,9 @@ public class BytesCodec extends Codec<ByteBuffer>{
         src.flip();
 
         System.out.println(src.remaining());
+        System.out.println(str.length());
 
-        ByteBuffer dst = bc.decode(src, 10000);
+        ByteBuffer dst = bc.decode(src, 0);
         byte[] bs = new byte[dst.remaining()];
         dst.get(bs);
         System.out.println(str);
