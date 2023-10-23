@@ -15,6 +15,11 @@ public class XORDoubleCodec extends Codec<double[]>{
         for (int i = 1; i < data.length; i++) {
             long longValue = Double.doubleToRawLongBits(data[i]);
             long xorValue = longValue ^ pre;
+            System.out.println(xorValue);
+            System.out.println(Long.numberOfLeadingZeros(xorValue));
+            System.out.println(Long.numberOfTrailingZeros(xorValue));
+            System.out.println(xorValue >> Long.numberOfTrailingZeros(xorValue));
+            System.out.println("==========================================");
             encodeVarLong(buffer, xorValue);
             pre = longValue;
         }
@@ -38,7 +43,7 @@ public class XORDoubleCodec extends Codec<double[]>{
 
     public static void main(String[] args) {
         XORDoubleCodec varintCodec = new XORDoubleCodec();
-        double[] numbers = {-17631.700458325424,-17631.700771279953,-17631.701292870832,-17631.70202309806,-17631.702961961626,-17631.704109461523,-17631.705465597748,-17631.70703037029,-17631.70880377913,-17631.71078582426,-17631.712976505667,-17631.715375823325,-17631.717983777227,-17631.720800367348,-17631.723825593668};
+        double[] numbers = {20155.050922867114,20155.050925996657,20155.05093121257,20155.05093851484,20155.050947903474,20155.050959378474,20155.050972939836,20155.05098858756,20155.05100632165,20155.0510261421,20155.051048048914,20155.051072042093,20155.051098121632,20155.051126287533,20155.051156539794};
 //        double[] numbers = {-17631.700458325424,-17631.700771279953,-17631.701292870832};
 
         ByteBuffer encodedBuffer = ByteBuffer.allocate(3000);
@@ -48,8 +53,7 @@ public class XORDoubleCodec extends Codec<double[]>{
         System.out.println(encodedBuffer.remaining());
 
         int size = numbers.length;
-        System.out.println(size);
-        System.out.println(15 * 8);
+        System.out.println(size * 8);
         double[] decodedNumbers = varintCodec.decode(encodedBuffer, size);
 
         System.out.println(Arrays.toString(decodedNumbers));
