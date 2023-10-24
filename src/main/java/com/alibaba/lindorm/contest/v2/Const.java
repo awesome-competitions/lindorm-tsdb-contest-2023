@@ -33,7 +33,7 @@ public interface Const {
     // column
     int COLUMN_COUNT = 60;
     List<String> COLUMNS = new ArrayList<>(COLUMN_COUNT);
-    int[] COLUMNS_SIZE = new int[COLUMN_COUNT];
+    long[] COLUMNS_SIZE = new long[COLUMN_COUNT];
 
     Map<String, Column> COLUMNS_INDEX = new HashMap<>(COLUMN_COUNT);
 
@@ -83,11 +83,11 @@ public interface Const {
     }};
 
     Map<String, Codec<double[]>> COLUMNS_DOUBLE_CODEC = new HashMap<>(COLUMN_COUNT){{
-        put("FWKW", Codec.deltaOfDeltaXORDoubleCodec());
-        put("BDPO", Codec.deltaOfDeltaXORDoubleCodec());
-        put("FQTH", Codec.deltaOfDeltaXORDoubleCodec());
-        put("SBXA", Codec.deltaOfDeltaXORDoubleCodec());
-        put("XRTP", Codec.deltaOfDeltaXORDoubleCodec());
+        put("FWKW", Codec.deltaOfDeltaDFCMCodec());
+        put("BDPO", Codec.deltaOfDeltaDFCMCodec());
+        put("FQTH", Codec.deltaOfDeltaDFCMCodec());
+        put("SBXA", Codec.deltaOfDeltaDFCMCodec());
+        put("XRTP", Codec.deltaOfDeltaDFCMCodec());
         put("ZIKG", Codec.xorDoubleCodec());
         put("LMLK", Codec.xorDoubleCodec());
         put("TEDW", Codec.xorDoubleCodec());

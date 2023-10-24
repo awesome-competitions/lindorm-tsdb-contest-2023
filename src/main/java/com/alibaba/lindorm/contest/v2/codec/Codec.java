@@ -19,8 +19,8 @@ public abstract class Codec<T> {
         return new XORDoubleCodec();
     }
 
-    public static Codec<double[]> deltaOfDeltaXORDoubleCodec(){
-        return new DeltaOfDeltaXORDoubleCodec();
+    public static Codec<double[]> deltaOfDeltaDFCMCodec(){
+        return new DeltaOfDeltaDFCMCodec();
     }
 
     public static Codec<ByteBuffer> bytesCodec(){
@@ -89,7 +89,6 @@ public abstract class Codec<T> {
 
     // varlong encode
     protected static void encodeVarLong(BitBuffer dst, long value) {
-        value = encodeZigzag(value);
         while ((value & 0xFFFFFFFFFFFFFF80L) != 0) {
             dst.put((byte) ((value & 0x7F) | 0x80));
             value >>>= 7;
@@ -104,7 +103,7 @@ public abstract class Codec<T> {
             byte b = src.getByte();
             result |= (long) (b & 0x7F) << shift;
             if ((b & 0x80) == 0) {
-                return decodeZigzag(result);
+                return result;
             }
             shift += 7;
         }
