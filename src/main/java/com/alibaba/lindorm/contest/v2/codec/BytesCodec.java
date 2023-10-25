@@ -11,7 +11,7 @@ import java.util.zip.Inflater;
 public class BytesCodec extends Codec<ByteBuffer>{
     @Override
     public void encode(ByteBuffer src, ByteBuffer data) {
-        Deflater compressor = new Deflater(1);
+        Deflater compressor = new Deflater(1, true);
         try {
             compressor.setInput(data);
             compressor.finish();
@@ -25,7 +25,7 @@ public class BytesCodec extends Codec<ByteBuffer>{
 
     @Override
     public ByteBuffer decode(ByteBuffer src, int size) {
-        Inflater decompressor = new Inflater();
+        Inflater decompressor = new Inflater(true);
         ByteBuffer output = Context.getCodecDecodeBuffer();
         output.clear();
         try {
