@@ -24,7 +24,7 @@ public class DeltaDFCMCodec extends Codec<double[]>{
                 int trailingZeros = Long.numberOfTrailingZeros(xorValue);
                 if (xorValue == 0){
                     buffer.putBit(false);
-                }else if (preTrailingZeros >= 0 && leadingZeros >= preLeadingZeros && trailingZeros >= preTrailingZeros) {
+                }else if (preTrailingZeros >= 0 && leadingZeros == preLeadingZeros && trailingZeros == preTrailingZeros) {
                     buffer.putBit(true);
                     buffer.putBit(true);
                     long v = xorValue >> preTrailingZeros;
