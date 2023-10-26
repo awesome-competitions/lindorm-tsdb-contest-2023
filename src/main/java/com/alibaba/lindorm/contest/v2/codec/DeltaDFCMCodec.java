@@ -7,6 +7,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 public class DeltaDFCMCodec extends Codec<double[]>{
+
     @Override
     public void encode(ByteBuffer src, double[] data) {
         BitBuffer buffer = new DirectBitBuffer(src);

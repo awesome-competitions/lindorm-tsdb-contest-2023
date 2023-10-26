@@ -88,11 +88,11 @@ public interface Const {
         put("FQTH", Codec.deltaOfDeltaDFCMCodec());
         put("SBXA", Codec.deltaOfDeltaDFCMCodec());
         put("XRTP", Codec.deltaOfDeltaDFCMCodec());
-        put("ZIKG", Codec.xorDoubleCodec());
-        put("LMLK", Codec.xorDoubleCodec());
-        put("TEDW", Codec.xorDoubleCodec());
-        put("UVGJ", Codec.xorDoubleCodec());
-        put("LYLI", Codec.xorDoubleCodec());
+        put("ZIKG", Codec.dfcmCodec());
+        put("LMLK", Codec.dfcmCodec());
+        put("TEDW", Codec.dfcmCodec());
+        put("UVGJ", Codec.dfcmCodec());
+        put("LYLI", Codec.dfcmCodec());
     }};
 
     Map<String, Codec<ByteBuffer>> COLUMNS_STRING_CODEC = new HashMap<>(COLUMN_COUNT){{
@@ -111,21 +111,4 @@ public interface Const {
     Codec<int[]> DEFAULT_INT_CODEC = new DefaultIntCodec();
     Codec<double[]> DEFAULT_DOUBLE_CODEC = new DefaultDoubleCodec();
     Codec<ByteBuffer> DEFAULT_STRING_CODEC = new DefaultBytesCodec();
-
-    // dic status
-
-    Map<String, int[]> STRING_DIC = new HashMap<>(){{
-        put("FVXS", new int[256]);
-        put("LIYD", new int[256]);
-        put("ZEBY", new int[256]);
-        put("UFPI", new int[256]);
-        put("UZSV", new int[256]);
-        put("FLLY", new int[256]);
-        put("JUBK", new int[256]);
-        put("ORNI", new int[256]);
-        put("SCHU", new int[256]);
-        put("GLNG", new int[256]);
-    }};
-
-
 }

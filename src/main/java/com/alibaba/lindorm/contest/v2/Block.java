@@ -139,15 +139,9 @@ public class Block {
                     Codec<ByteBuffer> stringCodec = Const.COLUMNS_STRING_CODEC.getOrDefault(name, Const.DEFAULT_STRING_CODEC);
                     ByteBuffer encodeBuffer = Context.getCodecEncodeBuffer();
                     encodeBuffer.clear();
-                    int[] dict = Const.STRING_DIC.get(name);
                     for (int k = 0; k < flushSize; k ++){
                         ColumnValue value = values[k][i];
                         byte[] bs = value.getStringValue().array();
-                        if (dict != null){
-                            for (byte b : bs) {
-                                dict[b]++;
-                            }
-                        }
                         encodeBuffer.put((byte) bs.length);
                         encodeBuffer.put(bs);
                     }
