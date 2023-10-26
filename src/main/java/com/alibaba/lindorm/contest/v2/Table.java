@@ -231,6 +231,8 @@ public class Table {
             ch.write(buffer);
             buffer.clear();
         }
+
+        System.out.println("index file size:" + ch.size());
     }
 
     public void loadIndex() throws IOException {
