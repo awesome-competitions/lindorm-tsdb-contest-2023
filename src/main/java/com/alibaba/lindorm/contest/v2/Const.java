@@ -41,25 +41,25 @@ public interface Const {
     Map<String, Codec<int[]>> COLUMNS_INTEGER_CODEC = new HashMap<>(COLUMN_COUNT){{
         // Integer
         put("GMVS", Codec.runLengthIntCodec(BLOCK_SIZE));
-        put("LIOS", Codec.deltaOfDeltaIntCodec(3));
-        put("LFZG", Codec.deltaOfDeltaIntCodec(3));
-        put("WLYQ", Codec.deltaOfDeltaIntCodec(3));
-        put("ZTGP", Codec.deltaOfDeltaIntCodec(3));
-        put("GMNR", Codec.deltaOfDeltaIntCodec(3));
-        put("BTJH", Codec.deltaOfDeltaIntCodec(3));
-        put("XCDQ", Codec.deltaOfDeltaIntCodec(3));
-        put("JKZL", Codec.deltaOfDeltaIntCodec(3));
-        put("DSKQ", Codec.deltaOfDeltaIntCodec(3));
-        put("MLBY", Codec.deltaOfDeltaIntCodec(3));
-        put("EQLU", Codec.deltaOfDeltaIntCodec(3));
-        put("KACE", Codec.deltaOfDeltaIntCodec(3));
-        put("YDXB", Codec.deltaOfDeltaIntCodec(3));
-        put("NXCR", Codec.deltaOfDeltaIntCodec(3));
-        put("OZSM", Codec.deltaOfDeltaIntCodec(3));
-        put("SYMN", Codec.deltaOfDeltaIntCodec(3));
-        put("UAPJ", Codec.deltaOfDeltaIntCodec(3));
-        put("PQRQ", Codec.deltaOfDeltaIntCodec(3));
-        put("UICP", Codec.deltaOfDeltaIntCodec(3));
+        put("LIOS", Codec.deltaOfDeltaIntCodec(1));
+        put("LFZG", Codec.deltaOfDeltaIntCodec(1));
+        put("WLYQ", Codec.deltaOfDeltaIntCodec(1));
+        put("ZTGP", Codec.deltaOfDeltaIntCodec(1));
+        put("GMNR", Codec.deltaOfDeltaIntCodec(1));
+        put("BTJH", Codec.deltaOfDeltaIntCodec(1));
+        put("XCDQ", Codec.deltaOfDeltaIntCodec(1));
+        put("JKZL", Codec.deltaOfDeltaIntCodec(1));
+        put("DSKQ", Codec.deltaOfDeltaIntCodec(1));
+        put("MLBY", Codec.deltaOfDeltaIntCodec(1));
+        put("EQLU", Codec.deltaOfDeltaIntCodec(1));
+        put("KACE", Codec.deltaOfDeltaIntCodec(1));
+        put("YDXB", Codec.deltaOfDeltaIntCodec(1));
+        put("NXCR", Codec.deltaOfDeltaIntCodec(1));
+        put("OZSM", Codec.deltaOfDeltaIntCodec(1));
+        put("SYMN", Codec.deltaOfDeltaIntCodec(1));
+        put("UAPJ", Codec.deltaOfDeltaIntCodec(1));
+        put("PQRQ", Codec.deltaOfDeltaIntCodec(1));
+        put("UICP", Codec.deltaOfDeltaIntCodec(1));
         put("KFGP", Codec.deltaVarIntCodec());
         put("ZZBE", Codec.deltaVarIntCodec());
         put("HJPZ", Codec.deltaVarIntCodec());
@@ -75,11 +75,11 @@ public interface Const {
         put("JCGU", Codec.deltaIntCodec(3));
         put("TFGW", Codec.deltaIntCodec(3));
         put("MUBC", Codec.deltaIntCodec(3));
-        put("JHET", Codec.deltaIntCodec(3));
+        put("JHET", Codec.fixedIntCodec(1, 3));
         put("WKUZ", Codec.runLengthIntCodec(BLOCK_SIZE));
-        put("YCTI", Codec.deltaIntCodec(7));
-        put("BBPX", Codec.deltaIntCodec(15));
-        put("HRXI", Codec.deltaIntCodec(15));
+        put("YCTI", Codec.fixedIntCodec(1, 5));
+        put("BBPX", Codec.fixedIntCodec(1, 9));
+        put("HRXI", Codec.fixedIntCodec(1, 9));
     }};
 
     Map<String, Codec<double[]>> COLUMNS_DOUBLE_CODEC = new HashMap<>(COLUMN_COUNT){{

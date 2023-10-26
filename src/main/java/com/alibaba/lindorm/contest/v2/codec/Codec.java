@@ -43,6 +43,10 @@ public abstract class Codec<T> {
         return new RunLengthIntCodec(runLengthMaxSize);
     }
 
+    public static Codec<int[]> fixedIntCodec(int min, int max){
+        return new FixedIntCodec(min, max);
+    }
+
     public static Codec<int[]> varIntCodec(){
         return new VarIntCodec();
     }

@@ -29,12 +29,12 @@ public class RunLengthIntCodec extends Codec<int[]>{
                len ++;
                continue;
            }
-           buffer.putInt(v);
+           encodeVarInt(buffer, v);
            buffer.putInt(len, runLengthSizeBits);
            v = data[i];
            len = 1;
         }
-        buffer.putInt(v);
+        encodeVarInt(buffer, v);
         buffer.putInt(len, runLengthSizeBits);
         buffer.flip();
     }
@@ -45,7 +45,7 @@ public class RunLengthIntCodec extends Codec<int[]>{
         BitBuffer buffer = new DirectBitBuffer(src);
         int index = 0;
         while (index < size){
-            int v = buffer.getInt();
+            int v = decodeVarInt(buffer);
             int len = buffer.getInt(runLengthSizeBits);
             for (int i = 0; i < len; i++) {
                 data[index++] = v;
@@ -57,7 +57,7 @@ public class RunLengthIntCodec extends Codec<int[]>{
     public static void main(String[] args) {
         Codec<int[]> compressor = new RunLengthIntCodec(15);
         ByteBuffer src = ByteBuffer.allocate(1000);
-        int[] ints = new int[]{12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394};
+        int[] ints = new int[]{12393,12393,12393,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394};
         compressor.encode(src, ints);
         src.flip();
         System.out.println(src.remaining());

@@ -22,7 +22,7 @@ public class DeltaIntCodec extends Codec<int[]>{
     @Override
     public void encode(ByteBuffer src, int[] data) {
         BitBuffer buffer = new DirectBitBuffer(src);
-        buffer.putInt(data[0]);
+        encodeVarInt(buffer, data[0]);
         for (int i = 1; i < data.length; i++) {
             int diff = data[i] - data[i - 1];
             if (Math.abs(diff) > deltaSize ){
@@ -37,8 +37,7 @@ public class DeltaIntCodec extends Codec<int[]>{
     public int[] decode(ByteBuffer src, int size) {
         int[] data = new int[size];
         BitBuffer buffer = new DirectBitBuffer(src);
-        int v = buffer.getInt();
-        data[0] = v;
+        data[0] = decodeVarInt(buffer);
         for (int i = 1; i < size; i++) {
             int diff = buffer.getInt(deltaSizeBits);
             data[i] = data[i-1] + diff;
@@ -47,7 +46,7 @@ public class DeltaIntCodec extends Codec<int[]>{
     }
 
     public static void main(String[] args) {
-        Codec<int[]> compressor = new DeltaIntCodec(1);
+        Codec<int[]> compressor = new DeltaIntCodec(15);
         ByteBuffer src = ByteBuffer.allocate(10);
         compressor.encode(src, new int[]{-1, -2, -3, -4, -5, -6, -7, -8, -9, -10});
         src.flip();

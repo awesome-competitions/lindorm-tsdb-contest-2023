@@ -19,8 +19,6 @@ public class DFCMCodec extends Codec<double[]>{
                 long v2 = Double.doubleToRawLongBits(data[i - 1]);
                 long xorValue = v1 ^ v2;
                 int leadingZeros = Long.numberOfLeadingZeros(xorValue);
-                int trailingZeros = Long.numberOfTrailingZeros(xorValue);
-                System.out.println(leadingZeros  + ":" + trailingZeros + ":" + xorValue);
                 if (xorValue == 0){
                     buffer.putBit(false);
                 }else if (preLeadingZeros >= 0 && leadingZeros == preLeadingZeros) {
