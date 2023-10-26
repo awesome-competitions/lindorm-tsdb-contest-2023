@@ -10,9 +10,11 @@ public class TestStringCompression {
         byte[] bytes = str.getBytes();
 
         byte pre = bytes[0];
+        System.out.println(pre);
         for (int i = 1; i < bytes.length; i++) {
             dic[str.charAt(i)]++;
-//
+            System.out.println(bytes[i]);
+
 //            System.out.println(bytes[i] - pre);
 //
 //            pre = bytes[i];
@@ -20,13 +22,13 @@ public class TestStringCompression {
 
 
 
-        int count = 0;
-        for (int i = 0; i < dic.length; i++) {
-            if (dic[i] > 0) {
-                count++;
-                System.out.println(i + " " + dic[i]);
-            }
-        }
-        System.out.println(count);
+//        int count = 0;
+//        for (int i = 0; i < dic.length; i++) {
+//            if (dic[i] > 0) {
+//                count++;
+//                System.out.println(i + " " + dic[i]);
+//            }
+//        }
+//        System.out.println(count);
     }
 }
