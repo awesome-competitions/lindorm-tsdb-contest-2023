@@ -100,6 +100,7 @@ public class Block {
 
             String name = Const.COLUMNS.get(i);
             Column column = Const.COLUMNS_INDEX.get(name);
+            long oldPosition, newPosition;
             switch (column.getType()){
                 case COLUMN_TYPE_DOUBLE_FLOAT:
                     Codec<double[]> doubleCodec = Const.COLUMNS_DOUBLE_CODEC.getOrDefault(name, Const.DEFAULT_DOUBLE_CODEC);
@@ -113,9 +114,9 @@ public class Block {
                         }
                         doubleValues[k] = doubleVal;
                     }
-                    long oldPosition = writeBuffer.position();
+                    oldPosition = writeBuffer.position();
                     doubleCodec.encode(writeBuffer, doubleValues);
-                    long newPosition = writeBuffer.position();
+                    newPosition = writeBuffer.position();
                     Const.COLUMNS_SIZE[i] += (newPosition - oldPosition);
                     break;
                 case COLUMN_TYPE_INTEGER:

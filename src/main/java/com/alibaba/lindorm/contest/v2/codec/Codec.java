@@ -35,6 +35,10 @@ public abstract class Codec<T> {
         return new DeltaOfDeltaIntCodec(deltaSize);
     }
 
+    public static Codec<int[]> deltaOfDeltaIntCodec(int deltaSize, boolean unsigned){
+        return new DeltaOfDeltaIntCodec(deltaSize, unsigned);
+    }
+
     public static Codec<long[]> deltaLongCodec(int deltaSize){
         return new DeltaLongCodec(deltaSize);
     }
