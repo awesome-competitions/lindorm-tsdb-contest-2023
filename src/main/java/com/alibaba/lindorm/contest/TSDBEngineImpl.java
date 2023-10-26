@@ -15,6 +15,7 @@ import com.alibaba.lindorm.contest.v2.Table;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Map;
 
 public class TSDBEngineImpl extends TSDBEngine {
 
@@ -65,6 +66,16 @@ public class TSDBEngineImpl extends TSDBEngine {
       System.out.println("shutdown table:" + table.getName() + ", size:" + table.size());
       for (int i = 0; i < Const.COLUMNS.size(); i ++){
         System.out.println("column " + Const.COLUMNS.get(i) + " size:" + Const.COLUMNS_SIZE[i]);
+      }
+      System.out.println("===== stings counter");
+      for(Map.Entry<String, int[]> e: Const.STRING_DIC.entrySet()){
+        int[] dic = e.getValue();
+        System.out.println(e.getKey() + ":");
+        for (int i = 0; i < dic.length; i++) {
+          if (dic[i] > 0) {
+            System.out.println(i + "-" + dic[i]);
+          }
+        }
       }
       table.close();
     } catch (Throwable e) {

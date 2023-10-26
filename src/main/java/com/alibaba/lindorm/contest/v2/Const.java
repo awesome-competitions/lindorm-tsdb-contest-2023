@@ -112,5 +112,20 @@ public interface Const {
     Codec<double[]> DEFAULT_DOUBLE_CODEC = new DefaultDoubleCodec();
     Codec<ByteBuffer> DEFAULT_STRING_CODEC = new DefaultBytesCodec();
 
+    // dic status
+
+    Map<String, int[]> STRING_DIC = new HashMap<>(){{
+        put("FVXS", new int[256]);
+        put("LIYD", new int[256]);
+        put("ZEBY", new int[256]);
+        put("UFPI", new int[256]);
+        put("UZSV", new int[256]);
+        put("FLLY", new int[256]);
+        put("JUBK", new int[256]);
+        put("ORNI", new int[256]);
+        put("SCHU", new int[256]);
+        put("GLNG", new int[256]);
+    }};
+
 
 }
