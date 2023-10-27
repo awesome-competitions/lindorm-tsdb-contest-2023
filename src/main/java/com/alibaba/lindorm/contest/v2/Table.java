@@ -200,38 +200,28 @@ public class Table {
         if(singleIndex == null){
             return;
         }
-        long oldest = singleIndex.getOldestTimestamp();
 
         // write first timestamp
         ByteBuffer buffer = ByteBuffer.allocateDirect(4 * Const.M);
-        buffer.putLong(oldest);
         for (Index index: indexes.values()){
+            List<Block.Header> headers = index.getHeaders();
             buffer.putInt(index.getVin());
-            int size = singleIndex.size();
-            buffer.putInt(size);
-            buffer.putShort((short) index.getHeaders().size());
-            for (long i = oldest; i < oldest + size * 1000L; i += 1000){
-                buffer.putLong(index.get(i));
-            }
-            for (Block.Header header: index.getHeaders().values()){
+            buffer.putShort((short) headers.size());
+            for (Block.Header header: headers){
                 buffer.putInt(header.getSize());
+                buffer.putShort((short) header.getCount());
                 buffer.putLong(header.getPosition());
-                buffer.putInt(header.getLength());
-                for (int pos: header.getPositions()){
-                    buffer.putInt(pos);
-                }
-                for (double maxVal: header.getMaxValues()){
-                    buffer.putDouble(maxVal);
-                }
-                for (double sumVal: header.getSumValues()){
-                    buffer.putDouble(sumVal);
+                buffer.putLong(header.getStart());
+                for (int i = 0; i < Const.COLUMNS.size(); i ++){
+                    buffer.putInt(header.getPositions()[i]);
+                    buffer.putDouble(header.getMaxValues()[i]);
+                    buffer.putDouble(header.getSumValues()[i]);
                 }
             }
             buffer.flip();
             ch.write(buffer);
             buffer.clear();
         }
-
         System.out.println("index file size:" + ch.size());
     }
 
@@ -240,55 +230,41 @@ public class Table {
         FileChannel ch = FileChannel.open(indexPath, StandardOpenOption.WRITE, StandardOpenOption.READ, StandardOpenOption.CREATE);
 
         ByteBuffer buffer = ByteBuffer.allocateDirect(4 * Const.M);
-        buffer.limit(8);
-        ch.read(buffer);
-        buffer.flip();
-        long oldest = buffer.getLong();
         while (true){
             buffer.clear();
-            buffer.limit(4 + 4 + 2);
+            buffer.limit(4 + 2);
             if (ch.read(buffer) != buffer.limit()){
                 break;
             }
             buffer.flip();
             int vinId = buffer.getInt();
-            int size = buffer.getInt();
             int blockSize = buffer.getShort();
 
             buffer.clear();
-            buffer.limit(size * 8 + (4 + 8 + 4 + Const.COLUMNS.size() * (4+8+8)) * blockSize);
+            buffer.limit((4 + 2 + 8 + 8 + Const.COLUMNS.size() * (4+8+8)) * blockSize);
             if (ch.read(buffer) != buffer.limit()){
                 break;
             }
             buffer.flip();
 
             Index index = getOrCreateVinIndex(vinId);
-            for (long i = oldest; i < oldest + size * 1000L; i += 1000){
-                long pos = buffer.getLong();
-                if (pos == -1){
-                   continue;
-                }
-                index.mark(i, pos);
-            }
-
             for (int i = 0; i < blockSize; i ++){
                 int headerSize = buffer.getInt();
+                int headerCount = buffer.getShort();
                 long headerPosition = buffer.getLong();
-                int headerLength = buffer.getInt();
+                long headerStart = buffer.getLong();
+
                 int[] headerPositions = new int[Const.COLUMNS.size()];
                 double[] maxValues = new double[Const.COLUMNS.size()];
                 double[] sumValues = new double[Const.COLUMNS.size()];
-                for (int j = 0; j < headerPositions.length; j ++){
+                for (int j = 0; j < Const.COLUMNS.size(); j ++){
                     headerPositions[j] = buffer.getInt();
-                }
-                for (int j = 0; j < maxValues.length; j ++){
                     maxValues[j] = buffer.getDouble();
-                }
-                for (int j = 0; j < sumValues.length; j ++){
                     sumValues[j] = buffer.getDouble();
                 }
-                Block.Header header = new Block.Header(headerSize, headerPosition, headerLength, headerPositions, maxValues, sumValues);
-                index.getHeaders().put(headerPosition, header);
+                Block.Header header = new Block.Header(headerSize, headerCount, headerPosition, headerStart, headerPositions, maxValues, sumValues);
+                index.mark(header.getEnd());
+                index.getHeaders().add(header);
             }
 
             // load latest

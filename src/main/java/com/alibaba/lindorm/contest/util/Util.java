@@ -85,6 +85,11 @@ public class Util {
         return b;
     }
 
+    // 去掉时间戳的毫秒
+    public static long trim(long timestamp){
+        return timestamp / 1000 * 1000;
+    }
+
     public static void main(String[] args) {
         System.out.println(parseBits(3, false));
     }

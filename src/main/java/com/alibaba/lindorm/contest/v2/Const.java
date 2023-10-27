@@ -30,6 +30,8 @@ public interface Const {
     // the time span of all the data
     int TIME_SPAN = 60 * 60 * 10;
 
+    int TIMESTAMP_INTERVAL = 1000;
+
     // column
     int COLUMN_COUNT = 60;
     List<String> COLUMNS = new ArrayList<>(COLUMN_COUNT);
@@ -111,4 +113,6 @@ public interface Const {
     Codec<int[]> DEFAULT_INT_CODEC = new DefaultIntCodec();
     Codec<double[]> DEFAULT_DOUBLE_CODEC = new DefaultDoubleCodec();
     Codec<ByteBuffer> DEFAULT_STRING_CODEC = new DefaultBytesCodec();
+
+    Codec<ByteBuffer> BYTES_CODEC = Codec.bytesCodec();
 }

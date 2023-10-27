@@ -49,7 +49,6 @@ import java.util.concurrent.CountDownLatch;
 
 public class TestBenchmark {
 
-
   static final int parallel = 1;
 
   static final int vinCount = 200 / parallel;
