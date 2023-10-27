@@ -99,7 +99,7 @@ public class Index {
         int left = 0;
         int right = headers.size() - 1;
 
-        if (t < headers.get(left).getStart()){
+        if (t <= headers.get(left).getStart()){
             return 0;
         }
         if (t > headers.get(right).getEnd()){
@@ -110,13 +110,13 @@ public class Index {
             Block.Header header = headers.get(mid);
             if (t < header.getStart()){
                 right = mid - 1;
-            } else if (t > header.getEnd()){
+            }else if (t > header.getEnd()){
                 left = mid + 1;
-            } else  {
+            }else {
                 return mid;
             }
             if (left > right){
-               return -1;
+                return left;
             }
         }
     }

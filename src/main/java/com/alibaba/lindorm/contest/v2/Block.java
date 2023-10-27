@@ -156,7 +156,6 @@ public class Block {
         long pos = this.data.write(writeBuffer);
         Header header = new Header(size, flushSize, pos, timestamps[0], positions, maxValues, sumValues);
         this.clear();
-        System.out.println(header.getSize());
         return header;
     }
 

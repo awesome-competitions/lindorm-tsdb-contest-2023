@@ -129,7 +129,7 @@ public class TestExample {
       System.out.println("=========== after shutdown ===========");
       resultSet = tsdbEngineSample.executeLatestQuery(new LatestQueryRequest("test", vinList, requestedColumns));
       showResult("executeLatestQuery", resultSet);
-      resultSet = tsdbEngineSample.executeTimeRangeQuery(new TimeRangeQueryRequest("test", new Vin(str.getBytes(StandardCharsets.UTF_8)), requestedColumns, 0, 1689091311000L));
+      resultSet = tsdbEngineSample.executeTimeRangeQuery(new TimeRangeQueryRequest("test", new Vin(str.getBytes(StandardCharsets.UTF_8)), requestedColumns, 0, 1699091311000L));
       showResult("executeTimeRangeQuery", resultSet);
 
     } catch (IOException e) {

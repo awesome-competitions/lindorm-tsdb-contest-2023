@@ -105,7 +105,7 @@ public class TestAggregation {
             tsdbEngineSample.connect();
 
             ArrayList<Row> resultSet = tsdbEngineSample.executeAggregateQuery(new TimeRangeAggregationRequest("test", new Vin(str.getBytes(StandardCharsets.UTF_8)), "col",
-                    1693274400000L, 1693274410183L, Aggregator.AVG));
+                    1693274400001L, 1693274410183L, Aggregator.AVG));
             showResult("executeDownsampleQuery", resultSet);
         } catch (IOException e) {
             e.printStackTrace();
