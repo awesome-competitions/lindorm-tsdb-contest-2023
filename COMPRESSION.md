@@ -51,7 +51,7 @@ column ORNI size:3468468300
 column SCHU size:164885089
 column GLNG size:4079286529
 
-
+// double
 column FWKW size:618309905
 column BDPO size:758267850
 column FQTH size:762160111
