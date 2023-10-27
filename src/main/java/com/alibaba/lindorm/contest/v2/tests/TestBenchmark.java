@@ -51,7 +51,7 @@ public class TestBenchmark {
 
   static final int parallel = 1;
 
-  static final int vinCount = 200 / parallel;
+  static final int vinCount = 1 / parallel;
 
   public static void main(String[] args) {
     File dataDir = new File(Const.TEST_DATA_DIR);
@@ -183,7 +183,8 @@ public class TestBenchmark {
       String vin = "LSVNV2182E0" + (vinId + j);
       startTimestamp = 1689091210000L;
       for (int k = 0; k < 360; k ++){
-        tsdbEngineSample.executeTimeRangeQuery(new TimeRangeQueryRequest("test", new Vin(vin.getBytes(StandardCharsets.UTF_8)), Const.EMPTY_COLUMNS, startTimestamp, startTimestamp + 100 * 1000));
+        List<Row> rows = tsdbEngineSample.executeTimeRangeQuery(new TimeRangeQueryRequest("test", new Vin(vin.getBytes(StandardCharsets.UTF_8)), Const.EMPTY_COLUMNS, startTimestamp, startTimestamp + 100 * 1000));
+        System.out.println(rows);
         startTimestamp += 100 * 1000;
       }
     }

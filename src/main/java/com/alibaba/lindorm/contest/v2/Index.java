@@ -69,7 +69,7 @@ public class Index {
 
     public List<Tuple<Long, Map<String, ColumnValue>>> range(long start, long end, Collection<String> requestedColumns) throws IOException {
         List<Tuple<Long, Map<String, ColumnValue>>> results = new ArrayList<>();
-        this.searchTimestamps(start, end, (header, startIndex, endIndex) ->
+        this.searchBlocks(start, end, (header, startIndex, endIndex) ->
             // read from disk
             results.addAll(Block.read(this.data, header, startIndex, endIndex, requestedColumns.isEmpty() ? Const.COLUMNS : requestedColumns))
         );
@@ -81,7 +81,7 @@ public class Index {
     }
 
     public void aggregate(long start, long end, String requestedColumn, Aggregator aggregator) throws IOException {
-        this.searchTimestamps(start, end, (header, startIndex, endIndex) ->
+        this.searchBlocks(start, end, (header, startIndex, endIndex) ->
             // read from disk
             Block.aggregate(this.data, header, startIndex, endIndex, requestedColumn, aggregator)
         );
@@ -92,21 +92,28 @@ public class Index {
     }
 
     // binary search
-    public int searchStartBlock(long t) {
+    public int searchBlock(long t) {
         if (headers.isEmpty()){
             return -1;
         }
         int left = 0;
         int right = headers.size() - 1;
+
+        if (t < headers.get(left).getStart()){
+            return 0;
+        }
+        if (t > headers.get(right).getEnd()){
+            return -1;
+        }
         while (true){
             int mid = (left + right) / 2;
             Block.Header header = headers.get(mid);
             if (t < header.getStart()){
                 right = mid - 1;
-            } else if (t >= header.getStart() && t <= header.getEnd()){
-                return mid;
-            } else  {
+            } else if (t > header.getEnd()){
                 left = mid + 1;
+            } else  {
+                return mid;
             }
             if (left > right){
                return -1;
@@ -114,9 +121,9 @@ public class Index {
         }
     }
 
-    public void searchTimestamps(long start, long end, ThConsumer<Block.Header, Integer, Integer> consumer) throws IOException {
+    public void searchBlocks(long start, long end, ThConsumer<Block.Header, Integer, Integer> consumer) throws IOException {
         // binary search
-        int target = searchStartBlock(start);
+        int target = searchBlock(start);
         if (target == -1){
             return;
         }
