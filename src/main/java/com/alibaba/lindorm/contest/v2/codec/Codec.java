@@ -72,6 +72,10 @@ public abstract class Codec<T> {
         return new DFCMIntCodec();
     }
 
+    public static Codec<int[]> simpleNBCodec(){
+        return new SimpleNBCodec();
+    }
+
     public static Codec<int[]> bdfcmIntCodec(){
         return new BDFCMIntCodec();
     }

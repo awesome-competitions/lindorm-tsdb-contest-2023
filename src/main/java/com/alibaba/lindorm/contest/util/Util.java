@@ -96,7 +96,7 @@ public class Util {
     }
 
     public static void main(String[] args) {
-        System.out.println(parseBits(3, false));
+        System.out.println(parseBits(Integer.MAX_VALUE, true));
     }
 
 }
