@@ -64,8 +64,15 @@ public class TSDBEngineImpl extends TSDBEngine {
     try {
       table.force();
       System.out.println("shutdown table:" + table.getName() + ", size:" + table.size());
-      for (int i = 0; i < Const.COLUMNS.size(); i ++){
-        System.out.println("column " + Const.COLUMNS.get(i) + " size:" + Const.COLUMNS_SIZE[i]);
+
+      for (ColumnValue.ColumnType t: ColumnValue.ColumnType.values()){
+        System.out.println(t.toString() + " columns size: ");
+        for (int i = 0; i < Const.COLUMNS.size(); i++){
+          String columnName = Const.COLUMNS.get(i);
+          if (t.equals(Const.COLUMNS_INDEX.get(columnName).getType())){
+            System.out.println("column " + columnName + " size:" + Const.COLUMNS_SIZE[i]);
+          }
+        }
       }
       table.close();
     } catch (Throwable e) {

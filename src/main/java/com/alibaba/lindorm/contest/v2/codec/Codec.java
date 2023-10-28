@@ -23,8 +23,17 @@ public abstract class Codec<T> {
         return new DFCMCodec();
     }
 
+    public static Codec<double[]> bdfcmCodec(){
+        return new BDFCMCodec();
+    }
+
+
     public static Codec<double[]> deltaOfDeltaDFCMCodec(){
         return new DeltaOfDeltaDFCMCodec();
+    }
+
+    public static Codec<double[]> deltaOfDeltaBDFCMCodec(){
+        return new DeltaOfDeltaBDFCMCodec();
     }
 
     public static Codec<ByteBuffer[]> bytesCodec(){

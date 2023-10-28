@@ -85,16 +85,16 @@ public interface Const {
     }};
 
     Map<String, Codec<double[]>> COLUMNS_DOUBLE_CODEC = new HashMap<>(COLUMN_COUNT){{
-        put("FWKW", Codec.deltaOfDeltaDFCMCodec());
-        put("BDPO", Codec.deltaOfDeltaDFCMCodec());
-        put("FQTH", Codec.deltaOfDeltaDFCMCodec());
-        put("SBXA", Codec.deltaOfDeltaDFCMCodec());
-        put("XRTP", Codec.deltaOfDeltaDFCMCodec());
-        put("ZIKG", Codec.dfcmCodec());
-        put("LMLK", Codec.dfcmCodec());
-        put("TEDW", Codec.dfcmCodec());
-        put("UVGJ", Codec.dfcmCodec());
-        put("LYLI", Codec.dfcmCodec());
+        put("FWKW", Codec.deltaOfDeltaBDFCMCodec());
+        put("BDPO", Codec.deltaOfDeltaBDFCMCodec());
+        put("FQTH", Codec.deltaOfDeltaBDFCMCodec());
+        put("SBXA", Codec.deltaOfDeltaBDFCMCodec());
+        put("XRTP", Codec.deltaOfDeltaBDFCMCodec());
+        put("ZIKG", Codec.bdfcmCodec());
+        put("LMLK", Codec.bdfcmCodec());
+        put("TEDW", Codec.bdfcmCodec());
+        put("UVGJ", Codec.bdfcmCodec());
+        put("LYLI", Codec.bdfcmCodec());
     }};
 
     Map<String, Codec<ByteBuffer[]>> COLUMNS_STRING_CODEC = new HashMap<>(COLUMN_COUNT){{
