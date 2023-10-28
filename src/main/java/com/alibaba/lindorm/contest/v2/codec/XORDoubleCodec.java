@@ -1,5 +1,6 @@
 package com.alibaba.lindorm.contest.v2.codec;
 
+import com.alibaba.lindorm.contest.v2.Context;
 import net.magik6k.bitbuffer.BitBuffer;
 import net.magik6k.bitbuffer.DirectBitBuffer;
 
@@ -23,7 +24,7 @@ public class XORDoubleCodec extends Codec<double[]>{
 
     @Override
     public double[] decode(ByteBuffer src, int size) {
-        double[] data = new double[size];
+        double[] data = Context.getBlockDoubleValues();
         BitBuffer buffer = new DirectBitBuffer(src);
         long pre = buffer.getLong();
         data[0] = Double.longBitsToDouble(pre);

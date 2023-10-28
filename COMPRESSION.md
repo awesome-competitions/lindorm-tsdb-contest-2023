@@ -47,9 +47,9 @@ column UFPI size:24338350
 column UZSV size:1777326137
 column FLLY size:199653604
 column JUBK size:11658564128
-column ORNI size:3468468300
+column ORNI size:3468468300 - 
 column SCHU size:164885089
-column GLNG size:4079286529
+column GLNG size:4079286529 - 
 
 // double
 column FWKW size:618309905
@@ -67,3 +67,15 @@ column LYLI size:1053745016
 string: 21536471485/37800000000
 double: 8918524298/14400000000
 int: 6956061612/28800000000
+
+
+FVXS:COLUMN_TYPE_STRING minLen:1 maxLen:2 minAscii:45 maxAscii:49
+LIYD:COLUMN_TYPE_STRING minLen:1 maxLen:1 minAscii:120 maxAscii:122
+ZEBY:COLUMN_TYPE_STRING minLen:7 maxLen:7 minAscii:67 maxAscii:85
+UFPI:COLUMN_TYPE_STRING minLen:5 maxLen:5 minAscii:71 maxAscii:84
+UZSV:COLUMN_TYPE_STRING minLen:15 maxLen:15 minAscii:33 maxAscii:121
+FLLY:COLUMN_TYPE_STRING minLen:1 maxLen:1 minAscii:33 maxAscii:121
+JUBK:COLUMN_TYPE_STRING minLen:100 maxLen:100 minAscii:33 maxAscii:121
+ORNI:COLUMN_TYPE_STRING minLen:30 maxLen:30 minAscii:33 maxAscii:121
+SCHU:COLUMN_TYPE_STRING minLen:0 maxLen:2 minAscii:33 maxAscii:119
+GLNG:COLUMN_TYPE_STRING minLen:30 maxLen:40 minAscii:33 maxAscii:121

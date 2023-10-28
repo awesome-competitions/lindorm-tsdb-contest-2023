@@ -88,6 +88,10 @@ public class Block {
         int[] positions = new int[Const.COLUMNS.size()];
         double[] maxValues = new double[Const.COLUMNS.size()];
         double[] sumValues = new double[Const.COLUMNS.size()];
+
+        double[] doubleValues = new double[flushSize];
+        int[] intValues = new int[flushSize];
+        ByteBuffer[] stringValues = new ByteBuffer[flushSize];
         for (int i = 0; i < Const.COLUMNS.size(); i ++){
             positions[i] = writeBuffer.position();
             double max = Long.MIN_VALUE;
@@ -95,11 +99,10 @@ public class Block {
 
             String name = Const.COLUMNS.get(i);
             Column column = Const.COLUMNS_INDEX.get(name);
-            long oldPosition, newPosition;
+            long oldPosition = writeBuffer.position();
             switch (column.getType()){
                 case COLUMN_TYPE_DOUBLE_FLOAT:
                     Codec<double[]> doubleCodec = Const.COLUMNS_DOUBLE_CODEC.getOrDefault(name, Const.DEFAULT_DOUBLE_CODEC);
-                    double[] doubleValues = new double[flushSize];
                     for (int k = 0; k < flushSize; k ++){
                         ColumnValue value = values[k][i];
                         double doubleVal = value.getDoubleFloatValue();
@@ -109,14 +112,10 @@ public class Block {
                         }
                         doubleValues[k] = doubleVal;
                     }
-                    oldPosition = writeBuffer.position();
                     doubleCodec.encode(writeBuffer, doubleValues);
-                    newPosition = writeBuffer.position();
-                    Const.COLUMNS_SIZE[i] += (newPosition - oldPosition);
                     break;
                 case COLUMN_TYPE_INTEGER:
                     Codec<int[]> intCodec = Const.COLUMNS_INTEGER_CODEC.getOrDefault(name, Const.DEFAULT_INT_CODEC);
-                    int[] intValues = new int[flushSize];
                     for (int k = 0; k < flushSize; k ++){
                         ColumnValue value = values[k][i];
                         int intVal = value.getIntegerValue();
@@ -126,28 +125,18 @@ public class Block {
                         }
                         intValues[k] = intVal;
                     }
-                    oldPosition = writeBuffer.position();
                     intCodec.encode(writeBuffer, intValues);
-                    newPosition = writeBuffer.position();
-                    Const.COLUMNS_SIZE[i] += (newPosition - oldPosition);
                     break;
                 case COLUMN_TYPE_STRING:
-                    Codec<ByteBuffer> stringCodec = Const.COLUMNS_STRING_CODEC.getOrDefault(name, Const.DEFAULT_STRING_CODEC);
-                    ByteBuffer encodeBuffer = Context.getCodecEncodeBuffer();
-                    encodeBuffer.clear();
+                    Codec<ByteBuffer[]> stringCodec = Const.COLUMNS_STRING_CODEC.getOrDefault(name, Const.DEFAULT_STRING_CODEC);
                     for (int k = 0; k < flushSize; k ++){
-                        ColumnValue value = values[k][i];
-                        byte[] bs = value.getStringValue().array();
-                        encodeBuffer.put((byte) bs.length);
-                        encodeBuffer.put(bs);
+                        stringValues[k] = values[k][i].getStringValue();
                     }
-                    encodeBuffer.flip();
-                    oldPosition = writeBuffer.position();
-                    stringCodec.encode(writeBuffer, encodeBuffer);
-                    newPosition = writeBuffer.position();
-                    Const.COLUMNS_SIZE[i] += (newPosition - oldPosition);
+                    stringCodec.encode(writeBuffer, stringValues);
                     break;
             }
+            long newPosition = writeBuffer.position();
+            Const.COLUMNS_SIZE[i] += (newPosition - oldPosition);
             maxValues[i] = max;
             sumValues[i] = sum;
         }
@@ -252,14 +241,8 @@ public class Block {
                     }
                     break;
                 case COLUMN_TYPE_STRING:
-                    Codec<ByteBuffer> stringCodec = Const.COLUMNS_STRING_CODEC.getOrDefault(requestedColumn, Const.DEFAULT_STRING_CODEC);
-                    ByteBuffer decodeBuffer = stringCodec.decode(readBuffer, 0);
-                    ByteBuffer[] stringValues = Context.getBlockStringValues();
-                    for (int i = 0; i < count; i++) {
-                        ByteBuffer val = ByteBuffer.allocate(decodeBuffer.get());
-                        decodeBuffer.get(val.array(), 0, val.limit());
-                        stringValues[i] = val;
-                    }
+                    Codec<ByteBuffer[]> stringCodec = Const.COLUMNS_STRING_CODEC.getOrDefault(requestedColumn, Const.DEFAULT_STRING_CODEC);
+                    ByteBuffer[] stringValues = stringCodec.decode(readBuffer, count);
                     for (int i = start; i <= end; i ++){
                         long t = header.start + (long) i * Const.TIMESTAMP_INTERVAL;
                         Tuple<Long, Map<String, ColumnValue>> result = results[i - start];

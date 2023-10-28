@@ -1,6 +1,7 @@
 package com.alibaba.lindorm.contest.v2.codec;
 
 import com.alibaba.lindorm.contest.util.Util;
+import com.alibaba.lindorm.contest.v2.Context;
 import net.magik6k.bitbuffer.ArrayBitBuffer;
 import net.magik6k.bitbuffer.BitBuffer;
 import net.magik6k.bitbuffer.DirectBitBuffer;
@@ -35,7 +36,7 @@ public class DeltaIntCodec extends Codec<int[]>{
 
     @Override
     public int[] decode(ByteBuffer src, int size) {
-        int[] data = new int[size];
+        int[] data = Context.getBlockIntValues();
         BitBuffer buffer = new DirectBitBuffer(src);
         data[0] = decodeVarInt(buffer);
         for (int i = 1; i < size; i++) {

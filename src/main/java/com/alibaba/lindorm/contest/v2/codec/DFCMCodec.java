@@ -1,5 +1,6 @@
 package com.alibaba.lindorm.contest.v2.codec;
 
+import com.alibaba.lindorm.contest.v2.Context;
 import net.magik6k.bitbuffer.BitBuffer;
 import net.magik6k.bitbuffer.DirectBitBuffer;
 
@@ -39,7 +40,7 @@ public class DFCMCodec extends Codec<double[]>{
 
     @Override
     public double[] decode(ByteBuffer src, int size) {
-        double[] data = new double[size];
+        double[] data = Context.getBlockDoubleValues();
         BitBuffer buffer = new DirectBitBuffer(src);
         data[0] = buffer.getDouble();
         if (size > 1){

@@ -85,7 +85,6 @@ public class TestManyRows {
 
       int startIntVal = 1;
       double startDoubleVal = 1.1;
-      ByteBuffer stringVal = ByteBuffer.wrap("TEST".getBytes());
       long startTimestamp = 1689091210000L;
 
       ArrayList<Row> rowList = new ArrayList<>();
@@ -93,7 +92,7 @@ public class TestManyRows {
         Map<String, ColumnValue> columns = new HashMap<>();
         columns.put("col1", new ColumnValue.IntegerColumn(startIntVal++));
         columns.put("col2", new ColumnValue.DoubleFloatColumn(startDoubleVal ++));
-        columns.put("col3", new ColumnValue.StringColumn(stringVal));
+        columns.put("col3", new ColumnValue.StringColumn(ByteBuffer.wrap("TEST".getBytes())));
         rowList.add(new Row(new Vin(str.getBytes(StandardCharsets.UTF_8)), startTimestamp += 1000, columns));
       }
 

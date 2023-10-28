@@ -27,8 +27,12 @@ public abstract class Codec<T> {
         return new DeltaOfDeltaDFCMCodec();
     }
 
-    public static Codec<ByteBuffer> bytesCodec(){
-        return new BytesCodec();
+    public static Codec<ByteBuffer[]> bytesCodec(){
+        return new BytesCodec(0);
+    }
+
+    public static Codec<ByteBuffer[]> bytesCodec(int fixedSize){
+        return new BytesCodec(fixedSize);
     }
 
     public static Codec<int[]> deltaOfDeltaIntCodec(int deltaSize){
@@ -37,10 +41,6 @@ public abstract class Codec<T> {
 
     public static Codec<int[]> deltaOfDeltaIntCodec(int deltaSize, boolean unsigned){
         return new DeltaOfDeltaIntCodec(deltaSize, unsigned);
-    }
-
-    public static Codec<long[]> deltaLongCodec(int deltaSize){
-        return new DeltaLongCodec(deltaSize);
     }
 
     public static Codec<int[]> runLengthIntCodec(int runLengthMaxSize){

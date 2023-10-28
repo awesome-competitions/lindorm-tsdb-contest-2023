@@ -1,5 +1,7 @@
 package com.alibaba.lindorm.contest.v2.codec;
 
+import com.alibaba.lindorm.contest.v2.Context;
+
 import java.nio.ByteBuffer;
 
 public class DefaultDoubleCodec extends Codec<double[]>{
@@ -12,7 +14,7 @@ public class DefaultDoubleCodec extends Codec<double[]>{
 
     @Override
     public double[] decode(ByteBuffer src, int size) {
-        double[] data = new double[size];
+        double[] data = Context.getBlockDoubleValues();
         for (int i = 0; i < size; i++) {
             data[i] = src.getDouble();
         }

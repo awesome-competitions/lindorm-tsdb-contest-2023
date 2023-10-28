@@ -1,5 +1,7 @@
 package com.alibaba.lindorm.contest.v2.codec;
 
+import com.alibaba.lindorm.contest.v2.Context;
+
 import java.nio.ByteBuffer;
 
 public class DefaultIntCodec extends Codec<int[]>{
@@ -12,7 +14,7 @@ public class DefaultIntCodec extends Codec<int[]>{
 
     @Override
     public int[] decode(ByteBuffer src, int size) {
-        int[] data = new int[size];
+        int[] data = Context.getBlockIntValues();
         for (int i = 0; i < size; i++) {
             data[i] = src.getInt();
         }

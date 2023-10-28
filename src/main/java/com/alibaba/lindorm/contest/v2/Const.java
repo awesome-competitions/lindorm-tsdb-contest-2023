@@ -97,22 +97,20 @@ public interface Const {
         put("LYLI", Codec.dfcmCodec());
     }};
 
-    Map<String, Codec<ByteBuffer>> COLUMNS_STRING_CODEC = new HashMap<>(COLUMN_COUNT){{
+    Map<String, Codec<ByteBuffer[]>> COLUMNS_STRING_CODEC = new HashMap<>(COLUMN_COUNT){{
         put("FVXS", Codec.bytesCodec());
-        put("LIYD", Codec.bytesCodec());
-        put("ZEBY", Codec.bytesCodec());
-        put("UFPI", Codec.bytesCodec());
-        put("UZSV", Codec.bytesCodec());
-        put("FLLY", Codec.bytesCodec());
-        put("JUBK", Codec.bytesCodec());
-        put("ORNI", Codec.bytesCodec());
+        put("LIYD", Codec.bytesCodec(1));
+        put("ZEBY", Codec.bytesCodec(7));
+        put("UFPI", Codec.bytesCodec(5));
+        put("UZSV", Codec.bytesCodec(15));
+        put("FLLY", Codec.bytesCodec(1));
+        put("JUBK", Codec.bytesCodec(100));
+        put("ORNI", Codec.bytesCodec(30));
         put("SCHU", Codec.bytesCodec());
         put("GLNG", Codec.bytesCodec());
     }};
 
     Codec<int[]> DEFAULT_INT_CODEC = new DefaultIntCodec();
     Codec<double[]> DEFAULT_DOUBLE_CODEC = new DefaultDoubleCodec();
-    Codec<ByteBuffer> DEFAULT_STRING_CODEC = new DefaultBytesCodec();
-
-    Codec<ByteBuffer> BYTES_CODEC = Codec.bytesCodec();
+    Codec<ByteBuffer[]> DEFAULT_STRING_CODEC = new DefaultBytesCodec();
 }
