@@ -68,6 +68,10 @@ public abstract class Codec<T> {
         return new DeltaVarIntCodec();
     }
 
+    public static Codec<int[]> dfcmIntCodec(){
+        return new DFCMIntCodec();
+    }
+
     // zigzag encode
     protected static int encodeZigzag(int n){
          return (n << 1) ^ n >> 31;

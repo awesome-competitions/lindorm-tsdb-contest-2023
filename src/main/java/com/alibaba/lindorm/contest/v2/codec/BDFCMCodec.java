@@ -18,7 +18,7 @@ public class BDFCMCodec extends Codec<double[]>{
                 long v1 = Double.doubleToRawLongBits(data[i]);
                 long v2 = Double.doubleToRawLongBits(data[i - 1]);
                 long xorValue = v1 ^ v2;
-                int leadingZeros = Long.numberOfLeadingZeros(xorValue) / 8 * 8;
+                int leadingZeros = Long.numberOfLeadingZeros(xorValue) / 4 * 4;
                 if (xorValue == 0){
                     buffer.putBit(false);
                 }else if (preLeadingZeros >= 0 && leadingZeros == preLeadingZeros) {
@@ -28,7 +28,7 @@ public class BDFCMCodec extends Codec<double[]>{
                 }else {
                     buffer.putBit(true);
                     buffer.putBit(false);
-                    buffer.putInt(leadingZeros/8, 3);
+                    buffer.putInt(leadingZeros/4, 4);
                     buffer.putLong(xorValue, 64 - leadingZeros);
                     preLeadingZeros = leadingZeros;
                 }
@@ -48,7 +48,7 @@ public class BDFCMCodec extends Codec<double[]>{
                 long xorValue = 0;
                 if (buffer.getBoolean()){
                     if (!buffer.getBoolean()) {
-                        preLeadingZeros = buffer.getIntUnsigned(3) * 8;
+                        preLeadingZeros = buffer.getIntUnsigned(4) * 4;
                     }
                     xorValue = buffer.getLongUnsigned(64 - preLeadingZeros);
                 }
@@ -69,18 +69,21 @@ public class BDFCMCodec extends Codec<double[]>{
                 {154476.05679147458,154491.5267799328,154492.2854211078,154490.20782726153,154490.97573887615,154488.3228144937,154489.0859333985,154486.44652734432,154486.07722810772,154486.8448577259,154474.98827819715,154475.74691827522,154473.12911031581,154473.89224518865,154471.81914717602,154472.5822820575}
         };
 
+        int total = 0;
         for (double[] numbers: numbersList){
             ByteBuffer encodedBuffer = ByteBuffer.allocate(3000);
             varintCodec.encode(encodedBuffer, numbers);
 
             encodedBuffer.flip();
             System.out.println(encodedBuffer.remaining());
-
+            total += encodedBuffer.remaining();
             int size = numbers.length;
             System.out.println(size * 8);
             double[] decodedNumbers = varintCodec.decode(encodedBuffer, size);
 
             System.out.println(Arrays.toString(decodedNumbers));
         }
+
+        System.out.println("total:" + total);
     }
 }
