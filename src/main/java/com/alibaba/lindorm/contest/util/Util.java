@@ -6,6 +6,7 @@ import sun.misc.Unsafe;
 
 import java.lang.reflect.Field;
 import java.nio.Buffer;
+import java.nio.ByteBuffer;
 
 public class Util {
 
@@ -33,6 +34,10 @@ public class Util {
 
     public static void copyMemory(long srcAddress, long destAddress, long bytes) {
         unsafe.copyMemory(srcAddress, destAddress, bytes);
+    }
+
+    public static void clean(ByteBuffer bf) {
+        unsafe.invokeCleaner(bf);
     }
 
     public static int parseVinId(Vin vin){
