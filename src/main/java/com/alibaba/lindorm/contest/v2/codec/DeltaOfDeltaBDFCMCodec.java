@@ -23,8 +23,8 @@ public class DeltaOfDeltaBDFCMCodec extends Codec<double[]>{
                 long v1 = Double.doubleToRawLongBits(diffDiff);
                 long v2 = Double.doubleToRawLongBits(preDiffDiff);
                 long xorValue = v1 ^ v2;
-                int leadingZeros = Long.numberOfLeadingZeros(xorValue) / 8 * 8;
-                int trailingZeros = Long.numberOfTrailingZeros(xorValue) / 8 * 8;
+                int leadingZeros = Long.numberOfLeadingZeros(xorValue) / 4 * 4;
+                int trailingZeros = Long.numberOfTrailingZeros(xorValue) / 4 * 4;
                 if (xorValue == 0){
                     buffer.putBit(false);
                 }else if (preTrailingZeros >= 0 && leadingZeros == preLeadingZeros && trailingZeros == preTrailingZeros) {
@@ -35,8 +35,8 @@ public class DeltaOfDeltaBDFCMCodec extends Codec<double[]>{
                 }else {
                     buffer.putBit(true);
                     buffer.putBit(false);
-                    buffer.putInt(leadingZeros/8, 3);
-                    buffer.putInt(trailingZeros/8, 3);
+                    buffer.putInt(leadingZeros/4, 4);
+                    buffer.putInt(trailingZeros/4, 4);
                     long v = xorValue >> trailingZeros;
                     buffer.putLong(v, 64 - leadingZeros - trailingZeros);
                     preLeadingZeros = leadingZeros;
@@ -63,8 +63,8 @@ public class DeltaOfDeltaBDFCMCodec extends Codec<double[]>{
                 long xorValue = 0;
                 if (buffer.getBoolean()){
                     if (!buffer.getBoolean()) {
-                        preLeadingZeros = buffer.getIntUnsigned(3) * 8;
-                        preTrailingZeros = buffer.getIntUnsigned(3) * 8;
+                        preLeadingZeros = buffer.getIntUnsigned(4) * 4;
+                        preTrailingZeros = buffer.getIntUnsigned(4) * 4;
                     }
                     long v = buffer.getLongUnsigned(64 - preLeadingZeros - preTrailingZeros);
                     xorValue = v << preTrailingZeros;

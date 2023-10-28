@@ -5,6 +5,7 @@ import net.magik6k.bitbuffer.BitBuffer;
 import net.magik6k.bitbuffer.DirectBitBuffer;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 public class VarIntCodec extends Codec<int[]>{
     @Override
@@ -28,19 +29,17 @@ public class VarIntCodec extends Codec<int[]>{
 
     public static void main(String[] args) {
         VarIntCodec varintCodec = new VarIntCodec();
-        int[] numbers = {-13061,-14901,-22085,-13557,-15621,-18085,-16757,-19525,-17285,-15253,-13013,-17045,-20613,-17941,-13285,-19381};
+        int[] numbers = {47508323,38447491,9735651,48158467,31176995,21444931,30686115,41353795,3464675,12283267,16355299,22657539,37193507,44959939,46392611,4670915};
 
         ByteBuffer encodedBuffer = ByteBuffer.allocate(3000);
         varintCodec.encode(encodedBuffer, numbers);
 
         encodedBuffer.flip();
         System.out.println(encodedBuffer.remaining());
+        System.out.println(numbers.length * 4);
 
         int size = numbers.length;
         int[] decodedNumbers = varintCodec.decode(encodedBuffer, size);
-
-        for (Integer num : decodedNumbers) {
-            System.out.println("Decoded: " + num);
-        }
+        System.out.println(Arrays.toString(decodedNumbers));
     }
 }
