@@ -72,11 +72,11 @@ public interface Const {
         put("CSRC", Codec.bdfcmIntCodec());
         put("GONE", Codec.bdfcmIntCodec());
         put("BZPV", Codec.bdfcmIntCodec());
-        put("AOAO", Codec.deltaIntCodec(3));
-        put("EXGV", Codec.deltaIntCodec(3));
-        put("JCGU", Codec.deltaIntCodec(3));
-        put("TFGW", Codec.deltaIntCodec(3));
-        put("MUBC", Codec.deltaIntCodec(3));
+        put("AOAO", Codec.fixedIntCodec(-2147483647, -2147483645));
+        put("EXGV", Codec.fixedIntCodec(-2147483647, -2147483645));
+        put("JCGU", Codec.fixedIntCodec(-2147483647, -2147483645));
+        put("TFGW", Codec.fixedIntCodec(-2147483647, -2147483645));
+        put("MUBC", Codec.fixedIntCodec(-2147483647, -2147483645));
         put("JHET", Codec.fixedIntCodec(1, 3));
         put("WKUZ", Codec.runLengthIntCodec(BLOCK_SIZE));
         put("YCTI", Codec.fixedIntCodec(1, 5));
