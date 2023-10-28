@@ -68,10 +68,10 @@ public interface Const {
         put("JDOE", Codec.deltaVarIntCodec());
         put("KWET", Codec.deltaVarIntCodec());
         put("WNHB", Codec.deltaVarIntCodec());
-        put("ENVH", Codec.dfcmIntCodec());
-        put("CSRC", Codec.dfcmIntCodec());
-        put("GONE", Codec.dfcmIntCodec());
-        put("BZPV", Codec.dfcmIntCodec());
+        put("ENVH", Codec.bdfcmIntCodec());
+        put("CSRC", Codec.bdfcmIntCodec());
+        put("GONE", Codec.bdfcmIntCodec());
+        put("BZPV", Codec.bdfcmIntCodec());
         put("AOAO", Codec.deltaIntCodec(3));
         put("EXGV", Codec.deltaIntCodec(3));
         put("JCGU", Codec.deltaIntCodec(3));
