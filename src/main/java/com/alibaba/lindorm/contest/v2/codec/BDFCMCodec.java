@@ -19,14 +19,10 @@ public class BDFCMCodec extends Codec<double[]>{
                 long v2 = Double.doubleToRawLongBits(data[i - 1]);
                 long xorValue = v1 ^ v2;
                 int leadingZeros = Long.numberOfLeadingZeros(xorValue) / 4 * 4;
-                if (xorValue == 0){
-                    buffer.putBit(false);
-                }else if (preLeadingZeros >= 0 && leadingZeros == preLeadingZeros) {
-                    buffer.putBit(true);
+                if (preLeadingZeros >= 0 && leadingZeros == preLeadingZeros) {
                     buffer.putBit(true);
                     buffer.putLong(xorValue, 64 - preLeadingZeros);
                 }else {
-                    buffer.putBit(true);
                     buffer.putBit(false);
                     buffer.putInt(leadingZeros/4, 4);
                     buffer.putLong(xorValue, 64 - leadingZeros);
@@ -45,13 +41,10 @@ public class BDFCMCodec extends Codec<double[]>{
         if (size > 1){
             int preLeadingZeros = -1;
             for (int i = 1; i < size; i++) {
-                long xorValue = 0;
-                if (buffer.getBoolean()){
-                    if (!buffer.getBoolean()) {
-                        preLeadingZeros = buffer.getIntUnsigned(4) * 4;
-                    }
-                    xorValue = buffer.getLongUnsigned(64 - preLeadingZeros);
+                if (!buffer.getBoolean()) {
+                    preLeadingZeros = buffer.getIntUnsigned(4) * 4;
                 }
+                long xorValue = buffer.getLongUnsigned(64 - preLeadingZeros);
                 long v1 = Double.doubleToRawLongBits(data[i-1]);
                 data[i] = Double.longBitsToDouble(v1 ^ xorValue);
             }
