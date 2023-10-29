@@ -1,5 +1,6 @@
 package com.alibaba.lindorm.contest.v2.codec;
 
+import com.alibaba.lindorm.contest.util.Util;
 import com.alibaba.lindorm.contest.v2.Context;
 import net.magik6k.bitbuffer.BitBuffer;
 import net.magik6k.bitbuffer.DirectBitBuffer;
@@ -9,30 +10,54 @@ import java.util.Arrays;
 
 public class SimpleBDFCMCodec extends Codec<double[]>{
 
-    private final SimpleNBLongCodec codec = new SimpleNBLongCodec();
-
     @Override
     public void encode(ByteBuffer src, double[] data, int size) {
-        src.putDouble(data[0]);
-        long[] values = new long[size - 1];
-        for (int i = 1; i < size; i++) {
-            long v1 = Double.doubleToRawLongBits(data[i]);
-            long v2 = Double.doubleToRawLongBits(data[i - 1]);
-            long xorValue = v1 ^ v2;
-            values[i-1] = xorValue;
+        BitBuffer buffer = new DirectBitBuffer(src);
+        buffer.putDouble(data[0]);
+        if (data.length > 1){
+            int minLeadingZeros = 32;
+            int maxLeadingZeros = 0;
+            for (int i = 1; i < size; i++) {
+                long v1 = Double.doubleToRawLongBits(data[i]);
+                long v2 = Double.doubleToRawLongBits(data[i - 1]);
+                long xorValue = v1 ^ v2;
+                int leadingZeros = Long.numberOfLeadingZeros(xorValue) / 3;
+                if (leadingZeros < minLeadingZeros){
+                    minLeadingZeros = leadingZeros;
+                }
+                if (leadingZeros > maxLeadingZeros){
+                    maxLeadingZeros = leadingZeros;
+                }
+            }
+            int leadingZerosDeltaBits = Util.parseBits(maxLeadingZeros - minLeadingZeros, true);
+            buffer.putInt(minLeadingZeros, 4);
+            buffer.putInt(leadingZerosDeltaBits, 4);
+
+            for (int i = 1; i < size; i++) {
+                long v1 = Double.doubleToRawLongBits(data[i]);
+                long v2 = Double.doubleToRawLongBits(data[i - 1]);
+                long xorValue = v1 ^ v2;
+                int leadingZeros = Long.numberOfLeadingZeros(xorValue) / 3;
+                buffer.putInt(leadingZeros - minLeadingZeros, leadingZerosDeltaBits);
+                buffer.putLong(xorValue, 64 - leadingZeros * 3);
+            }
         }
-        codec.encode(src, values, size - 1);
+        buffer.flip();
     }
 
     @Override
     public void decode(ByteBuffer src, double[] data, int size) {
-        data[0] = src.getDouble();
-        long[] values = new long[size - 1];
-        codec.decode(src, values, size - 1);
-        for (int i = 1; i < size; i++) {
-            long xorValue = values[i-1];
-            long v1 = Double.doubleToRawLongBits(data[i-1]);
-            data[i] = Double.longBitsToDouble(v1 ^ xorValue);
+        BitBuffer buffer = new DirectBitBuffer(src);
+        data[0] = buffer.getDouble();
+        if (size > 1){
+            int minLeadingZeros = buffer.getIntUnsigned(4);
+            int leadingZerosDeltaBits = buffer.getIntUnsigned(4);
+            for (int i = 1; i < size; i++) {
+                int leadingZeros = buffer.getIntUnsigned(leadingZerosDeltaBits) + minLeadingZeros;
+                long xorValue = buffer.getLongUnsigned(64 - leadingZeros * 3);
+                long v1 = Double.doubleToRawLongBits(data[i-1]);
+                data[i] = Double.longBitsToDouble(v1 ^ xorValue);
+            }
         }
     }
 

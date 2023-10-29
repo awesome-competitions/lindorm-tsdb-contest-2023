@@ -8,6 +8,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 public class BDFCMCodec extends Codec<double[]>{
+
     @Override
     public void encode(ByteBuffer src, double[] data, int size) {
         BitBuffer buffer = new DirectBitBuffer(src);
@@ -18,13 +19,13 @@ public class BDFCMCodec extends Codec<double[]>{
                 long v1 = Double.doubleToRawLongBits(data[i]);
                 long v2 = Double.doubleToRawLongBits(data[i - 1]);
                 long xorValue = v1 ^ v2;
-                int leadingZeros = Long.numberOfLeadingZeros(xorValue) / 4 * 4;
+                int leadingZeros = Long.numberOfLeadingZeros(xorValue) / 3 * 3;
                 if (preLeadingZeros >= 0 && leadingZeros == preLeadingZeros) {
                     buffer.putBit(true);
                     buffer.putLong(xorValue, 64 - preLeadingZeros);
                 }else {
                     buffer.putBit(false);
-                    buffer.putInt(leadingZeros/4, 4);
+                    buffer.putInt(leadingZeros/3, 4);
                     buffer.putLong(xorValue, 64 - leadingZeros);
                     preLeadingZeros = leadingZeros;
                 }
@@ -41,7 +42,7 @@ public class BDFCMCodec extends Codec<double[]>{
             int preLeadingZeros = -1;
             for (int i = 1; i < size; i++) {
                 if (!buffer.getBoolean()) {
-                    preLeadingZeros = buffer.getIntUnsigned(4) * 4;
+                    preLeadingZeros = buffer.getIntUnsigned(4) * 3;
                 }
                 long xorValue = buffer.getLongUnsigned(64 - preLeadingZeros);
                 long v1 = Double.doubleToRawLongBits(data[i-1]);
