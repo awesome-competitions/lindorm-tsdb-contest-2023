@@ -26,7 +26,7 @@ public interface Const {
     int VIN_COUNT = 5000;
 
     // block size
-    int BLOCK_SIZE = 300;
+    int BLOCK_SIZE = 600;
     // the time span of all the data
     int TIME_SPAN = 60 * 60 * 10;
 
@@ -120,6 +120,4 @@ public interface Const {
     Codec<int[]> DEFAULT_INT_CODEC = new DefaultIntCodec();
     Codec<double[]> DEFAULT_DOUBLE_CODEC = new DefaultDoubleCodec();
     Codec<ByteBuffer[]> DEFAULT_STRING_CODEC = Codec.stringCodec();
-
-    Codec<ByteBuffer> BYTE_BUFFER_CODEC = new ZSTDCodec();
 }
