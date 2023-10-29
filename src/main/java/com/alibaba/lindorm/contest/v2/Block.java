@@ -163,18 +163,14 @@ public class Block {
 
         // write string values
         columnIndex += doubleCount;
-        ByteBuffer encodeBuffer = Context.getCodecEncodeBuffer().clear();
         for (int i = 0; i < Const.STRING_COLUMNS.size(); i ++){
-            positions[i + columnIndex] = writeBuffer.position() + encodeBuffer.position();
+            positions[i + columnIndex] = writeBuffer.position() ;
             Codec<ByteBuffer[]> stringCodec = Const.COLUMNS_STRING_CODEC.getOrDefault(Const.STRING_COLUMNS.get(i), Const.DEFAULT_STRING_CODEC);
-            stringCodec.encode(encodeBuffer, stringValues[i], flushSize);
+            long oldPosition = writeBuffer.position();
+            stringCodec.encode(writeBuffer, stringValues[i], flushSize);
+            long newPosition = writeBuffer.position();
+            Const.COLUMNS_SIZE[i + columnIndex] += (newPosition - oldPosition);
         }
-        encodeBuffer.flip();
-
-        long oldPosition = writeBuffer.position();
-        Const.BYTE_BUFFER_CODEC.encode(writeBuffer, encodeBuffer, 1);
-        long newPosition = writeBuffer.position();
-        Const.COLUMNS_SIZE[columnIndex] += (newPosition - oldPosition);
 
         writeBuffer.flip();
         int size = writeBuffer.remaining();
@@ -238,29 +234,14 @@ public class Block {
         if (readBytes != header.size){
             throw new IOException("read bytes not enough");
         }
+        readBuffer.flip();
 
         int count = header.count;
+        int size = header.size;
         int[] positions = header.positions;
         int intCount = Const.INT_COLUMNS.size();
         int doubleCount = Const.DOUBLE_COLUMNS.size();
         int numberCount = intCount + doubleCount;
-        int stringCount = Const.STRING_COLUMNS.size();
-
-        if (stringCount > 0){
-            int stringPos = positions[numberCount];
-            readBuffer.position(stringPos);
-            readBuffer.limit(header.size);
-
-            ByteBuffer writeBuffer = Context.getBlockWriteBuffer().clear();
-            writeBuffer.put(readBuffer);
-            writeBuffer.flip();
-
-            readBuffer.position(stringPos);
-            readBuffer.limit(readBuffer.capacity());
-            Const.BYTE_BUFFER_CODEC.decode(writeBuffer, readBuffer, 1);
-        }
-        readBuffer.flip();
-        int size = readBuffer.remaining();
 
         Tuple<Long, Map<String, ColumnValue>>[] results = new Tuple[end - start + 1];
         for (String requestedColumn: requestedColumns){

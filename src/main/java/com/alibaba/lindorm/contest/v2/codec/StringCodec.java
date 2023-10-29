@@ -1,5 +1,8 @@
 package com.alibaba.lindorm.contest.v2.codec;
 
+import com.alibaba.lindorm.contest.v2.Context;
+import com.github.luben.zstd.Zstd;
+
 import java.nio.ByteBuffer;
 
 public class StringCodec extends Codec<ByteBuffer[]>{
@@ -17,38 +20,41 @@ public class StringCodec extends Codec<ByteBuffer[]>{
         this.maxSize = maxSize;
     }
 
-    public int getFixedSize() {
-        return fixedSize;
-    }
-
     @Override
     public void encode(ByteBuffer src, ByteBuffer[] data, int size) {
+        ByteBuffer encodeBuffer = Context.getCodecEncodeBuffer().clear();
         for (int i = 0; i < size; i++) {
             ByteBuffer buffer = data[i];
             if (fixedSize == 0){
                 if (maxSize < 128){
-                    src.put((byte) buffer.remaining());
+                    encodeBuffer.put((byte) buffer.remaining());
                 }else{
-                    src.putShort((short) buffer.remaining());
+                    encodeBuffer.putShort((short) buffer.remaining());
                 }
             }
-            src.put(buffer);
+            encodeBuffer.put(buffer);
         }
+        encodeBuffer.flip();
+        Zstd.compress(src, encodeBuffer);
     }
 
     @Override
     public void decode(ByteBuffer src, ByteBuffer[] data, int size) {
+        ByteBuffer decodeBuffer = Context.getCodecDecodeBuffer().clear();
+        Zstd.decompress(decodeBuffer, src);
+        decodeBuffer.flip();
+
         for (int i = 0; i < size; i++) {
             int capacity = fixedSize;
             if (capacity == 0){
                 if (maxSize < 128){
-                    capacity = src.get();
+                    capacity = decodeBuffer.get();
                 }else{
-                    capacity = src.getShort();
+                    capacity = decodeBuffer.getShort();
                 }
             }
             ByteBuffer val = ByteBuffer.allocate(capacity);
-            src.get(val.array(), 0, val.limit());
+            decodeBuffer.get(val.array(), 0, val.limit());
             data[i] = val;
         }
     }

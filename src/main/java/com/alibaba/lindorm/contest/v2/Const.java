@@ -121,5 +121,5 @@ public interface Const {
     Codec<double[]> DEFAULT_DOUBLE_CODEC = new DefaultDoubleCodec();
     Codec<ByteBuffer[]> DEFAULT_STRING_CODEC = Codec.stringCodec();
 
-    Codec<ByteBuffer> BYTE_BUFFER_CODEC = new ZstdCodec();
+    Codec<ByteBuffer> BYTE_BUFFER_CODEC = new ZSTDCodec();
 }
