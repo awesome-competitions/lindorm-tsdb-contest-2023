@@ -162,7 +162,7 @@ public class Block {
         }
 
         // write string values
-        columnIndex += Const.DOUBLE_COLUMNS.size();
+        columnIndex += doubleCount;
         ByteBuffer encodeBuffer = Context.getCodecEncodeBuffer().clear();
         for (int i = 0; i < Const.STRING_COLUMNS.size(); i ++){
             positions[i + columnIndex] = writeBuffer.position() + encodeBuffer.position();
