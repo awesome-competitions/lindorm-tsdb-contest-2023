@@ -97,11 +97,11 @@ public interface Const {
         put("FQTH", Codec.deltaOfDeltaBDFCMCodec());
         put("SBXA", Codec.deltaOfDeltaBDFCMCodec());
         put("XRTP", Codec.deltaOfDeltaBDFCMCodec());
-        put("ZIKG", Codec.bdfcmCodec());
-        put("LMLK", Codec.bdfcmCodec());
-        put("TEDW", Codec.bdfcmCodec());
-        put("UVGJ", Codec.bdfcmCodec());
-        put("LYLI", Codec.bdfcmCodec());
+        put("ZIKG", Codec.simpleBDFCMCodec());
+        put("LMLK", Codec.simpleBDFCMCodec());
+        put("TEDW", Codec.simpleBDFCMCodec());
+        put("UVGJ", Codec.simpleBDFCMCodec());
+        put("LYLI", Codec.simpleBDFCMCodec());
     }};
 
     Map<String, Codec<ByteBuffer[]>> COLUMNS_STRING_CODEC = new HashMap<>(COLUMN_COUNT){{
