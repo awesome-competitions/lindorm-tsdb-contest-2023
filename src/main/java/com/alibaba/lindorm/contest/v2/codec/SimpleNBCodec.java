@@ -12,18 +12,16 @@ public class SimpleNBCodec extends Codec<int[]>{
     @Override
     public void encode(ByteBuffer src, int[] data, int size) {
         int minValue = Integer.MAX_VALUE;
-        int maxBits = 0;
+        int maxValue = Integer.MIN_VALUE;
         for (int i = 0; i < size; i++) {
             if (data[i] < minValue){
                 minValue = data[i];
             }
-        }
-        for (int i = 0; i < size; i++) {
-            int bits = Util.parseBits(data[i] - minValue, true);
-            if (bits > maxBits){
-                maxBits = bits;
+            if (data[i] > maxValue){
+                maxValue = data[i];
             }
         }
+        int maxBits = Util.parseBits(maxValue - minValue, true);
         BitBuffer buffer = new DirectBitBuffer(src);
         encodeVarInt(buffer, minValue);
         buffer.put(maxBits, 5);

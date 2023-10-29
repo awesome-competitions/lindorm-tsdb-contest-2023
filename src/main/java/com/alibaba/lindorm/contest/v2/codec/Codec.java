@@ -44,12 +44,8 @@ public abstract class Codec<T> {
         return new StringCodec(fixedSize);
     }
 
-    public static Codec<int[]> deltaOfDeltaIntCodec(int deltaSize){
-        return new DeltaOfDeltaIntCodec(deltaSize);
-    }
-
-    public static Codec<int[]> deltaOfDeltaIntCodec(int deltaSize, boolean unsigned){
-        return new DeltaOfDeltaIntCodec(deltaSize, unsigned);
+    public static Codec<int[]> deltaOfDeltaIntCodec(){
+        return new DeltaOfDeltaIntCodec();
     }
 
     public static Codec<int[]> runLengthIntCodec(int runLengthMaxSize){
