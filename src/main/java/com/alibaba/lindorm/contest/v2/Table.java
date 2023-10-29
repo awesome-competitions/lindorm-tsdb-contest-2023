@@ -38,14 +38,31 @@ public class Table {
 
     public void setSchema(Schema schema) {
         Const.COLUMNS.clear();
+        Const.INT_COLUMNS.clear();
+        Const.DOUBLE_COLUMNS.clear();
+        Const.STRING_COLUMNS.clear();
         Const.COLUMNS_INDEX.clear();
 
         this.schema = schema;
-        this.schema.getColumnTypeMap().keySet().stream().sorted().forEach(Const.COLUMNS::add);
-        for (int i = 0; i < Const.COLUMNS.size(); i++) {
-            String columnName = Const.COLUMNS.get(i);
-            Const.COLUMNS_INDEX.put(Const.COLUMNS.get(i), new Column(i, schema.getColumnTypeMap().get(columnName)));
-        }
+        this.schema.getColumnTypeMap().keySet().stream().sorted().forEach(columnName -> {
+            Const.COLUMNS.add(columnName);
+            ColumnValue.ColumnType columnType = schema.getColumnTypeMap().get(columnName);
+            switch (columnType){
+                case COLUMN_TYPE_INTEGER:
+                    Const.COLUMNS_INDEX.put(columnName, new Column(Const.INT_COLUMNS.size(), columnType));
+                    Const.INT_COLUMNS.add(columnName);
+                    break;
+                case COLUMN_TYPE_DOUBLE_FLOAT:
+                    Const.COLUMNS_INDEX.put(columnName, new Column(Const.DOUBLE_COLUMNS.size(), columnType));
+                    Const.DOUBLE_COLUMNS.add(columnName);
+                    break;
+                case COLUMN_TYPE_STRING:
+                    Const.COLUMNS_INDEX.put(columnName, new Column(Const.STRING_COLUMNS.size(), columnType));
+                    Const.STRING_COLUMNS.add(columnName);
+                    break;
+            }
+        });
+
     }
 
     public static Table load(String basePath, String tableName) throws IOException {
@@ -191,15 +208,10 @@ public class Table {
         Path indexPath = Path.of(basePath, name+ ".index");
         FileChannel ch = FileChannel.open(indexPath, StandardOpenOption.WRITE, StandardOpenOption.READ, StandardOpenOption.CREATE);
 
-        // single index
-        Index singleIndex = null;
-        for (Index index: indexes.values()){
-            singleIndex = index;
-            break;
-        }
-        if(singleIndex == null){
-            return;
-        }
+        int intCount = Const.INT_COLUMNS.size();
+        int doubleCount = Const.DOUBLE_COLUMNS.size();
+        int numberCount = intCount + doubleCount;
+        int stringCount = Const.STRING_COLUMNS.size();
 
         // write first timestamp
         ByteBuffer buffer = ByteBuffer.allocateDirect(4 * Const.M);
@@ -212,8 +224,10 @@ public class Table {
                 buffer.putShort((short) header.getCount());
                 buffer.putLong(header.getPosition());
                 buffer.putLong(header.getStart());
-                for (int i = 0; i < Const.COLUMNS.size(); i ++){
+                for (int i = 0; i < numberCount + stringCount; i ++){
                     buffer.putInt(header.getPositions()[i]);
+                }
+                for (int i = 0; i < numberCount; i ++){
                     buffer.putDouble(header.getMaxValues()[i]);
                     buffer.putDouble(header.getSumValues()[i]);
                 }
@@ -229,6 +243,12 @@ public class Table {
         Path indexPath = Path.of(basePath, name+ ".index");
         FileChannel ch = FileChannel.open(indexPath, StandardOpenOption.WRITE, StandardOpenOption.READ, StandardOpenOption.CREATE);
 
+        int intCount = Const.INT_COLUMNS.size();
+        int doubleCount = Const.DOUBLE_COLUMNS.size();
+        int numberCount = intCount + doubleCount;
+        int stringCount = Const.STRING_COLUMNS.size();
+        int columnCount = numberCount + stringCount;
+
         ByteBuffer buffer = ByteBuffer.allocateDirect(4 * Const.M);
         while (true){
             buffer.clear();
@@ -241,7 +261,7 @@ public class Table {
             int blockSize = buffer.getShort();
 
             buffer.clear();
-            buffer.limit((4 + 2 + 8 + 8 + Const.COLUMNS.size() * (4+8+8)) * blockSize);
+            buffer.limit((4 + 2 + 8 + 8 + (columnCount) * 4 + numberCount * (8+8)) * blockSize);
             if (ch.read(buffer) != buffer.limit()){
                 break;
             }
@@ -253,12 +273,13 @@ public class Table {
                 int headerCount = buffer.getShort();
                 long headerPosition = buffer.getLong();
                 long headerStart = buffer.getLong();
-
-                int[] headerPositions = new int[Const.COLUMNS.size()];
-                double[] maxValues = new double[Const.COLUMNS.size()];
-                double[] sumValues = new double[Const.COLUMNS.size()];
-                for (int j = 0; j < Const.COLUMNS.size(); j ++){
+                int[] headerPositions = new int[columnCount];
+                double[] maxValues = new double[numberCount];
+                double[] sumValues = new double[numberCount];
+                for (int j = 0; j < columnCount; j ++){
                     headerPositions[j] = buffer.getInt();
+                }
+                for (int j = 0; j < numberCount; j ++){
                     maxValues[j] = buffer.getDouble();
                     sumValues[j] = buffer.getDouble();
                 }

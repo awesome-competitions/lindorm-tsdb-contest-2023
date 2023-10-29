@@ -23,30 +23,28 @@ public class FixedIntCodec extends Codec<int[]>{
     }
 
     @Override
-    public void encode(ByteBuffer src, int[] data) {
+    public void encode(ByteBuffer src, int[] data, int size) {
         BitBuffer buffer = new DirectBitBuffer(src);
-        for (int v: data){
-            buffer.putInt(v - min, bits);
+        for (int i = 0; i < size; i++) {
+            buffer.putInt(data[i] - min, bits);
         }
         buffer.flip();
     }
 
     @Override
-    public int[] decode(ByteBuffer src, int size) {
-        int[] data = Context.getBlockIntValues();
+    public void decode(ByteBuffer src, int[] data, int size) {
         BitBuffer buffer = new DirectBitBuffer(src);
         for (int i = 0; i < size; i++) {
             data[i] = buffer.getIntUnsigned(bits) + min;
         }
-        return data;
     }
 
     public static void main(String[] args) {
         Codec<int[]> compressor = new FixedIntCodec(1,9);
         ByteBuffer src = ByteBuffer.allocate(9);
-        compressor.encode(src, new int[]{1,2,3,4,5,6,7,8,9});
+        compressor.encode(src, new int[]{1,2,3,4,5,6,7,8,9}, 9);
         src.flip();
-        int[] data = compressor.decode(src, 9);
-        System.out.println(Arrays.toString(data));
+        compressor.decode(src, Context.getBlockIntValues(), 9);
+        System.out.println(Arrays.toString(Context.getBlockIntValues()));
     }
 }

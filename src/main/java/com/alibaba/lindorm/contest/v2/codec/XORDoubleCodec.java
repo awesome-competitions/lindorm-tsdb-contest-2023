@@ -9,11 +9,11 @@ import java.util.Arrays;
 
 public class XORDoubleCodec extends Codec<double[]>{
     @Override
-    public void encode(ByteBuffer src, double[] data) {
+    public void encode(ByteBuffer src, double[] data, int size) {
         BitBuffer buffer = new DirectBitBuffer(src);
         long pre = Double.doubleToLongBits(data[0]);
         buffer.putLong(pre);
-        for (int i = 1; i < data.length; i++) {
+        for (int i = 1; i < size; i++) {
             long longValue = Double.doubleToRawLongBits(data[i]);
             long xorValue = longValue ^ pre;
             encodeVarLong(buffer, xorValue);
@@ -23,8 +23,7 @@ public class XORDoubleCodec extends Codec<double[]>{
     }
 
     @Override
-    public double[] decode(ByteBuffer src, int size) {
-        double[] data = Context.getBlockDoubleValues();
+    public void decode(ByteBuffer src, double[] data, int size) {
         BitBuffer buffer = new DirectBitBuffer(src);
         long pre = buffer.getLong();
         data[0] = Double.longBitsToDouble(pre);
@@ -34,7 +33,6 @@ public class XORDoubleCodec extends Codec<double[]>{
             data[i] = Double.longBitsToDouble(longValue);
             pre = longValue;
         }
-        return data;
     }
 
     public static void main(String[] args) {
@@ -49,16 +47,16 @@ public class XORDoubleCodec extends Codec<double[]>{
 
         for (double[] numbers: numbersList){
             ByteBuffer encodedBuffer = ByteBuffer.allocate(3000);
-            varintCodec.encode(encodedBuffer, numbers);
+            varintCodec.encode(encodedBuffer, numbers, numbers.length);
 
             encodedBuffer.flip();
             System.out.println(encodedBuffer.remaining());
 
             int size = numbers.length;
             System.out.println(size * 8);
-            double[] decodedNumbers = varintCodec.decode(encodedBuffer, size);
+            varintCodec.decode(encodedBuffer, Context.getBlockDoubleValues(), size);
 
-            System.out.println(Arrays.toString(decodedNumbers));
+            System.out.println(Arrays.toString(Context.getBlockDoubleValues()));
         }
     }
 }

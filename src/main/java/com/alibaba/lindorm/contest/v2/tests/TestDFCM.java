@@ -1,5 +1,6 @@
 package com.alibaba.lindorm.contest.v2.tests;
 
+import com.alibaba.lindorm.contest.v2.Context;
 import com.alibaba.lindorm.contest.v2.codec.*;
 
 import java.nio.ByteBuffer;
@@ -32,15 +33,15 @@ public class TestDFCM {
         for (Codec<double[]> codec : codecs) {
             System.out.println(codec.getClass().getSimpleName());
             ByteBuffer encodedBuffer = ByteBuffer.allocate(3000);
-            codec.encode(encodedBuffer, numbers);
+            codec.encode(encodedBuffer, numbers, numbers.length);
 
             encodedBuffer.flip();
             System.out.println(encodedBuffer.remaining());
 
             int size = numbers.length;
             System.out.println(size * 8);
-            double[] decodedNumbers = codec.decode(encodedBuffer, size);
-            System.out.println(Arrays.toString(decodedNumbers));
+            codec.decode(encodedBuffer, Context.getBlockDoubleValues(), size);
+            System.out.println(Arrays.toString(Context.getBlockDoubleValues()));
         }
     }
 }

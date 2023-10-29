@@ -9,7 +9,7 @@ import java.util.Arrays;
 
 public class DeltaOfDeltaDFCMCodec extends Codec<double[]>{
     @Override
-    public void encode(ByteBuffer src, double[] data) {
+    public void encode(ByteBuffer src, double[] data, int size) {
         BitBuffer buffer = new DirectBitBuffer(src);
         buffer.putDouble(data[0]);
         if (data.length > 1){
@@ -50,8 +50,7 @@ public class DeltaOfDeltaDFCMCodec extends Codec<double[]>{
     }
 
     @Override
-    public double[] decode(ByteBuffer src, int size) {
-        double[] data = Context.getBlockDoubleValues();
+    public void decode(ByteBuffer src, double[] data, int size) {
         BitBuffer buffer = new DirectBitBuffer(src);
         data[0] = buffer.getDouble();
         if (size > 1){
@@ -77,7 +76,6 @@ public class DeltaOfDeltaDFCMCodec extends Codec<double[]>{
                 preDiff = diff;
             }
         }
-        return data;
     }
 
     public static void main(String[] args) {
@@ -92,7 +90,7 @@ public class DeltaOfDeltaDFCMCodec extends Codec<double[]>{
 //        double[] numbers = {-13061,-14901,-22085,-13557,-15621,-18085,-16757,-19525,-17285,-15253,-13013,-17045,-20613,-17941,-13285,-19381};
 
         ByteBuffer encodedBuffer = ByteBuffer.allocate(3000);
-        varintCodec.encode(encodedBuffer, numbers);
+        varintCodec.encode(encodedBuffer, numbers, numbers.length);
 
         encodedBuffer.flip();
         System.out.println(encodedBuffer.remaining());
@@ -100,8 +98,8 @@ public class DeltaOfDeltaDFCMCodec extends Codec<double[]>{
         int size = numbers.length;
         System.out.println(size * 8);
         System.out.println("==============================");
-        double[] decodedNumbers = varintCodec.decode(encodedBuffer, size);
+        varintCodec.decode(encodedBuffer, Context.getBlockDoubleValues(), size);
 
-        System.out.println(Arrays.toString(decodedNumbers));
+        System.out.println(Arrays.toString(Context.getBlockDoubleValues()));
     }
 }

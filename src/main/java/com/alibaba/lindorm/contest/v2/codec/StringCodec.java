@@ -1,73 +1,60 @@
 package com.alibaba.lindorm.contest.v2.codec;
 
-import com.alibaba.lindorm.contest.v2.Context;
-import com.github.luben.zstd.Zstd;
-
-import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
-import java.util.zip.DataFormatException;
-import java.util.zip.Deflater;
-import java.util.zip.Inflater;
 
-public class BytesCodec extends Codec<ByteBuffer[]>{
+public class StringCodec extends Codec<ByteBuffer[]>{
 
     private final int fixedSize;
 
     private final int maxSize;
 
-    public BytesCodec(int fixedSize) {
+    public StringCodec(int fixedSize) {
         this(fixedSize, 100);
     }
 
-    public BytesCodec(int fixedSize, int maxSize) {
+    public StringCodec(int fixedSize, int maxSize) {
         this.fixedSize = fixedSize;
         this.maxSize = maxSize;
     }
 
-    @Override
-    public void encode(ByteBuffer src, ByteBuffer[] data) {
-        ByteBuffer encodeBuffer = Context.getCodecEncodeBuffer();
-        encodeBuffer.clear();
-        for (ByteBuffer buffer: data){
-            if (fixedSize == 0){
-                if (maxSize < 128){
-                    encodeBuffer.put((byte) buffer.remaining());
-                }else{
-                    encodeBuffer.putShort((short) buffer.remaining());
-                }
-            }
-            encodeBuffer.put(buffer);
-        }
-        encodeBuffer.flip();
-        Zstd.compress(src, encodeBuffer);
+    public int getFixedSize() {
+        return fixedSize;
     }
 
     @Override
-    public ByteBuffer[] decode(ByteBuffer src, int size) {
-        ByteBuffer decodeBuffer = Context.getCodecDecodeBuffer();
-        decodeBuffer.clear();
-        Zstd.decompress(decodeBuffer, src);
-        decodeBuffer.flip();
+    public void encode(ByteBuffer src, ByteBuffer[] data, int size) {
+        for (int i = 0; i < size; i++) {
+            ByteBuffer buffer = data[i];
+            if (fixedSize == 0){
+                if (maxSize < 128){
+                    src.put((byte) buffer.remaining());
+                }else{
+                    src.putShort((short) buffer.remaining());
+                }
+            }
+            src.put(buffer);
+        }
+    }
 
-        ByteBuffer[] stringValues = Context.getBlockStringValues();
+    @Override
+    public void decode(ByteBuffer src, ByteBuffer[] data, int size) {
         for (int i = 0; i < size; i++) {
             int capacity = fixedSize;
             if (capacity == 0){
                 if (maxSize < 128){
-                    capacity = decodeBuffer.get();
+                    capacity = src.get();
                 }else{
-                    capacity = decodeBuffer.getShort();
+                    capacity = src.getShort();
                 }
             }
             ByteBuffer val = ByteBuffer.allocate(capacity);
-            decodeBuffer.get(val.array(), 0, val.limit());
-            stringValues[i] = val;
+            src.get(val.array(), 0, val.limit());
+            data[i] = val;
         }
-        return stringValues;
     }
 
     public static void main(String[] args) {
-        BytesCodec bc = new BytesCodec(0, 5000);
+        StringCodec bc = new StringCodec(0, 5000);
 
 //        String str = "i\\8K#0#0\\ySG.SSa[8.OmCiS\\\\mSyayK&aqa..Sm'Ca[[mG-0&-''''4q[muy#G0'KWmSa#4yKme48OmKuO'[4&iG[q#4[u\\44yu9q\\y#.mm8C.-K8iS[Gq[uy.-'&WK&u&4SSm'.WayWaO[OeC\\4C00&-8C&yim\\qqaeCO..uCKWaCSO-qS&-0maO-y#W''WSyeWuGy#9-'&'O840O'm8iyO''eO48yyeyy[444#e8WGq#mGqmu40[GyWCC8\\&8SG8qi'GO4&Gu.8[8y.\\KOe-meW.8O'#.\\[WK#u&.S[&a#S9aS'S4aC\\eu4CSyyiaGCeuq4e8iuee808u-0WeS-#G80yaOS.[4\\q0C\\8&\\y'W\\q#\\uKKWSeC\\aS[u'yyWaq0..'SS0y.yKGqKG.89yCm'4&m0--S.W0q[uam[eu-0K0S#O&-.mu'\\iaOq#0mKyS0[e-iOGSmia4SC4qyyy8ySa4S[ui#[8iS8yi4[iu8u8K[-aqy[u4&\\9K0aGK#4SyKW&0.y'-'0m'\\[C&'-OWu.\\'&WCe-\\.Kq\\i[-G'Kae0WmS.m0[8-eSO[iCaK\\mm#Gy.O[i[.yG\\y[a\\#eG..iuSySGa90[aC4iG-ye8[-C\\8i#O#O[aC\\.C-W#0'OOimCu.84\\e'qaO#-\\a\\[8Kuuq'quS8KCKSOqWSKCyW[.iyKeKOiKuy0'.e[\\8OWq#qu9qK\\#K&SOueGSi&Cqu-.u&S#8CSmeGiuO-[OWSa&88y&iOG[&''eCum-yau-C['&GG\\[imyaOKC&8#q08mi.m[-\\aa-'W8W'4O.eK90[G8.-#-&-&\\8[4WG[umO8#OO-K[u8ae&4C'&-0&q[mGS\\0'SyG.Saei0\\0#SOeW4S[WK#4CuqC[[4Sy\\-S0.#0GqyW0['e.CO''9m.-qK-8.Su#&'eWe0#m'..m&.Ki#Wu'4.\\O8'#O8m#4-#iaO'Oq-CK4i&iaWqqySe8imC\\KCy[Cq0q\\0.eu8.iyya\\ymS4aW[CCq9W.ym.KCCa.imem[K#&.[8m0Wim-S[-#u'uC4qS#&8ya4&4&q'-S\\0#CGCq-'[m0uC[i0aCaqi#\\-y4-q#&&Wi0.4q-Cq8a0\\mGqm9m.mi-G&'GyKm8C4Kq&K#&4[#[qGy#S4e.Ge'Cy&u-e0mu&CaW4ymi#i&.[8yy'&u4'iq[CS-[-uGa.W8[8yaaGi4#\\O'eyKa8uK\\98a..WamS['C0KS0Om[GiC#4&['G[W.i0CuyKOC[i[e-WCS8'-aCyW8[-ay8''OC\\&a8i&0-GKK0.K88[uqGy#aCSq.ye'iOe.Gme9a.'4uyy#8KC0KaWS\\Wq'&q\\[\\[CmS0WiO.G\\KWy4uyWS0y&qOW4&-mqa&W#OyGuOG4a'8[8ySaC.4-0['4yGS0CG&8i\\G.Wqq'OC9G44SyWSSK0K\\WyWGu-yy[u-\\-Ce.\\0iu-CO04Syme.Ky\\#08WaquGKKi'44qaq0eq[iq8u'#a.\\.0#yu-4G#0-OuGW-meu#ai&0C";
 //        String str = "GmyKO8&y.SyuSm8Sy4que-8CCmiiCWSyu'eCa4GGmy4\\m4[0e&--yKSGWumeW.\\00#-.'&O-&4qiOq\\O4.\\C8yqK&qaq#OGummaaa0.-GKO'm-0i.[O##u-[me.m4SO-uCOC0-i\\qmCauSiO8#iOS0K00-Oa\\mCWe8i&q#&OuC'8yK#C.CeC";
@@ -86,7 +73,7 @@ public class BytesCodec extends Codec<ByteBuffer[]>{
             data.put(str.getBytes());
             data.flip();
 
-            bc.encode(src, new ByteBuffer[]{data});
+            bc.encode(src, new ByteBuffer[]{data}, 1);
             src.flip();
 
             System.out.println(src.remaining() + "/" + str.length() + "=" + (src.remaining() * 1.0 / str.length()));
@@ -104,7 +91,7 @@ public class BytesCodec extends Codec<ByteBuffer[]>{
         data.put(str1.getBytes());
         data.flip();
 
-        bc.encode(src, new ByteBuffer[]{data});
+        bc.encode(src, new ByteBuffer[]{data}, 1);
         src.flip();
 
         System.out.println("multi compress: " + src.remaining() + "/" + str1.length() + "=" + (src.remaining() * 1.0 / str1.length()));

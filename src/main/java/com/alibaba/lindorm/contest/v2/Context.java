@@ -21,25 +21,13 @@ public class Context {
         return ctx;
     }
 
-    private final ByteBuffer dataWriteBuffer;
-
-    private final ByteBuffer dataReadBuffer;
-
     private final ByteBuffer blockWriteBuffer;
 
     private final ByteBuffer blockReadBuffer;
 
-    private final ByteBuffer blockHeaderBuffer;
-
-    private final ByteBuffer blockDataBuffer;
-
     private final ByteBuffer codecEncodeBuffer;
 
     private final ByteBuffer codecDecodeBuffer;
-
-    private final int[] blockPositions;
-
-    private final long[] blockTimestamps;
 
     private final int[] blockIntValues;
 
@@ -47,41 +35,18 @@ public class Context {
 
     private final ByteBuffer[] blockStringValues;
 
-
     public Context() {
-        this.dataWriteBuffer = ByteBuffer.allocateDirect(Const.BYTE_BUFFER_SIZE);
-        this.dataReadBuffer = ByteBuffer.allocateDirect(Const.BYTE_BUFFER_SIZE);
         this.blockWriteBuffer = ByteBuffer.allocateDirect(Const.BYTE_BUFFER_SIZE);
-        this.blockHeaderBuffer = ByteBuffer.allocateDirect(Const.BYTE_BUFFER_SIZE);
-        this.blockDataBuffer = ByteBuffer.allocateDirect(Const.BYTE_BUFFER_SIZE);
         this.blockReadBuffer = ByteBuffer.allocateDirect(Const.BYTE_BUFFER_SIZE);
         this.codecEncodeBuffer = ByteBuffer.allocateDirect(Const.BYTE_BUFFER_SIZE);
         this.codecDecodeBuffer = ByteBuffer.allocateDirect(Const.BYTE_BUFFER_SIZE);
-        this.blockPositions = new int[Const.COLUMNS.size()];
-        this.blockTimestamps = new long[Const.BLOCK_SIZE];
         this.blockIntValues = new int[Const.BLOCK_SIZE];
         this.blockDoubleValues = new double[Const.BLOCK_SIZE];
         this.blockStringValues = new ByteBuffer[Const.BLOCK_SIZE];
     }
 
-    public static ByteBuffer getDataWriteBuffer() {
-        return get().dataWriteBuffer;
-    }
-
-    public static ByteBuffer getDataReadBuffer() {
-        return get().dataReadBuffer;
-    }
-
     public static ByteBuffer getBlockWriteBuffer() {
         return get().blockWriteBuffer;
-    }
-
-    public static ByteBuffer getBlockHeaderBuffer() {
-        return get().blockHeaderBuffer;
-    }
-
-    public static ByteBuffer getBlockDataBuffer() {
-        return get().blockDataBuffer;
     }
 
     public static ByteBuffer getBlockReadBuffer() {
@@ -96,13 +61,6 @@ public class Context {
         return get().codecDecodeBuffer;
     }
 
-    public static int[] getBlockPositions() {
-        return get().blockPositions;
-    }
-
-    public static long[] getBlockTimestamps() {
-        return get().blockTimestamps;
-    }
 
     public static int[] getBlockIntValues() {
         return get().blockIntValues;

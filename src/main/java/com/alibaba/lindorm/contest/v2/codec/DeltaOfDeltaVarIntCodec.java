@@ -14,13 +14,13 @@ public class DeltaOfDeltaVarIntCodec extends Codec<int[]> {
     }
 
     @Override
-    public void encode(ByteBuffer src, int[] data) {
+    public void encode(ByteBuffer src, int[] data, int size) {
         BitBuffer buffer = new DirectBitBuffer(src);
         buffer.putInt(data[0]);
         if (data.length > 1){
             buffer.putInt(data[1]);
             int preDiff = data[1] - data[0];
-            for (int i = 2; i < data.length; i++) {
+            for (int i = 2; i < size; i++) {
                 int diff = data[i] - data[i - 1];
                 encodeVarInt(buffer, diff - preDiff);
                 preDiff = diff;
@@ -30,8 +30,7 @@ public class DeltaOfDeltaVarIntCodec extends Codec<int[]> {
     }
 
     @Override
-    public int[] decode(ByteBuffer src, int size) {
-        int[] data = Context.getBlockIntValues();
+    public void decode(ByteBuffer src, int[] data, int size) {
         BitBuffer buffer = new DirectBitBuffer(src);
         data[0] = buffer.getInt();
         if (size > 1){
@@ -43,7 +42,6 @@ public class DeltaOfDeltaVarIntCodec extends Codec<int[]> {
                 preDiff = diff;
             }
         }
-        return data;
     }
 
     public static void main(String[] args) {
@@ -51,15 +49,15 @@ public class DeltaOfDeltaVarIntCodec extends Codec<int[]> {
         int[] numbers = {-13061,-14901,-22085,-13557,-15621,-18085,-16757,-19525,-17285,-15253,-13013,-17045,-20613,-17941,-13285,-19381};
 
         ByteBuffer encodedBuffer = ByteBuffer.allocate(3000);
-        varintCodec.encode(encodedBuffer, numbers);
+        varintCodec.encode(encodedBuffer, numbers, numbers.length);
 
         encodedBuffer.flip();
         System.out.println(encodedBuffer.remaining());
 
         int size = numbers.length;
-        int[] decodedNumbers = varintCodec.decode(encodedBuffer, size);
+        varintCodec.decode(encodedBuffer, Context.getBlockIntValues(), size);
 
-        for (Integer num : decodedNumbers) {
+        for (Integer num : Context.getBlockIntValues()) {
             System.out.println("Decoded: " + num);
         }
     }

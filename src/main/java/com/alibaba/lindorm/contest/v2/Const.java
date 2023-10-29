@@ -34,7 +34,14 @@ public interface Const {
 
     // column
     int COLUMN_COUNT = 60;
+    int INT_COLUMN_COUNT = 40;
+    int DOUBLE_COLUMN_COUNT = 10;
+    int STRING_COLUMN_COUNT = 10;
     List<String> COLUMNS = new ArrayList<>(COLUMN_COUNT);
+    List<String> INT_COLUMNS = new ArrayList<>(INT_COLUMN_COUNT);
+    List<String> DOUBLE_COLUMNS = new ArrayList<>(DOUBLE_COLUMN_COUNT);
+    List<String> STRING_COLUMNS = new ArrayList<>(STRING_COLUMN_COUNT);
+
     long[] COLUMNS_SIZE = new long[COLUMN_COUNT];
 
     Map<String, Column> COLUMNS_INDEX = new HashMap<>(COLUMN_COUNT);
@@ -98,19 +105,21 @@ public interface Const {
     }};
 
     Map<String, Codec<ByteBuffer[]>> COLUMNS_STRING_CODEC = new HashMap<>(COLUMN_COUNT){{
-        put("FVXS", Codec.bytesCodec());
-        put("LIYD", Codec.bytesCodec(1));
-        put("ZEBY", Codec.bytesCodec(7));
-        put("UFPI", Codec.bytesCodec(5));
-        put("UZSV", Codec.bytesCodec(15));
-        put("FLLY", Codec.bytesCodec(1));
-        put("JUBK", Codec.bytesCodec(100));
-        put("ORNI", Codec.bytesCodec(30));
-        put("SCHU", Codec.bytesCodec());
-        put("GLNG", Codec.bytesCodec());
+        put("FVXS", Codec.stringCodec());
+        put("LIYD", Codec.stringCodec(1));
+        put("ZEBY", Codec.stringCodec(7));
+        put("UFPI", Codec.stringCodec(5));
+        put("UZSV", Codec.stringCodec(15));
+        put("FLLY", Codec.stringCodec(1));
+        put("JUBK", Codec.stringCodec(100));
+        put("ORNI", Codec.stringCodec(30));
+        put("SCHU", Codec.stringCodec());
+        put("GLNG", Codec.stringCodec());
     }};
 
     Codec<int[]> DEFAULT_INT_CODEC = new DefaultIntCodec();
     Codec<double[]> DEFAULT_DOUBLE_CODEC = new DefaultDoubleCodec();
-    Codec<ByteBuffer[]> DEFAULT_STRING_CODEC = new DefaultBytesCodec();
+    Codec<ByteBuffer[]> DEFAULT_STRING_CODEC = Codec.stringCodec();
+
+    Codec<ByteBuffer> BYTE_BUFFER_CODEC = new ZstdCodec();
 }

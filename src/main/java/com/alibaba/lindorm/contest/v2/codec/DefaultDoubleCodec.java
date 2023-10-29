@@ -6,18 +6,16 @@ import java.nio.ByteBuffer;
 
 public class DefaultDoubleCodec extends Codec<double[]>{
     @Override
-    public void encode(ByteBuffer src, double[] data) {
-        for (double value : data) {
-            src.putDouble(value);
+    public void encode(ByteBuffer src, double[] data, int size) {
+        for (int i = 0; i < size; i++) {
+            src.putDouble(data[i]);
         }
     }
 
     @Override
-    public double[] decode(ByteBuffer src, int size) {
-        double[] data = Context.getBlockDoubleValues();
+    public void decode(ByteBuffer src, double[] data, int size) {
         for (int i = 0; i < size; i++) {
             data[i] = src.getDouble();
         }
-        return data;
     }
 }

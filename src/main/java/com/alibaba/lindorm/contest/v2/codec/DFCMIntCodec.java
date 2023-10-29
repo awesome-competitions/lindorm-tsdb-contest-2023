@@ -9,10 +9,10 @@ import java.util.Arrays;
 
 public class DFCMIntCodec extends Codec<int[]>{
     @Override
-    public void encode(ByteBuffer src, int[] data) {
+    public void encode(ByteBuffer src, int[] data, int size) {
         BitBuffer buffer = new DirectBitBuffer(src);
         int preLeadingZeros = -1;
-        for (int i = 0; i < data.length; i++) {
+        for (int i = 0; i < size; i++) {
             int leadingZeros = Integer.numberOfLeadingZeros(data[i]);
             if (preLeadingZeros >= 0 && leadingZeros == preLeadingZeros) {
                 buffer.putBit(true);
@@ -28,8 +28,7 @@ public class DFCMIntCodec extends Codec<int[]>{
     }
 
     @Override
-    public int[] decode(ByteBuffer src, int size) {
-        int[] data = Context.getBlockIntValues();
+    public void decode(ByteBuffer src, int[] data, int size) {
         BitBuffer buffer = new DirectBitBuffer(src);
         int preLeadingZeros = -1;
         for (int i = 0; i < size; i++) {
@@ -39,7 +38,6 @@ public class DFCMIntCodec extends Codec<int[]>{
             int v = buffer.getIntUnsigned(32 - preLeadingZeros);
             data[i] = v;
         }
-        return data;
     }
 
     public static void main(String[] args) {
@@ -50,14 +48,14 @@ public class DFCMIntCodec extends Codec<int[]>{
 
 
         ByteBuffer encodedBuffer = ByteBuffer.allocate(3000);
-        varintCodec.encode(encodedBuffer, numbers);
+        varintCodec.encode(encodedBuffer, numbers, numbers.length);
 
         encodedBuffer.flip();
         System.out.println(encodedBuffer.remaining());
         System.out.println(numbers.length * 4);
 
         int size = numbers.length;
-        int[] decodedNumbers = varintCodec.decode(encodedBuffer, size);
-        System.out.println(Arrays.toString(decodedNumbers));
+        varintCodec.decode(encodedBuffer, Context.getBlockIntValues(), size);
+        System.out.println(Arrays.toString(Context.getBlockIntValues()));
     }
 }

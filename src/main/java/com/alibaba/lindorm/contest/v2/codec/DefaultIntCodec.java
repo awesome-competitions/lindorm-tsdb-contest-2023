@@ -6,18 +6,16 @@ import java.nio.ByteBuffer;
 
 public class DefaultIntCodec extends Codec<int[]>{
     @Override
-    public void encode(ByteBuffer src, int[] data) {
-        for (int value : data) {
-            src.putInt(value);
+    public void encode(ByteBuffer src, int[] data, int size) {
+        for (int i = 0; i < size; i++) {
+            src.putInt(data[i]);
         }
     }
 
     @Override
-    public int[] decode(ByteBuffer src, int size) {
-        int[] data = Context.getBlockIntValues();
+    public void decode(ByteBuffer src, int[] data, int size) {
         for (int i = 0; i < size; i++) {
             data[i] = src.getInt();
         }
-        return data;
     }
 }

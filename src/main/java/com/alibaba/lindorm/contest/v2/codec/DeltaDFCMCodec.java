@@ -10,14 +10,14 @@ import java.util.Arrays;
 public class DeltaDFCMCodec extends Codec<double[]>{
 
     @Override
-    public void encode(ByteBuffer src, double[] data) {
+    public void encode(ByteBuffer src, double[] data, int size) {
         BitBuffer buffer = new DirectBitBuffer(src);
         buffer.putDouble(data[0]);
         if (data.length > 1){
             double preDiff = 0;
             int preLeadingZeros = -1;
             int preTrailingZeros = -1;
-            for (int i = 1; i < data.length; i++) {
+            for (int i = 1; i < size; i++) {
                 double diff = data[i] - data[i - 1];
                 long v1 = Double.doubleToRawLongBits(diff);
                 long v2 = Double.doubleToRawLongBits(preDiff);
@@ -48,8 +48,7 @@ public class DeltaDFCMCodec extends Codec<double[]>{
     }
 
     @Override
-    public double[] decode(ByteBuffer src, int size) {
-        double[] data = Context.getBlockDoubleValues();
+    public void decode(ByteBuffer src, double[] data, int size) {
         BitBuffer buffer = new DirectBitBuffer(src);
         data[0] = buffer.getDouble();
         if (size > 1){
@@ -72,7 +71,6 @@ public class DeltaDFCMCodec extends Codec<double[]>{
                 preDiff = diff;
             }
         }
-        return data;
     }
 
     public static void main(String[] args) {
@@ -87,7 +85,7 @@ public class DeltaDFCMCodec extends Codec<double[]>{
 //        double[] numbers = {-13061,-14901,-22085,-13557,-15621,-18085,-16757,-19525,-17285,-15253,-13013,-17045,-20613,-17941,-13285,-19381};
 
         ByteBuffer encodedBuffer = ByteBuffer.allocate(3000);
-        varintCodec.encode(encodedBuffer, numbers);
+        varintCodec.encode(encodedBuffer, numbers, numbers.length);
 
         encodedBuffer.flip();
         System.out.println(encodedBuffer.remaining());
@@ -95,8 +93,8 @@ public class DeltaDFCMCodec extends Codec<double[]>{
         int size = numbers.length;
         System.out.println(size * 8);
         System.out.println("==============================");
-        double[] decodedNumbers = varintCodec.decode(encodedBuffer, size);
+        varintCodec.decode(encodedBuffer, Context.getBlockDoubleValues(), size);
 
-        System.out.println(Arrays.toString(decodedNumbers));
+        System.out.println(Arrays.toString(Context.getBlockDoubleValues()));
     }
 }

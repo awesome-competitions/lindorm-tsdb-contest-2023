@@ -21,11 +21,11 @@ public class RunLengthIntCodec extends Codec<int[]>{
     }
 
     @Override
-    public void encode(ByteBuffer src, int[] data) {
+    public void encode(ByteBuffer src, int[] data, int size) {
         BitBuffer buffer = new DirectBitBuffer(src);
         int v = data[0];
         int len = 1;
-        for (int i = 1; i < data.length; i++) {
+        for (int i = 1; i < size; i++) {
            if (data[i] == v && len < runLengthMaxSize){
                len ++;
                continue;
@@ -41,8 +41,7 @@ public class RunLengthIntCodec extends Codec<int[]>{
     }
 
     @Override
-    public int[] decode(ByteBuffer src, int size) {
-        int[] data = Context.getBlockIntValues();
+    public void decode(ByteBuffer src, int[] data, int size) {
         BitBuffer buffer = new DirectBitBuffer(src);
         int index = 0;
         while (index < size){
@@ -52,18 +51,17 @@ public class RunLengthIntCodec extends Codec<int[]>{
                 data[index++] = v;
             }
         }
-        return data;
     }
 
     public static void main(String[] args) {
         Codec<int[]> compressor = new RunLengthIntCodec(15);
         ByteBuffer src = ByteBuffer.allocate(1000);
         int[] ints = new int[]{12393,12393,12393,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394,12394};
-        compressor.encode(src, ints);
+        compressor.encode(src, ints, ints.length);
         src.flip();
         System.out.println(src.remaining());
-        int[] data = compressor.decode(src, ints.length);
-        System.out.println(Arrays.toString(data));
+        compressor.decode(src, Context.getBlockIntValues(), ints.length);
+        System.out.println(Arrays.toString(Context.getBlockIntValues()));
     }
 
 }

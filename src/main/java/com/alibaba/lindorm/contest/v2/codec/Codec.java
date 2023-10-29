@@ -7,9 +7,9 @@ import java.nio.ByteBuffer;
 
 public abstract class Codec<T> {
 
-    public abstract void encode(ByteBuffer src, T data);
+    public abstract void encode(ByteBuffer src, T data, int size);
 
-    public abstract T decode(ByteBuffer src, int size);
+    public abstract void decode(ByteBuffer src, T data, int size);
 
     public static Codec<int[]> deltaIntCodec(int deltaSize){
         return new DeltaIntCodec(deltaSize);
@@ -36,12 +36,12 @@ public abstract class Codec<T> {
         return new DeltaOfDeltaBDFCMCodec();
     }
 
-    public static Codec<ByteBuffer[]> bytesCodec(){
-        return new BytesCodec(0);
+    public static Codec<ByteBuffer[]> stringCodec(){
+        return new StringCodec(0);
     }
 
-    public static Codec<ByteBuffer[]> bytesCodec(int fixedSize){
-        return new BytesCodec(fixedSize);
+    public static Codec<ByteBuffer[]> stringCodec(int fixedSize){
+        return new StringCodec(fixedSize);
     }
 
     public static Codec<int[]> deltaOfDeltaIntCodec(int deltaSize){
