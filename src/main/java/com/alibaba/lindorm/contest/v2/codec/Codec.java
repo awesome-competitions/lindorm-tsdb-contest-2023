@@ -40,6 +40,10 @@ public abstract class Codec<T> {
         return new DeltaOfDeltaBDFCMCodec();
     }
 
+    public static Codec<double[]> zstdDoubleCodec(){
+        return new ZSTDDoubleCodec();
+    }
+
     public static Codec<ByteBuffer[]> stringCodec(){
         return new StringCodec(0);
     }

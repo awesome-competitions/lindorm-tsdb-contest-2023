@@ -7,6 +7,7 @@ import net.magik6k.bitbuffer.DirectBitBuffer;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Random;
 
 public class SimpleBDFCMCodec extends Codec<double[]>{
 
@@ -71,9 +72,17 @@ public class SimpleBDFCMCodec extends Codec<double[]>{
                 {154476.05679147458,154491.5267799328,154492.2854211078,154490.20782726153,154490.97573887615,154488.3228144937,154489.0859333985,154486.44652734432,154486.07722810772,154486.8448577259,154474.98827819715,154475.74691827522,154473.12911031581,154473.89224518865,154471.81914717602,154472.5822820575}
         };
 
+        double[] v = new double[600];
+        v[0] = 9973.29309055919;
+        Random random = new Random();
+        for (int i = 1; i < 600; i ++){
+            v[i] += v[i-1] + random.nextDouble();
+        }
+        numbersList[0] = v;
+
         int total = 0;
         for (double[] numbers: numbersList){
-            ByteBuffer encodedBuffer = ByteBuffer.allocate(3000);
+            ByteBuffer encodedBuffer = ByteBuffer.allocate(300000);
             varintCodec.encode(encodedBuffer, numbers, numbers.length);
 
             encodedBuffer.flip();
