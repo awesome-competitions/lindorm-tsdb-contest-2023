@@ -48,8 +48,16 @@ public abstract class Codec<T> {
         return new StringCodec(0);
     }
 
+    public static Codec<ByteBuffer[]> originalStringCodec(){
+        return new OriginalStringCodec(0);
+    }
+
     public static Codec<ByteBuffer[]> stringCodec(int fixedSize){
         return new StringCodec(fixedSize);
+    }
+
+    public static Codec<ByteBuffer[]> originalStringCodec(int fixedSize){
+        return new OriginalStringCodec(fixedSize);
     }
 
     public static Codec<int[]> deltaOfDeltaIntCodec(){
