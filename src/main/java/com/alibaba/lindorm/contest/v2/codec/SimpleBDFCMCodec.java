@@ -22,25 +22,21 @@ public class SimpleBDFCMCodec extends Codec<double[]>{
                 long v1 = Double.doubleToRawLongBits(data[i]);
                 long v2 = Double.doubleToRawLongBits(data[i - 1]);
                 long xorValue = v1 ^ v2;
-                int leadingZeros = Long.numberOfLeadingZeros(xorValue) / 3;
-                if (leadingZeros < minLeadingZeros){
-                    minLeadingZeros = leadingZeros;
-                }
-                if (leadingZeros > maxLeadingZeros){
-                    maxLeadingZeros = leadingZeros;
-                }
+                int leadingZeros = Long.numberOfLeadingZeros(xorValue);
+                minLeadingZeros = Math.min(minLeadingZeros, leadingZeros);
+                maxLeadingZeros = Math.max(maxLeadingZeros, leadingZeros);
             }
             int leadingZerosDeltaBits = Util.parseBits(maxLeadingZeros - minLeadingZeros, true);
-            buffer.putInt(minLeadingZeros, 4);
-            buffer.putInt(leadingZerosDeltaBits, 4);
+            buffer.putInt(minLeadingZeros, 6);
+            buffer.putInt(leadingZerosDeltaBits, 6);
 
             for (int i = 1; i < size; i++) {
                 long v1 = Double.doubleToRawLongBits(data[i]);
                 long v2 = Double.doubleToRawLongBits(data[i - 1]);
                 long xorValue = v1 ^ v2;
-                int leadingZeros = Long.numberOfLeadingZeros(xorValue) / 3;
+                int leadingZeros = Long.numberOfLeadingZeros(xorValue);
                 buffer.putInt(leadingZeros - minLeadingZeros, leadingZerosDeltaBits);
-                buffer.putLong(xorValue, 64 - leadingZeros * 3);
+                buffer.putLong(xorValue, 64 - leadingZeros);
             }
         }
         buffer.flip();
@@ -51,11 +47,11 @@ public class SimpleBDFCMCodec extends Codec<double[]>{
         BitBuffer buffer = new DirectBitBuffer(src);
         data[0] = buffer.getDouble();
         if (size > 1){
-            int minLeadingZeros = buffer.getIntUnsigned(4);
-            int leadingZerosDeltaBits = buffer.getIntUnsigned(4);
+            int minLeadingZeros = buffer.getIntUnsigned(6);
+            int leadingZerosDeltaBits = buffer.getIntUnsigned(6);
             for (int i = 1; i < size; i++) {
                 int leadingZeros = buffer.getIntUnsigned(leadingZerosDeltaBits) + minLeadingZeros;
-                long xorValue = buffer.getLongUnsigned(64 - leadingZeros * 3);
+                long xorValue = buffer.getLongUnsigned(64 - leadingZeros);
                 long v1 = Double.doubleToRawLongBits(data[i-1]);
                 data[i] = Double.longBitsToDouble(v1 ^ xorValue);
             }
@@ -71,14 +67,6 @@ public class SimpleBDFCMCodec extends Codec<double[]>{
                 {9493.598575277196,9490.116340839557,9489.94557365169,9490.413231973373,9490.240378045479,9490.837541040784,9490.665765933289,9491.259886005302,9491.343013831993,9491.170223380403,9493.83909347421,9493.668326533254,9494.257584957846,9494.085806256011,9494.552452582973,9494.380673879194},
                 {154476.05679147458,154491.5267799328,154492.2854211078,154490.20782726153,154490.97573887615,154488.3228144937,154489.0859333985,154486.44652734432,154486.07722810772,154486.8448577259,154474.98827819715,154475.74691827522,154473.12911031581,154473.89224518865,154471.81914717602,154472.5822820575}
         };
-
-        double[] v = new double[600];
-        v[0] = 9973.29309055919;
-        Random random = new Random();
-        for (int i = 1; i < 600; i ++){
-            v[i] += v[i-1] + random.nextDouble();
-        }
-        numbersList[0] = v;
 
         int total = 0;
         for (double[] numbers: numbersList){
