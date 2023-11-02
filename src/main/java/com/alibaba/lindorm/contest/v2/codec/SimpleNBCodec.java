@@ -10,6 +10,8 @@ import java.util.Arrays;
 
 public class SimpleNBCodec extends Codec<int[]>{
 
+    private final int reduceBits = 4;
+
     @Override
     public void encode(ByteBuffer src, int[] data, int size) {
         int minValue = Integer.MAX_VALUE;
@@ -23,11 +25,13 @@ public class SimpleNBCodec extends Codec<int[]>{
             }
         }
         int maxBits = Util.parseBits(maxValue - minValue, true);
+        maxBits -= reduceBits;
+
         BitBuffer buffer = new DirectBitBuffer(src);
         encodeVarInt(buffer, minValue);
         buffer.put(maxBits, 5);
         for (int value : data) {
-            buffer.putInt(value - minValue, maxBits);
+            buffer.putInt((value - minValue) >> reduceBits, maxBits);
         }
         buffer.flip();
     }
@@ -38,7 +42,7 @@ public class SimpleNBCodec extends Codec<int[]>{
         int min = decodeVarInt(buffer);
         int bits = buffer.getIntUnsigned(5);
         for (int i = 0; i < size; i++) {
-            data[i] = buffer.getIntUnsigned(bits) + min;
+            data[i] = (buffer.getIntUnsigned(bits) << reduceBits) + min;
         }
     }
 
@@ -50,12 +54,20 @@ public class SimpleNBCodec extends Codec<int[]>{
         ByteBuffer encodedBuffer = ByteBuffer.allocate(3000);
         varintCodec.encode(encodedBuffer, numbers, numbers.length);
 
+        System.out.println("=====================");
         encodedBuffer.flip();
         System.out.println(encodedBuffer.remaining());
         System.out.println(numbers.length * 4);
 
         int size = numbers.length;
         varintCodec.decode(encodedBuffer, Context.getBlockIntValues(), size);
+
+        for (int i = 0; i < size; i++) {
+            if (numbers[i] != Context.getBlockIntValues()[i]){
+                throw new RuntimeException("error");
+            }
+        }
+
         System.out.println(Arrays.toString(Context.getBlockIntValues()));
     }
 }
