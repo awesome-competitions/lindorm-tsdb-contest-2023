@@ -1,5 +1,6 @@
 package com.alibaba.lindorm.contest.v2.codec;
 
+import com.alibaba.lindorm.contest.util.Simple8RLE;
 import com.alibaba.lindorm.contest.util.Util;
 import com.alibaba.lindorm.contest.v2.Context;
 import net.magik6k.bitbuffer.ArrayBitBuffer;
@@ -18,24 +19,17 @@ public class DeltaOfDeltaIntCodec extends Codec<int[]> {
         if (data.length > 1){
             int preDiff = data[1] - data[0];
             encodeVarInt(buffer, preDiff);
-            int maxDelta = Integer.MIN_VALUE;
+            long[] diffs = new long[size - 2];
+            long[] encodedDiffs = new long[size - 2];
             for (int i = 2; i < size; i++) {
                 int diff = data[i] - data[i - 1];
                 int v = encodeZigzag(diff - preDiff);
-                if (v > maxDelta){
-                    maxDelta = v;
-                }
+                diffs[i - 2] = v;
                 preDiff = diff;
             }
-
-            int deltaBits = Util.parseBits(maxDelta, true);
-            buffer.putInt(deltaBits, 2);
-            preDiff = data[1] - data[0];
-            for (int i = 2; i < size; i++) {
-                int diff = data[i] - data[i - 1];
-                int v = encodeZigzag(diff - preDiff);
-                buffer.putInt(v, deltaBits);
-                preDiff = diff;
+            int len = Simple8RLE.compress(diffs, encodedDiffs);
+            for (int i = 0; i < len; i++) {
+                buffer.putLong(encodedDiffs[i]);
             }
         }
         buffer.flip();
@@ -47,10 +41,16 @@ public class DeltaOfDeltaIntCodec extends Codec<int[]> {
         data[0] = decodeVarInt(buffer);
         if (size > 1){
             data[1] = data[0] + decodeVarInt(buffer);
-            int deltaBits = buffer.getIntUnsigned(2);
+
+            long[] diffs = new long[size - 2];
+            long[] encodedDiffs = new long[(int) ((src.limit() * 8 - buffer.position()) / 64)];
+            for (int i = 0; i < encodedDiffs.length; i++) {
+                encodedDiffs[i] = buffer.getLong();
+            }
+            Simple8RLE.decompress(encodedDiffs, 0, encodedDiffs.length, diffs, 0);
             int preDiff = data[1] - data[0];
             for (int i = 2; i < size; i++) {
-                int diff = decodeZigzag(buffer.getIntUnsigned(deltaBits)) + preDiff;
+                int diff = decodeZigzag((int)diffs[i-2]) + preDiff;
                 data[i] = data[i - 1] + diff;
                 preDiff = diff;
             }
