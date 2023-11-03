@@ -26,14 +26,17 @@ public class Table {
 
     private final Map<Vin, Integer> vinIds;
 
-    private final Data data;
+    private final Data[] data;
 
     public Table(String basePath, String tableName) throws IOException {
         this.name = tableName;
         this.basePath = basePath;
         this.indexes = new ConcurrentHashMap<>(Const.VIN_COUNT, 0.65F);
         this.vinIds = new ConcurrentHashMap<>();
-        this.data = new Data(Path.of(basePath, tableName + ".data"), StandardOpenOption.WRITE, StandardOpenOption.READ, StandardOpenOption.CREATE);
+        this.data = new Data[Const.DATA_COUNT];
+        for (int i = 0; i < Const.DATA_COUNT; i++){
+            this.data[i] = new Data(Path.of(basePath, tableName + ".data." + i), StandardOpenOption.WRITE, StandardOpenOption.READ, StandardOpenOption.CREATE);
+        }
     }
 
     public void setSchema(Schema schema) {
@@ -81,7 +84,7 @@ public class Table {
     }
 
     public Index getOrCreateVinIndex(Integer vinId){
-        return indexes.computeIfAbsent(vinId, k -> new Index(this.data, vinId));
+        return indexes.computeIfAbsent(vinId, k -> new Index(this.data[vinId%Const.DATA_COUNT], vinId));
     }
 
     public Index getOrCreateVinIndex(Vin vin){
@@ -166,17 +169,25 @@ public class Table {
         for (Index index: indexes.values()){
             index.flush();
         }
-        this.data.force();
+        for (Data f: data){
+            f.force();
+        }
         this.flushSchema();
         this.flushIndex();
     }
 
     public long size() throws IOException {
-        return this.data.size();
+        long size = 0;
+        for (Data f: data){
+            size += f.size();
+        }
+        return size;
     }
 
     public void close() throws IOException {
-        this.data.close();
+        for (Data f: data){
+            f.close();
+        }
     }
 
     public void flushSchema() throws IOException {

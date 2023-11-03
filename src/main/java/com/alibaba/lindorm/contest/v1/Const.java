@@ -6,7 +6,7 @@ import java.util.ArrayList;
 
 public interface Const {
 
-    String TEST_DATA_DIR = "/Users/nico/workspace/nico/test/lindorm-tsdb/";
+    String TEST_DATA_DIR = "D:\\Workspace\\tests\\test-tsdb\\";
 
     int BITS = 8;
 
