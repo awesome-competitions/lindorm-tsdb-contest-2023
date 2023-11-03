@@ -15,6 +15,23 @@ public abstract class Codec<T> {
         return new DeltaIntCodec(deltaSize);
     }
 
+    public static Codec<int[]> huffmanCodec(int min, int max){
+        int size = max - min + 1;
+        switch (size){
+            case 3:
+                return new Huffman3Codec(min);
+            case 5:
+                return new Huffman5Codec(min);
+            case 9:
+                return new Huffman9Codec(min);
+        }
+        throw new RuntimeException("invalid size " + size);
+    }
+
+    public static Codec<ByteBuffer[]> stringHuffman3Codec(int min){
+        return new StringHuffman3Codec(min);
+    }
+
     public static Codec<double[]> xorDoubleCodec(){
         return new XORDoubleCodec();
     }
@@ -30,7 +47,6 @@ public abstract class Codec<T> {
     public static Codec<double[]> simpleBDFCMCodec(){
         return new SimpleBDFCMCodec();
     }
-
 
     public static Codec<double[]> deltaOfDeltaDFCMCodec(){
         return new DeltaOfDeltaDFCMCodec();

@@ -79,16 +79,16 @@ public interface Const {
         put("CSRC", Codec.simpleNBCodec());
         put("GONE", Codec.simpleNBCodec());
         put("BZPV", Codec.simpleNBCodec());
-        put("AOAO", Codec.fixedIntCodec(-2147483647, -2147483645));
-        put("EXGV", Codec.fixedIntCodec(-2147483647, -2147483645));
-        put("JCGU", Codec.fixedIntCodec(-2147483647, -2147483645));
-        put("TFGW", Codec.fixedIntCodec(-2147483647, -2147483645));
-        put("MUBC", Codec.fixedIntCodec(-2147483647, -2147483645));
-        put("JHET", Codec.fixedIntCodec(1, 3));
+        put("AOAO", Codec.huffmanCodec(-2147483647, -2147483645));
+        put("EXGV", Codec.huffmanCodec(-2147483647, -2147483645));
+        put("JCGU", Codec.huffmanCodec(-2147483647, -2147483645));
+        put("TFGW", Codec.huffmanCodec(-2147483647, -2147483645));
+        put("MUBC", Codec.huffmanCodec(-2147483647, -2147483645));
+        put("JHET", Codec.huffmanCodec(1, 3));
         put("WKUZ", Codec.runLengthIntCodec(BLOCK_SIZE));
-        put("YCTI", Codec.fixedIntCodec(1, 5));
-        put("BBPX", Codec.fixedIntCodec(1, 9));
-        put("HRXI", Codec.fixedIntCodec(1, 9));
+        put("YCTI", Codec.huffmanCodec(1, 5));
+        put("BBPX", Codec.huffmanCodec(1, 9));
+        put("HRXI", Codec.huffmanCodec(1, 9));
     }};
 
     Map<String, Codec<double[]>> COLUMNS_DOUBLE_CODEC = new HashMap<>(COLUMN_COUNT){{
@@ -105,7 +105,7 @@ public interface Const {
     }};
 
     Map<String, Codec<ByteBuffer[]>> COLUMNS_STRING_CODEC = new HashMap<>(COLUMN_COUNT){{
-        put("FVXS", Codec.stringCodec());
+        put("FVXS", Codec.stringHuffman3Codec(-1));
         put("LIYD", Codec.stringCodec(1));
         put("ZEBY", Codec.stringCodec(7));
         put("UFPI", Codec.stringCodec(5));

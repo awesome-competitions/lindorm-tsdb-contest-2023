@@ -9,3 +9,4 @@
 - block 压缩 -- 不太行
 - zstd dict?
 - LZMA2?
+- SCHU
