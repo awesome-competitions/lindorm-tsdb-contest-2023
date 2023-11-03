@@ -1,6 +1,7 @@
 # int
 - [x] simple8 & 自适应，快速求2开方
 - [x] delta & simple 8b 自适应，快速求2开方
+- [ ] huffman
 
 # double
 

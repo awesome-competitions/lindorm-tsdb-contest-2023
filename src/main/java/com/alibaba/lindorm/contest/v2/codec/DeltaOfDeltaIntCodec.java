@@ -37,6 +37,7 @@ public class DeltaOfDeltaIntCodec extends Codec<int[]> {
             for (int i = 2; i < size; i++) {
                 int diff = data[i] - data[i - 1];
                 int v = encodeZigzag(diff - preDiff);
+                System.out.println(v);
                 if (rl == MAX_RLE || (v != 0 && rl > 0)) {
                     buffer.putInt(rl - 1, RLE_BITS);
                     rl = 0;
