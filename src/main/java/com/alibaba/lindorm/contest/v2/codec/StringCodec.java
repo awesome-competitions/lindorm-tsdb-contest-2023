@@ -35,7 +35,7 @@ public class StringCodec extends Codec<ByteBuffer[]>{
             encodeBuffer.put(buffer);
         }
         encodeBuffer.flip();
-        Zstd.compress(src, encodeBuffer);
+        Zstd.compress(src, encodeBuffer, 11);
     }
 
     @Override
