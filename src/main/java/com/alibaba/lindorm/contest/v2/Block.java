@@ -52,6 +52,10 @@ public class Block {
         return Const.BLOCK_SIZE - size;
     }
 
+    public int getSize() {
+        return size;
+    }
+
     public void clear(){
         int surplusSize = size - flushSize;
         for (int i = 0; i < surplusSize; i ++){
@@ -106,6 +110,9 @@ public class Block {
 
     public Header flush() throws IOException {
         this.preFlush();
+        if (flushSize == 0){
+            return null;
+        }
 
         ByteBuffer writeBuffer = Context.getBlockWriteBuffer();
         writeBuffer.clear();

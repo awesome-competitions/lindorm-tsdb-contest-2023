@@ -141,13 +141,14 @@ public class Index {
         }
     }
 
-    public Block.Header flush() throws IOException {
-        if (block == null){
-            return null;
+    public void flush() throws IOException {
+        if (block == null || block.getSize() == 0){
+            return;
         }
         Block.Header header = block.flush();
-        this.headers.add(header);
-        return header;
+        if (header != null){
+            this.headers.add(header);
+        }
     }
 
     public long getLatestTimestamp() {
