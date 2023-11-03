@@ -4,6 +4,7 @@ import com.alibaba.lindorm.contest.structs.*;
 import com.alibaba.lindorm.contest.util.Tuple;
 import com.alibaba.lindorm.contest.util.Util;
 import com.alibaba.lindorm.contest.util.Column;
+import com.github.luben.zstd.Zstd;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -214,7 +215,8 @@ public class Table {
         int stringCount = Const.STRING_COLUMNS.size();
 
         // write first timestamp
-        ByteBuffer buffer = ByteBuffer.allocateDirect(4 * Const.M);
+        ByteBuffer buffer = ByteBuffer.allocateDirect(384 * Const.M);
+        ByteBuffer encode = ByteBuffer.allocateDirect(384 * Const.M);
         for (Index index: indexes.values()){
             List<Block.Header> headers = index.getHeaders();
             buffer.putInt(index.getVin());
@@ -232,11 +234,14 @@ public class Table {
                     buffer.putDouble(header.getSumValues()[i]);
                 }
             }
-            buffer.flip();
-            ch.write(buffer);
-            buffer.clear();
         }
+        buffer.flip();
+        Zstd.compress(encode, buffer);
+        encode.flip();
+        ch.write(encode);
         System.out.println("index file size:" + ch.size());
+        Util.clean(encode);
+        Util.clean(buffer);
     }
 
     public void loadIndex() throws IOException {
@@ -249,24 +254,17 @@ public class Table {
         int stringCount = Const.STRING_COLUMNS.size();
         int columnCount = numberCount + stringCount;
 
-        ByteBuffer buffer = ByteBuffer.allocateDirect(4 * Const.M);
-        while (true){
-            buffer.clear();
-            buffer.limit(4 + 2);
-            if (ch.read(buffer) != buffer.limit()){
-                break;
-            }
-            buffer.flip();
+        ByteBuffer encode = ByteBuffer.allocateDirect(384 * Const.M);
+        ch.read(encode);
+        encode.flip();
+
+        ByteBuffer buffer = ByteBuffer.allocateDirect(384 * Const.M);
+        Zstd.decompress(buffer, encode);
+        buffer.flip();
+
+        while (buffer.remaining() > 0){
             int vinId = buffer.getInt();
             int blockSize = buffer.getShort();
-
-            buffer.clear();
-            buffer.limit((4 + 2 + 8 + 8 + (columnCount) * 4 + numberCount * (8+8)) * blockSize);
-            if (ch.read(buffer) != buffer.limit()){
-                break;
-            }
-            buffer.flip();
-
             Index index = getOrCreateVinIndex(vinId);
             for (int i = 0; i < blockSize; i ++){
                 int headerSize = buffer.getInt();
@@ -291,6 +289,9 @@ public class Table {
             // load latest
             index.getLatest(Const.EMPTY_COLUMNS);
         }
+
+        Util.clean(encode);
+        Util.clean(buffer);
     }
 
 }
