@@ -215,8 +215,8 @@ public class Table {
         int stringCount = Const.STRING_COLUMNS.size();
 
         // write first timestamp
-        ByteBuffer buffer = ByteBuffer.allocateDirect(384 * Const.M);
-        ByteBuffer encode = ByteBuffer.allocateDirect(384 * Const.M);
+        ByteBuffer buffer = ByteBuffer.allocate(320 * Const.M);
+        ByteBuffer encode = ByteBuffer.allocate(256 * Const.M);
         for (Index index: indexes.values()){
             List<Block.Header> headers = index.getHeaders();
             buffer.putInt(index.getVin());
@@ -236,12 +236,10 @@ public class Table {
             }
         }
         buffer.flip();
-        Zstd.compress(encode, buffer);
-        encode.flip();
+        int total = (int) Zstd.compressByteArray(encode.array(), 0, encode.array().length, buffer.array(), 0, buffer.remaining(), 3);
+        encode.limit(total);
         ch.write(encode);
         System.out.println("index file size:" + ch.size());
-        Util.clean(encode);
-        Util.clean(buffer);
     }
 
     public void loadIndex() throws IOException {
@@ -254,13 +252,13 @@ public class Table {
         int stringCount = Const.STRING_COLUMNS.size();
         int columnCount = numberCount + stringCount;
 
-        ByteBuffer encode = ByteBuffer.allocateDirect(384 * Const.M);
+        ByteBuffer buffer = ByteBuffer.allocate(320 * Const.M);
+        ByteBuffer encode = ByteBuffer.allocate(256 * Const.M);
+
         ch.read(encode);
         encode.flip();
-
-        ByteBuffer buffer = ByteBuffer.allocateDirect(384 * Const.M);
-        Zstd.decompress(buffer, encode);
-        buffer.flip();
+        int total = (int) Zstd.decompressByteArray(buffer.array(), 0, buffer.array().length, encode.array(), 0, encode.remaining());
+        buffer.limit(total);
 
         while (buffer.remaining() > 0){
             int vinId = buffer.getInt();
@@ -289,9 +287,6 @@ public class Table {
             // load latest
             index.getLatest(Const.EMPTY_COLUMNS);
         }
-
-        Util.clean(encode);
-        Util.clean(buffer);
     }
 
 }
