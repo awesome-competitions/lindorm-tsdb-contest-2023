@@ -79,7 +79,7 @@ public class TestExample {
       Map<String, ColumnValue> columns = new HashMap<>();
       columns.put("col1", new ColumnValue.IntegerColumn(123));
       columns.put("col2", new ColumnValue.DoubleFloatColumn(37.16));
-      columns.put("FVXS", new ColumnValue.StringColumn(buffer));
+      columns.put("SCHU", new ColumnValue.StringColumn(buffer));
       String str = "LSVNV2182E0200001";
       vinList.add(new Vin(str.getBytes(StandardCharsets.UTF_8)));
       ArrayList<Row> rowList = new ArrayList<>();
@@ -92,30 +92,30 @@ public class TestExample {
       columns = new HashMap<>();
       columns.put("col1", new ColumnValue.IntegerColumn(124));
       columns.put("col2", new ColumnValue.DoubleFloatColumn(36.17));
-      columns.put("FVXS", new ColumnValue.StringColumn(buffer));
+      columns.put("SCHU", new ColumnValue.StringColumn(buffer));
       rowList.add(new Row(new Vin(str.getBytes(StandardCharsets.UTF_8)), 1689091211000L, columns));
 
       columns = new HashMap<>();
       columns.put("col1", new ColumnValue.IntegerColumn(125));
       columns.put("col2", new ColumnValue.DoubleFloatColumn(36.18));
-      columns.put("FVXS", new ColumnValue.StringColumn(buffer));
+      columns.put("SCHU", new ColumnValue.StringColumn(buffer));
       rowList.add(new Row(new Vin(str.getBytes(StandardCharsets.UTF_8)), 1689091212000L, columns));
 
       Map<String, ColumnValue.ColumnType> columnTypes = new HashMap<>();
       columnTypes.put("col1", ColumnValue.ColumnType.COLUMN_TYPE_INTEGER);
       columnTypes.put("col2", ColumnValue.ColumnType.COLUMN_TYPE_DOUBLE_FLOAT);
-      columnTypes.put("FVXS", ColumnValue.ColumnType.COLUMN_TYPE_STRING);
+      columnTypes.put("SCHU", ColumnValue.ColumnType.COLUMN_TYPE_STRING);
       Schema schema = new Schema(columnTypes);
 
       tsdbEngineSample.createTable("test", schema);
       tsdbEngineSample.write(new WriteRequest("test", rowList));
-      Set<String> requestedColumns = new HashSet<>(Arrays.asList("col1", "col2", "FVXS"));
+      Set<String> requestedColumns = new HashSet<>(Arrays.asList("col1", "col2", "SCHU"));
 
       // before shutdown
       System.out.println("=========== before shutdown ===========");
       ArrayList<Row> resultSet = tsdbEngineSample.executeLatestQuery(new LatestQueryRequest("test", vinList, new HashSet<>()));
       showResult("executeLatestQuery", resultSet);
-      resultSet = tsdbEngineSample.executeTimeRangeQuery(new TimeRangeQueryRequest("test", new Vin(str.getBytes(StandardCharsets.UTF_8)), new HashSet<>(Arrays.asList("col1", "FVXS")), 1689091210000L, 1689091311000L));
+      resultSet = tsdbEngineSample.executeTimeRangeQuery(new TimeRangeQueryRequest("test", new Vin(str.getBytes(StandardCharsets.UTF_8)), new HashSet<>(Arrays.asList("col1", "SCHU")), 1689091210000L, 1689091311000L));
       showResult("executeTimeRangeQuery", resultSet);
 
 

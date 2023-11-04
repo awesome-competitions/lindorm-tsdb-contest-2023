@@ -80,6 +80,10 @@ public abstract class Codec<T> {
         return new DeltaOfDeltaIntCodec();
     }
 
+    public static Codec<int[]> huffmanDeltaOfDeltaIntCodec(){
+        return new HuffmanDeltaOfDeltaIntCodec();
+    }
+
     public static Codec<int[]> runLengthIntCodec(int runLengthMaxSize){
         return new RunLengthIntCodec(runLengthMaxSize);
     }

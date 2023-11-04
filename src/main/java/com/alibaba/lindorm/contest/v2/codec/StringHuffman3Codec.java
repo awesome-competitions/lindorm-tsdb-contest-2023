@@ -7,7 +7,11 @@ import java.nio.ByteBuffer;
 
 public class StringHuffman3Codec extends Codec<ByteBuffer[]>{
 
-    private Huffman3Codec codec;
+    private final Huffman3Codec codec;
+
+    private final static ByteBuffer MINUS_ONE = ByteBuffer.wrap(new byte[]{'-', '1'});
+    private final static ByteBuffer ZERO = ByteBuffer.wrap(new byte[]{'0'});
+    private final static ByteBuffer ONE = ByteBuffer.wrap(new byte[]{'1'});
 
     public StringHuffman3Codec(int min) {
         this.codec = new Huffman3Codec(min);
@@ -18,10 +22,16 @@ public class StringHuffman3Codec extends Codec<ByteBuffer[]>{
         int[] intData = new int[size];
         for (int i = 0; i < size; i++) {
             ByteBuffer buffer = data[i];
-            if (buffer.remaining() == 1){
-                intData[i] = buffer.get() - '0';
-            }else{
-                intData[i] = -1;
+            if (buffer.remaining() > 0){
+                if (buffer.get(0) == '-'){
+                    intData[i] = -1;
+                }else if (buffer.get(0) == '0'){
+                    intData[i] = 0;
+                }else if (buffer.get(0) == '1'){
+                    intData[i] = 1;
+                }else{
+                    throw new RuntimeException("invalid value " + new String(buffer.array()));
+                }
             }
         }
         codec.encode(src, intData, size);
@@ -32,10 +42,14 @@ public class StringHuffman3Codec extends Codec<ByteBuffer[]>{
         int[] intData = new int[size];
         codec.decode(src, intData, size);
         for (int i = 0; i < size; i++) {
-            if (intData[i] == -1){
-                data[i] = ByteBuffer.wrap(new byte[]{'-', '1'});
-            }else{
-                data[i] = ByteBuffer.wrap(new byte[]{(byte) (intData[i] + '0')});
+            if (intData[i] == -1) {
+                data[i] = MINUS_ONE;
+            }else if (intData[i] == 0) {
+                data[i] = ZERO;
+            } else if (intData[i] == 1) {
+                data[i] = ONE;
+            } else{
+                throw new RuntimeException("invalid value " + intData[i]);
             }
         }
     }
@@ -44,10 +58,28 @@ public class StringHuffman3Codec extends Codec<ByteBuffer[]>{
         StringHuffman3Codec bc = new StringHuffman3Codec(-1);
 
         String[] strings = new String[]{
+                "0",
+                "0",
+                "0",
+                "0",
+                "0",
                 "-1",
                 "0",
                 "1",
-                "-1"
+                "-1",
+                "1",
+                "1",
+                "0",
+                "-1",
+                "-1",
+                "-1",
+                "-1",
+                "-1",
+                "-1",
+                "-1",
+                "-1",
+                "-1",
+                "-1",
         };
 
         ByteBuffer[] buffers = new ByteBuffer[strings.length];
