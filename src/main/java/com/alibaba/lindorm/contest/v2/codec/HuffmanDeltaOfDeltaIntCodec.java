@@ -41,7 +41,6 @@ public class HuffmanDeltaOfDeltaIntCodec extends Codec<int[]> {
             int preDiff = data[1] - data[0];
             encodeVarInt(buffer, preDiff);
             int level = calculateLevel(data, size);
-            System.out.println("level " + level);
             buffer.putInt(level, 2);
             for (int i = 2; i < size; i++) {
                 int diff = data[i] - data[i - 1];
