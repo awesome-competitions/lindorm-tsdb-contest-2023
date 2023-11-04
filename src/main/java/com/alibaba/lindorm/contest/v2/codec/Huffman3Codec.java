@@ -58,9 +58,9 @@ public class Huffman3Codec extends Codec<int[]>{
     }
 
     public static void main(String[] args) {
-        Codec<int[]> compressor = new Huffman3Codec(1);
+        Codec<int[]> compressor = new Huffman3Codec(-1);
         ByteBuffer src = ByteBuffer.allocate(1000);
-        compressor.encode(src, new int[]{1,2,3,1,2,3,3,2,1,2,3}, 11);
+        compressor.encode(src, new int[]{-1,0,1,1,-1,-1,-1,-1,1,0,-1}, 11);
         src.flip();
         compressor.decode(src, Context.getBlockIntValues(), 11);
         System.out.println(Arrays.toString(Context.getBlockIntValues()));

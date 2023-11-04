@@ -25,6 +25,7 @@ import com.alibaba.lindorm.contest.TSDBEngine;
 import com.alibaba.lindorm.contest.TSDBEngineImpl;
 import com.alibaba.lindorm.contest.structs.*;
 import com.alibaba.lindorm.contest.v1.Const;
+import com.alibaba.lindorm.contest.v2.Context;
 
 import java.io.File;
 import java.io.IOException;
@@ -80,11 +81,13 @@ public class TestExample {
       columns.put("col1", new ColumnValue.IntegerColumn(123));
       columns.put("col2", new ColumnValue.DoubleFloatColumn(37.16));
       columns.put("SCHU", new ColumnValue.StringColumn(buffer));
+      columns.put("FVXS", new ColumnValue.StringColumn(ByteBuffer.wrap("1".getBytes())));
       String str = "LSVNV2182E0200001";
       vinList.add(new Vin(str.getBytes(StandardCharsets.UTF_8)));
       ArrayList<Row> rowList = new ArrayList<>();
       rowList.add(new Row(new Vin(str.getBytes(StandardCharsets.UTF_8)), 1689091210000L, columns));
       rowList.add(new Row(new Vin(str.getBytes(StandardCharsets.UTF_8)), 1689091211000L, columns));
+
       str = "LSVNV2182E0200002";
       vinList.add(new Vin(str.getBytes(StandardCharsets.UTF_8)));
       rowList.add(new Row(new Vin(str.getBytes(StandardCharsets.UTF_8)), 1689091210000L, columns));
@@ -93,29 +96,32 @@ public class TestExample {
       columns.put("col1", new ColumnValue.IntegerColumn(124));
       columns.put("col2", new ColumnValue.DoubleFloatColumn(36.17));
       columns.put("SCHU", new ColumnValue.StringColumn(buffer));
+      columns.put("FVXS", new ColumnValue.StringColumn(ByteBuffer.wrap("-1".getBytes())));
       rowList.add(new Row(new Vin(str.getBytes(StandardCharsets.UTF_8)), 1689091211000L, columns));
 
       columns = new HashMap<>();
       columns.put("col1", new ColumnValue.IntegerColumn(125));
       columns.put("col2", new ColumnValue.DoubleFloatColumn(36.18));
       columns.put("SCHU", new ColumnValue.StringColumn(buffer));
+      columns.put("FVXS", new ColumnValue.StringColumn(ByteBuffer.wrap("0".getBytes())));
       rowList.add(new Row(new Vin(str.getBytes(StandardCharsets.UTF_8)), 1689091212000L, columns));
 
       Map<String, ColumnValue.ColumnType> columnTypes = new HashMap<>();
       columnTypes.put("col1", ColumnValue.ColumnType.COLUMN_TYPE_INTEGER);
       columnTypes.put("col2", ColumnValue.ColumnType.COLUMN_TYPE_DOUBLE_FLOAT);
       columnTypes.put("SCHU", ColumnValue.ColumnType.COLUMN_TYPE_STRING);
+      columnTypes.put("FVXS", ColumnValue.ColumnType.COLUMN_TYPE_STRING);
       Schema schema = new Schema(columnTypes);
 
       tsdbEngineSample.createTable("test", schema);
       tsdbEngineSample.write(new WriteRequest("test", rowList));
-      Set<String> requestedColumns = new HashSet<>(Arrays.asList("col1", "col2", "SCHU"));
+      Set<String> requestedColumns = new HashSet<>(Arrays.asList("col1", "col2", "SCHU", "FVXS"));
 
       // before shutdown
       System.out.println("=========== before shutdown ===========");
       ArrayList<Row> resultSet = tsdbEngineSample.executeLatestQuery(new LatestQueryRequest("test", vinList, new HashSet<>()));
       showResult("executeLatestQuery", resultSet);
-      resultSet = tsdbEngineSample.executeTimeRangeQuery(new TimeRangeQueryRequest("test", new Vin(str.getBytes(StandardCharsets.UTF_8)), new HashSet<>(Arrays.asList("col1", "SCHU")), 1689091210000L, 1689091311000L));
+      resultSet = tsdbEngineSample.executeTimeRangeQuery(new TimeRangeQueryRequest("test", new Vin(str.getBytes(StandardCharsets.UTF_8)), new HashSet<>(Arrays.asList("col1", "SCHU", "FVXS")), 1689091210000L, 1689091311000L));
       showResult("executeTimeRangeQuery", resultSet);
 
 
@@ -126,10 +132,13 @@ public class TestExample {
       tsdbEngineSample.connect();
 
       // after shutdown
+
+
       System.out.println("=========== after shutdown ===========");
       resultSet = tsdbEngineSample.executeLatestQuery(new LatestQueryRequest("test", vinList, requestedColumns));
       showResult("executeLatestQuery", resultSet);
       resultSet = tsdbEngineSample.executeTimeRangeQuery(new TimeRangeQueryRequest("test", new Vin(str.getBytes(StandardCharsets.UTF_8)), requestedColumns, 0, 1699091311000L));
+      Context.getBlockStringValues()[0] = ByteBuffer.wrap("abafcd".getBytes());
       showResult("executeTimeRangeQuery", resultSet);
 
     } catch (IOException e) {
