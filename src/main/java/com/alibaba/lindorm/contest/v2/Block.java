@@ -240,13 +240,6 @@ public class Block {
     }
 
     public static List<Tuple<Long, Map<String, ColumnValue>>> read(Data data, Header header, int start, int end, Collection<String> requestedColumns) throws IOException {
-        ByteBuffer readBuffer = Context.getBlockReadBuffer().clear();
-        int readBytes = data.read(readBuffer, header.position, header.size);
-        if (readBytes != header.size){
-            throw new IOException("read bytes not enough");
-        }
-        readBuffer.flip();
-
         int count = header.count;
         int size = header.size;
         int[] positions = header.positions;
@@ -275,9 +268,10 @@ public class Block {
             }
             int currentPos = positions[index];
 
+            ByteBuffer readBuffer = Context.getBlockReadBuffer();
             readBuffer.clear();
-            readBuffer.position(currentPos);
-            readBuffer.limit(latestPos);
+            data.read(readBuffer, header.position + currentPos, latestPos - currentPos);
+            readBuffer.flip();
 
             double[] doubleValues = Context.getBlockDoubleValues();
             int[] intValues = Context.getBlockIntValues();
@@ -350,14 +344,10 @@ public class Block {
             latestPos = header.positions[index + 1];
         }
         int currentPos = header.positions[index];
-        int columnDataSize = latestPos - currentPos;
 
         ByteBuffer readBuffer = Context.getBlockReadBuffer();
         readBuffer.clear();
-        int readBytes = data.read(readBuffer, header.position + currentPos, columnDataSize);
-        if (readBytes != columnDataSize){
-            throw new IOException("read bytes not enough");
-        }
+        data.read(readBuffer, header.position + currentPos, latestPos - currentPos);
         readBuffer.flip();
 
         double[] doubleValues = Context.getBlockDoubleValues();
