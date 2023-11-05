@@ -86,13 +86,6 @@ public class TSDBEngineImpl extends TSDBEngine {
           System.out.println("column " + columnName + " size:" + Const.COLUMNS_SIZE[i + Const.INT_COLUMNS.size() + Const.DOUBLE_COLUMNS.size()]);
       }
 
-      System.out.println("double columns range:");
-      for (Map.Entry<String, Codec<double[]>> e: Const.COLUMNS_DOUBLE_CODEC.entrySet()){
-        Codec<double[]> codec = e.getValue();
-        if (codec instanceof DeltaOfDeltaBFCMPlusCodec){
-          System.out.println("column " + e.getKey() + " valueBits:" + Arrays.toString(((DeltaOfDeltaBFCMPlusCodec) codec).getValueBits()));
-        }
-      }
       table.close();
     } catch (Throwable e) {
       e.printStackTrace();

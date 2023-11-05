@@ -26,7 +26,7 @@ public interface Const {
     int VIN_COUNT = 5000;
 
     // block size
-    int BLOCK_SIZE = 900;
+    int BLOCK_SIZE = 600;
     // the time span of all the data
     int TIME_SPAN = 60 * 60 * 10;
 
@@ -92,11 +92,11 @@ public interface Const {
     }};
 
     Map<String, Codec<double[]>> COLUMNS_DOUBLE_CODEC = new HashMap<>(COLUMN_COUNT){{
-        put("FWKW", Codec.deltaOfDeltaBFCMPlusCodec());
-        put("BDPO", Codec.deltaOfDeltaBFCMPlusCodec());
-        put("FQTH", Codec.deltaOfDeltaBFCMPlusCodec());
-        put("SBXA", Codec.deltaOfDeltaBFCMPlusCodec());
-        put("XRTP", Codec.deltaOfDeltaBFCMPlusCodec());
+        put("FWKW", Codec.deltaOfDeltaBDFCMCodec());
+        put("BDPO", Codec.deltaOfDeltaBDFCMCodec());
+        put("FQTH", Codec.deltaOfDeltaBDFCMCodec());
+        put("SBXA", Codec.deltaOfDeltaBDFCMCodec());
+        put("XRTP", Codec.deltaOfDeltaBDFCMCodec());
         put("ZIKG", Codec.simpleBDFCMCodec());
         put("LMLK", Codec.simpleBDFCMCodec());
         put("TEDW", Codec.simpleBDFCMCodec());
