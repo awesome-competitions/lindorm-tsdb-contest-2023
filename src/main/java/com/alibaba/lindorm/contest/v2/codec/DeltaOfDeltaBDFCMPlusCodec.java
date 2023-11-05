@@ -1,13 +1,14 @@
 package com.alibaba.lindorm.contest.v2.codec;
 
+import com.alibaba.lindorm.contest.util.Util;
 import com.alibaba.lindorm.contest.v2.Context;
 import net.magik6k.bitbuffer.BitBuffer;
 import net.magik6k.bitbuffer.DirectBitBuffer;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 
-public class DeltaOfDeltaBDFCMCodec extends Codec<double[]>{
+public class DeltaOfDeltaBDFCMPlusCodec extends Codec<double[]>{
+
     @Override
     public void encode(ByteBuffer src, double[] data, int size) {
         BitBuffer buffer = new DirectBitBuffer(src);
@@ -17,6 +18,45 @@ public class DeltaOfDeltaBDFCMCodec extends Codec<double[]>{
             double preDiffDiff = 0;
             int preLeadingZeros = -1;
             int preTrailingZeros = -1;
+            int minLeadingZeros = 64;
+            int maxLeadingZeros = 0;
+            int minTrailingZeros = 64;
+            int maxTrailingZeros = 0;
+            for (int i = 1; i < size; i++) {
+                double diff = data[i] - data[i - 1];
+                double diffDiff = diff - preDiff;
+                long v1 = Double.doubleToRawLongBits(diffDiff);
+                long v2 = Double.doubleToRawLongBits(preDiffDiff);
+                long xorValue = v1 ^ v2;
+                int leadingZeros = Long.numberOfLeadingZeros(xorValue) / 4 * 4;
+                int trailingZeros = Long.numberOfTrailingZeros(xorValue) / 4 * 4;
+                if (i > 2 && xorValue != 0){
+                    minLeadingZeros = Math.min(minLeadingZeros, leadingZeros);
+                    maxLeadingZeros = Math.max(maxLeadingZeros, leadingZeros);
+                    minTrailingZeros = Math.min(minTrailingZeros, trailingZeros);
+                    maxTrailingZeros = Math.max(maxTrailingZeros, trailingZeros);
+                }
+                if (xorValue == 0){
+                }else if (preTrailingZeros >= 0 && leadingZeros == preLeadingZeros && trailingZeros == preTrailingZeros) {
+                }else {
+                    preLeadingZeros = leadingZeros;
+                    preTrailingZeros = trailingZeros;
+                }
+                preDiffDiff = diffDiff;
+                preDiff = diff;
+            }
+
+            int leadingBits = Util.parseBits((maxLeadingZeros - minLeadingZeros)/4, true);
+            int trailingBits = Util.parseBits((maxTrailingZeros - minTrailingZeros)/4, true);
+            buffer.putInt(minLeadingZeros/4, 4);
+            buffer.putInt(minTrailingZeros/4, 4);
+            buffer.putInt(leadingBits, 4);
+            buffer.putInt(trailingBits, 4);
+
+            preDiff = 0;
+            preDiffDiff = 0;
+            preLeadingZeros = -1;
+            preTrailingZeros = -1;
             for (int i = 1; i < size; i++) {
                 double diff = data[i] - data[i - 1];
                 double diffDiff = diff - preDiff;
@@ -35,8 +75,13 @@ public class DeltaOfDeltaBDFCMCodec extends Codec<double[]>{
                 }else {
                     buffer.putBit(true);
                     buffer.putBit(false);
-                    buffer.putInt(leadingZeros/4, 4);
-                    buffer.putInt(trailingZeros/4, 4);
+                    if (i > 2){
+                        buffer.putInt((leadingZeros - minLeadingZeros)/4, leadingBits);
+                        buffer.putInt((trailingZeros - minTrailingZeros)/4, trailingBits);
+                    }else{
+                        buffer.putInt(leadingZeros/4, 4);
+                        buffer.putInt(trailingZeros/4, 4);
+                    }
                     long v = xorValue >> trailingZeros;
                     buffer.putLong(v, 64 - leadingZeros - trailingZeros);
                     preLeadingZeros = leadingZeros;
@@ -58,12 +103,22 @@ public class DeltaOfDeltaBDFCMCodec extends Codec<double[]>{
             double preDiffDiff = 0;
             int preLeadingZeros = -1;
             int preTrailingZeros = -1;
+
+            int minLeadingZeros = buffer.getIntUnsigned(4) * 4;
+            int minTrailingZeros = buffer.getIntUnsigned(4) * 4;
+            int leadingBits = buffer.getIntUnsigned(4);
+            int trailingBits = buffer.getIntUnsigned(4);
             for (int i = 1; i < size; i++) {
                 long xorValue = 0;
                 if (buffer.getBoolean()){
                     if (!buffer.getBoolean()) {
-                        preLeadingZeros = buffer.getIntUnsigned(4) * 4;
-                        preTrailingZeros = buffer.getIntUnsigned(4) * 4;
+                        if (i > 2){
+                            preLeadingZeros = minLeadingZeros + buffer.getIntUnsigned(leadingBits) * 4;
+                            preTrailingZeros = minTrailingZeros + buffer.getIntUnsigned(trailingBits) * 4;
+                        }else{
+                            preLeadingZeros = buffer.getIntUnsigned(4) * 4;
+                            preTrailingZeros = buffer.getIntUnsigned(4) * 4;
+                        }
                     }
                     long v = buffer.getLongUnsigned(64 - preLeadingZeros - preTrailingZeros);
                     xorValue = v << preTrailingZeros;
@@ -79,7 +134,7 @@ public class DeltaOfDeltaBDFCMCodec extends Codec<double[]>{
     }
 
     public static void main(String[] args) {
-        DeltaOfDeltaBDFCMCodec codec = new DeltaOfDeltaBDFCMCodec();
+        DeltaOfDeltaBDFCMPlusCodec codec = new DeltaOfDeltaBDFCMPlusCodec();
 
         double[][] numbersList = new double[][]{
                 {20155.050843980156,20155.05084502334,20155.050848152885,20155.050853368793,20155.05086067107,20155.050870059706,20155.05088153471,20155.050895096076,20155.050910743805,20155.0509284779,20155.050948298354,20155.050970205175,20155.05099419836,20155.051020277904,20155.051048443816,20155.051078696088,20155.05111103472,20155.051145459718,20155.051181971074,20155.051220568796,20155.051261252876,20155.051304023316,20155.05134888012,20155.051395823284,20155.051444852805,20155.051495968688,20155.05154917093,20155.051604459528,20155.05166183449,20155.051721295804,20155.05178284348,20155.05184647751,20155.051912197894,20155.05198000464,20155.05204989774,20155.05212187719,20155.052195943	,20155.05227209516,20155.052350333677,20155.052430658543,20155.052513069764,20155.052597567334,20155.05268415126,20155.052772821527,20155.052863578152,20155.05295642112,20155.05305135044,20155.053148366103,20155.053247468117,20155.053348656475,20155.053451931177,20155.053557292227,20155.05366473962,20155.05377427335,20155.053885893427,20155.05399959984,20155.0541153926,20155.054233271694,20155.054353237127,20155.0544752889,20155.054599427007,20155.05472565145,20155.05485396223,20155.05498435934,20155.055116842785,20155.05525141256,20155.055388068664,20155.055526811102,20155.055667639866,20155.055810554957,20155.055955556374,20155.056102644117,20155.056251818183,20155.056403078575,20155.056556425287,20155.05671185832,20155.05686937767,20155.05702898334,20155.05719067533,20155.05735445363,20155.05752031825,20155.05768826918,20155.057858306423,20155.058030429976,20155.05820463984,20155.05838093601,20155.058559318488,20155.058739787273,20155.05892234236,20155.059106983746,20155.059293711438,20155.05948252543,20155.05967342572,20155.059866412306,20155.060061485186,20155.06025864436,20155.06045788983,20155.060659221588,20155.060862639635,20155.061068143972,20155.061275734595,20155.0614854115,20155.06169717469,20155.06191102416,20155.062126959914,20155.062344981943,20155.062565090248,20155.06278728483,20155.063011565682,20155.06323793281,20155.063466386204,20155.063696925867,20155.063929551798,20155.06416426399,20155.064401062446,20155.064639947166,20155.06488091814,20155.065123975375,20155.065369118864,20155.065616348606,20155.0658656646,20155.066117066846,20155.066370555338,20155.066626130076,20155.066883791056,20155.06714353828,20155.067405371745,20155.067669291446,20155.067935297382,20155.068203389554,20155.068473567957,20155.068745832592,20155.06902018345,20155.06929662054,20155.06957514385,20155.069855753383,20155.070138449133,20155.0704232311,20155.070710099284,20155.07099905368,20155.07129009429,20155.071583221103,20155.071878434126,20155.072175733352,20155.072475118777,20155.072776590405,20155.073080148228,20155.073385792246,20155.07369352246,20155.07400333886,20155.074315241447,20155.07462923022,20155.07494530518,20155.07526346632,20155.075583713635,20155.075906047125,20155.07623046679,20155.076556972625,20155.07688556463,20155.0772162428,20155.077549007132,20155.077883857626,20155.07822079428,20155.078559817088,20155.078900926048,20155.07924412116,20155.07958940242,20155.079936769824,20155.08028622337,20155.080637763058,20155.08099138888,20155.08134710084,20155.08170489893,20155.08206478315,20155.082426753495,20155.082790809964,20155.083156952554,20155.083525181264,20155.08389549609,20155.084267897022,20155.08464238407,20155.085018957223,20155.08539761648,20155.085778361834,20155.086161193292,20155.08654611084,20155.086933114486,20155.087322204217,20155.087713380035,20155.088106641935,20155.088501989918,20155.08889942398,20155.089298944113,20155.089700550318,20155.09010424259,20155.090510020927,20155.09091788533,20155.091327835788,20155.091739872303,20155.092153994872},

@@ -36,13 +36,13 @@ public class StringCodec extends Codec<ByteBuffer[]>{
             encodeBuffer.put(buffer);
         }
         encodeBuffer.flip();
-        Brotli.compress(src, encodeBuffer);
+        Zstd.compress(src, encodeBuffer);
     }
 
     @Override
     public void decode(ByteBuffer src, ByteBuffer[] data, int size) {
         ByteBuffer decodeBuffer = Context.getCodecDecodeBuffer().clear();
-        Brotli.decompress(decodeBuffer, src);
+        Zstd.decompress(decodeBuffer, src);
         decodeBuffer.flip();
 
         for (int i = 0; i < size; i++) {
