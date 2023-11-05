@@ -1,6 +1,9 @@
 package com.alibaba.lindorm.contest.v2.tests;
 
 import com.github.luben.zstd.Zstd;
+import com.nixxcode.jvmbrotli.common.BrotliLoader;
+import com.nixxcode.jvmbrotli.dec.BrotliInputStream;
+import com.nixxcode.jvmbrotli.enc.BrotliOutputStream;
 import net.magik6k.bitbuffer.ArrayBitBuffer;
 import net.magik6k.bitbuffer.BitBuffer;
 import net.magik6k.bitbuffer.DirectBitBuffer;
@@ -8,6 +11,9 @@ import net.magik6k.bitbuffer.DirectBitBuffer;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 
 public class TestZSTD2 {
 
@@ -22,28 +28,65 @@ public class TestZSTD2 {
 
         for (int i = 0; i < strings.length; i ++){
             byte[] input = strings[i];
-            byte[] dst = encode(input);
-            System.out.println(input.length + " " + dst.length);
 
-            byte[] compressed = Zstd.compress(dst, 3);
+            byte[] compressed = compress(input);
 //            byte[] decompressed = new byte[500000];
 //            Zstd.decompress(decompressed, compressed);
             System.out.println(compressed.length + "/" + input.length + "=" + (compressed.length * 1.0 / input.length));
         }
     }
 
-    public static byte[] encode(byte[] src) {
-        ByteBuffer s = ByteBuffer.allocateDirect(100000);
-        BitBuffer bf = new DirectBitBuffer(s);
-        for (int i = 0; i < src.length; i ++) {
-            bf.put(src[i], 7);
-        }
-        bf.flip();
-        s.flip();
-        byte[] dst = new byte[s.remaining()];
-        for (int i = 0; i < dst.length; i ++) {
-            dst[i] = s.get();
-        }
-        return dst;
+    static {
+        // 确保加载了Brotli的本地库
+        BrotliLoader.isBrotliAvailable();
     }
+
+    // 压缩方法
+    public static byte[] compress(byte[] data) throws IOException {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        try (BrotliOutputStream brotliOutput = new BrotliOutputStream(bos)) {
+            brotliOutput.write(data);
+        }
+        return bos.toByteArray();
+    }
+
+    // 解压缩方法
+    public static byte[] decompress(byte[] compressedData) throws IOException {
+        ByteArrayInputStream bis = new ByteArrayInputStream(compressedData);
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        try (BrotliInputStream brotliInput = new BrotliInputStream(bis)) {
+            byte[] buffer = new byte[1024];
+            int len;
+            while ((len = brotliInput.read(buffer)) > 0) {
+                bos.write(buffer, 0, len);
+            }
+        }
+        return bos.toByteArray();
+    }
+
+
+        // 压缩方法
+//    public static byte[] compress(byte[] data) throws IOException {
+//        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+//        try (BZip2CompressorOutputStream bzip2 = new BZip2CompressorOutputStream(bos, 9)) {
+//            bzip2.write(data);
+//        }
+//        return bos.toByteArray();
+//    }
+//
+//    // 解压缩方法
+//    public static byte[] decompress(byte[] data) throws IOException {
+//        ByteArrayInputStream bis = new ByteArrayInputStream(data);
+//        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+//        try (BZip2CompressorInputStream bzip2 = new BZip2CompressorInputStream(bis)) {
+//            byte[] buffer = new byte[1024];
+//            int n;
+//            while ((n = bzip2.read(buffer)) != -1) {
+//                bos.write(buffer, 0, n);
+//            }
+//        }
+//        return bos.toByteArray();
+//    }
+
+
 }

@@ -1,5 +1,6 @@
 package com.alibaba.lindorm.contest.v2.codec;
 
+import com.alibaba.lindorm.contest.util.Brotli;
 import com.alibaba.lindorm.contest.v2.Context;
 import com.github.luben.zstd.Zstd;
 
@@ -35,13 +36,13 @@ public class StringCodec extends Codec<ByteBuffer[]>{
             encodeBuffer.put(buffer);
         }
         encodeBuffer.flip();
-        Zstd.compress(src, encodeBuffer);
+        Brotli.compress(src, encodeBuffer);
     }
 
     @Override
     public void decode(ByteBuffer src, ByteBuffer[] data, int size) {
         ByteBuffer decodeBuffer = Context.getCodecDecodeBuffer().clear();
-        Zstd.decompress(decodeBuffer, src);
+        Brotli.decompress(decodeBuffer, src);
         decodeBuffer.flip();
 
         for (int i = 0; i < size; i++) {
