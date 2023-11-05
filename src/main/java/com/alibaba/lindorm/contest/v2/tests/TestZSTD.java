@@ -25,7 +25,7 @@ public class TestZSTD {
 
         for (int i = 0; i < strings.length; i ++){
             byte[] input = strings[i];
-            byte[] compressed = Zstd.compress(input, 22);
+            byte[] compressed = Zstd.compress(input, 3);
             System.out.println(compressed.length + "/" + input.length + "=" + (compressed.length * 1.0 / input.length));
         }
 

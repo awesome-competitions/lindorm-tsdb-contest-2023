@@ -16,7 +16,7 @@ public class Brotli {
 
     public static void compress(ByteBuffer dst, ByteBuffer src) {
         try {
-            BrotliOutputStream brotliOutput = new BrotliOutputStream(new ByteBufferOutputStream(dst));
+            BrotliOutputStream brotliOutput = new BrotliOutputStream(new ByteBufferOutputStream(dst), new Encoder.Parameters().setQuality(3));
             while(src.hasRemaining()) {
                 brotliOutput.write(src.get());
             }
