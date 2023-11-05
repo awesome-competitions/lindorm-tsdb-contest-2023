@@ -1,21 +1,14 @@
 package com.alibaba.lindorm.contest.v2.tests;
 
-import com.github.luben.zstd.Zstd;
 import com.nixxcode.jvmbrotli.common.BrotliLoader;
 import com.nixxcode.jvmbrotli.dec.BrotliInputStream;
 import com.nixxcode.jvmbrotli.enc.BrotliOutputStream;
-import net.magik6k.bitbuffer.ArrayBitBuffer;
-import net.magik6k.bitbuffer.BitBuffer;
-import net.magik6k.bitbuffer.DirectBitBuffer;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 
-public class TestZSTD2 {
+public class TestBrotli {
 
     public static void main(String[] args) throws IOException {
 
