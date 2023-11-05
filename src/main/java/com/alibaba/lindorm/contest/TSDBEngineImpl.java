@@ -11,10 +11,13 @@ import com.alibaba.lindorm.contest.structs.*;
 import com.alibaba.lindorm.contest.util.Monitor;
 import com.alibaba.lindorm.contest.v2.Const;
 import com.alibaba.lindorm.contest.v2.Table;
+import com.alibaba.lindorm.contest.v2.codec.Codec;
+import com.alibaba.lindorm.contest.v2.codec.DeltaOfDeltaBFCMPlusCodec;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Map;
 
 public class TSDBEngineImpl extends TSDBEngine {
@@ -83,6 +86,13 @@ public class TSDBEngineImpl extends TSDBEngine {
           System.out.println("column " + columnName + " size:" + Const.COLUMNS_SIZE[i + Const.INT_COLUMNS.size() + Const.DOUBLE_COLUMNS.size()]);
       }
 
+      System.out.println("double columns range:");
+      for (Map.Entry<String, Codec<double[]>> e: Const.COLUMNS_DOUBLE_CODEC.entrySet()){
+        Codec<double[]> codec = e.getValue();
+        if (codec instanceof DeltaOfDeltaBFCMPlusCodec){
+          System.out.println("column " + e.getKey() + " valueBits:" + Arrays.toString(((DeltaOfDeltaBFCMPlusCodec) codec).getValueBits()));
+        }
+      }
       table.close();
     } catch (Throwable e) {
       e.printStackTrace();

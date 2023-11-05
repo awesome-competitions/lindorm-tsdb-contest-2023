@@ -56,6 +56,10 @@ public abstract class Codec<T> {
         return new DeltaOfDeltaBDFCMCodec();
     }
 
+    public static Codec<double[]> deltaOfDeltaBFCMPlusCodec(){
+        return new DeltaOfDeltaBFCMPlusCodec();
+    }
+
     public static Codec<double[]> zstdDoubleCodec(){
         return new ZSTDDoubleCodec();
     }
