@@ -9,6 +9,7 @@ import com.alibaba.lindorm.contest.v2.codec.Codec;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.function.Consumer;
 
 public class Block {
 
@@ -230,10 +231,10 @@ public class Block {
             int columnIndex = column.getIndex();
             switch (type){
                 case COLUMN_TYPE_DOUBLE_FLOAT:
-                    consumer.accept(this.doubleValues[columnIndex][i]);
+                    consumer.accept(t, this.doubleValues[columnIndex][i]);
                     break;
                 case COLUMN_TYPE_INTEGER:
-                    consumer.accept((double) this.intValues[columnIndex][i]);
+                    consumer.accept(t, (double) this.intValues[columnIndex][i]);
                     break;
             }
         }
@@ -326,7 +327,8 @@ public class Block {
 
         int count = header.count;
         int requestedCount = end - start + 1;
-        if (aggregator.getColumnFilter() == null && requestedCount == count){
+        boolean isDownsample = aggregator instanceof Downsample;
+        if (!isDownsample && aggregator.getColumnFilter() == null && requestedCount == count){
             // return first
             switch (aggregator.getAggregator()){
                 case MAX:
@@ -358,14 +360,16 @@ public class Block {
                 Codec<double[]> doubleCodec = Const.COLUMNS_DOUBLE_CODEC.getOrDefault(requestedColumn, Const.DEFAULT_DOUBLE_CODEC);
                 doubleCodec.decode(readBuffer, doubleValues, count);
                 for (int i = start; i <= end; i ++){
-                    aggregator.accept(doubleValues[i]);
+                    long t = header.start + (long) i * Const.TIMESTAMP_INTERVAL;
+                    aggregator.accept(t, doubleValues[i]);
                 }
                 break;
             case COLUMN_TYPE_INTEGER:
                 Codec<int[]> intCodec = Const.COLUMNS_INTEGER_CODEC.getOrDefault(requestedColumn, Const.DEFAULT_INT_CODEC);
                 intCodec.decode(readBuffer, intValues, count);
                 for (int i = start; i <= end; i ++){
-                    aggregator.accept((double) intValues[i]);
+                    long t = header.start + (long) i * Const.TIMESTAMP_INTERVAL;
+                    aggregator.accept(t, (double) intValues[i]);
                 }
                 break;
         }

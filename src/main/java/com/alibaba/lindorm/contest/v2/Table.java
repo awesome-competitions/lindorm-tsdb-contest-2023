@@ -134,14 +134,14 @@ public class Table {
         }
 
         ColumnValue.ColumnType type = this.schema.getColumnTypeMap().get(columnName);
-        Aggregator consumer = new Aggregator(type, aggregator, null);
-        index.aggregate(timeLowerBound, timeUpperBound, columnName, consumer);
-        if (consumer.getCount() == 0){
+        Aggregator agg = new Aggregator(type, aggregator, null);
+        index.aggregate(timeLowerBound, timeUpperBound, columnName, agg);
+        if (agg.getCount() == 0){
             return Const.EMPTY_ROWS;
         }
 
         ArrayList<Row> rows = new ArrayList<>();
-        rows.add(new Row(vin, timeLowerBound, Map.of(columnName, consumer.value())));
+        rows.add(new Row(vin, timeLowerBound, Map.of(columnName, agg.value())));
         return rows;
     }
 
@@ -151,14 +151,19 @@ public class Table {
             return Const.EMPTY_ROWS;
         }
         ArrayList<Row> rows = new ArrayList<>();
+        ColumnValue.ColumnType type = this.schema.getColumnTypeMap().get(columnName);
+
+
+        Downsample downsample = new Downsample(timeLowerBound, timeUpperBound, interval, type, aggregator, columnFilter);
+        index.aggregate(timeLowerBound, timeUpperBound, columnName, downsample);
+        Aggregator[] aggregators = downsample.getAggregators();
         for (long start = timeLowerBound; start < timeUpperBound; start += interval){
-            ColumnValue.ColumnType type = this.schema.getColumnTypeMap().get(columnName);
-            Aggregator consumer = new Aggregator(type, aggregator, columnFilter);
-            index.aggregate(start, start + interval, columnName, consumer);
-            if (consumer.getCount() == 0 && consumer.getFilteredCount() == 0){
+            int i = (int) ((start - timeLowerBound) / interval);
+            Aggregator agg = aggregators[i];
+            if (agg.getCount() == 0 && agg.getFilteredCount() == 0){
                 continue;
             }
-            rows.add(new Row(vin, start, Map.of(columnName, consumer.value())));
+            rows.add(new Row(vin, start, Map.of(columnName, agg.value())));
         }
         return rows;
     }

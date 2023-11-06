@@ -6,21 +6,21 @@ import com.alibaba.lindorm.contest.structs.CompareExpression;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-public class Aggregator implements BiConsumer<Double, Integer> {
+public class Aggregator {
 
-    private double sum;
+    protected double sum;
 
-    private Double max;
+    protected Double max;
 
-    private int count;
+    protected int count;
 
-    private int filteredCount;
+    protected int filteredCount;
 
-    private final ColumnValue.ColumnType type;
+    protected final ColumnValue.ColumnType type;
 
-    private final com.alibaba.lindorm.contest.structs.Aggregator aggregator;
+    protected final com.alibaba.lindorm.contest.structs.Aggregator aggregator;
 
-    private final CompareExpression columnFilter;
+    protected final CompareExpression columnFilter;
 
     public Aggregator(ColumnValue.ColumnType type, com.alibaba.lindorm.contest.structs.Aggregator aggregator, CompareExpression columnFilter) {
         this.aggregator = aggregator;
@@ -51,12 +51,19 @@ public class Aggregator implements BiConsumer<Double, Integer> {
         }
     }
 
-    public void accept(Double val){
-        this.accept(val, 1);
+    public void accept(double val){
+        this.accept(-1, val);
     }
 
-    @Override
-    public void accept(Double val, Integer count) {
+    public void accept(double val, int count){
+        this.accept(-1, val, count);
+    }
+
+    public void accept(long timestamp, double val){
+        this.accept(timestamp, val, 1);
+    }
+
+    public void accept(long timestamp, double val, int count) {
         if(columnFilter != null && ! doCompare(val)){
             filteredCount ++;
             return;
