@@ -9,7 +9,7 @@ public class Column {
 
     private final ColumnValue.ColumnType type;
 
-    private final Data data;
+    private Data data;
 
     public Column(int index, ColumnValue.ColumnType type, Data data) {
         this.index = index;
@@ -27,5 +27,9 @@ public class Column {
 
     public Data getData() {
         return data;
+    }
+
+    public void setData(Data data) {
+        this.data = data;
     }
 }

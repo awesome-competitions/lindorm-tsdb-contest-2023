@@ -15,7 +15,6 @@ public interface Const {
     String TEST_DATA_DIR = "D:\\Workspace\\tests\\test-tsdb\\";
     ArrayList<Row> EMPTY_ROWS = new ArrayList<>();
     Set<String> EMPTY_COLUMNS = new HashSet<>();
-    int DATA_COUNT = 4;
 
     int K = 1024;
     int M = 1024 * K;
@@ -43,8 +42,6 @@ public interface Const {
     List<String> DOUBLE_COLUMNS = new ArrayList<>(DOUBLE_COLUMN_COUNT);
     List<String> STRING_COLUMNS = new ArrayList<>(STRING_COLUMN_COUNT);
 
-    long[] COLUMNS_SIZE = new long[COLUMN_COUNT];
-
     Map<String, Column> COLUMNS_INDEX = new HashMap<>(COLUMN_COUNT);
 
     // compress columns
@@ -68,6 +65,16 @@ public interface Const {
         add("UAPJ");
         add("PQRQ");
         add("UICP");
+        add("AOAO");
+        add("EXGV");
+        add("JCGU");
+        add("TFGW");
+        add("MUBC");
+        add("JHET");
+        add("WKUZ");
+        add("YCTI");
+        add("BBPX");
+        add("HRXI");
     }};
 
     // coding

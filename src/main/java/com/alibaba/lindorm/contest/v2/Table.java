@@ -48,7 +48,7 @@ public class Table {
             ColumnValue.ColumnType columnType = schema.getColumnTypeMap().get(columnName);
             Data file;
             try {
-                file = new Data(Path.of(basePath, this.name + "_" + columnName + ".data"),
+                file = new DiskData(Path.of(basePath, this.name + "_" + columnName + ".data"),
                         StandardOpenOption.WRITE, StandardOpenOption.READ, StandardOpenOption.CREATE);
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -73,6 +73,14 @@ public class Table {
     public static Table load(String basePath, String tableName) throws IOException {
         Table t = new Table(basePath, tableName);
         t.loadSchema();
+        for (Map.Entry<String, Column> e: Const.COLUMNS_INDEX.entrySet()){
+            String columnName = e.getKey();
+            Data data = e.getValue().getData();
+            if (Const.COMPRESS_COLUMNS.contains(columnName)){
+                ByteBuffer buff = File.decompress(data.path());
+                e.getValue().setData(new MemData(buff));
+            }
+        }
         t.loadIndex();
         return t;
     }
@@ -179,10 +187,13 @@ public class Table {
         for (Map.Entry<String, Column> e: Const.COLUMNS_INDEX.entrySet()){
             String columnName = e.getKey();
             Data data = e.getValue().getData();
+            if (data instanceof MemData){
+                continue;
+            }
             data.force();
             data.close();
             if (Const.COMPRESS_COLUMNS.contains(columnName)){
-                File.compress(data.getPath());
+                File.compress(data.path());
             }
         }
         this.flushSchema();
