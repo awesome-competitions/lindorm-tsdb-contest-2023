@@ -21,14 +21,11 @@ public class Block {
 
     private final ByteBuffer[][] stringValues;
 
-    private final Data data;
-
     private int size;
 
     private int flushSize;
 
-    public Block(Data data){
-        this.data = data;
+    public Block(){
         this.timestamps = new long[Const.BLOCK_SIZE];
         this.intValues = new int[Const.INT_COLUMN_COUNT][Const.BLOCK_SIZE];
         this.doubleValues = new double[Const.DOUBLE_COLUMN_COUNT][Const.BLOCK_SIZE];
@@ -119,23 +116,24 @@ public class Block {
             return null;
         }
 
-        ByteBuffer writeBuffer = Context.getBlockWriteBuffer();
-        writeBuffer.clear();
-
         int intCount = Const.INT_COLUMNS.size();
         int doubleCount = Const.DOUBLE_COLUMNS.size();
         int numberCount = intCount + doubleCount;
         int stringCount = Const.STRING_COLUMNS.size();
         int columnCount = numberCount + stringCount;
 
-        int[] positions = new int[columnCount];
+        long[] positions = new long[columnCount];
+        int[] lengths = new int[columnCount];
         double[] maxValues = new double[numberCount];
         double[] sumValues = new double[numberCount];
 
         // write int values
         for (int i = 0; i < intCount; i ++){
-            positions[i] = writeBuffer.position();
-            Codec<int[]> intCodec = Const.COLUMNS_INTEGER_CODEC.getOrDefault(Const.INT_COLUMNS.get(i), Const.DEFAULT_INT_CODEC);
+            ByteBuffer writeBuffer = Context.getBlockWriteBuffer();
+            writeBuffer.clear();
+
+            String columnName = Const.INT_COLUMNS.get(i);
+            Codec<int[]> intCodec = Const.COLUMNS_INTEGER_CODEC.getOrDefault(columnName, Const.DEFAULT_INT_CODEC);
             double max = Long.MIN_VALUE;
             double sum = 0;
             for (int v = 0; v < flushSize; v ++){
@@ -143,20 +141,26 @@ public class Block {
                 sum += intVal;
                 if (intVal > max) max = intVal;
             }
-            long oldPosition = writeBuffer.position();
             intCodec.encode(writeBuffer, intValues[i], flushSize);
-            long newPosition = writeBuffer.position();
-            Const.COLUMNS_SIZE[i] += (newPosition - oldPosition);
+            writeBuffer.flip();
+            lengths[i] = writeBuffer.remaining();
+            Const.COLUMNS_SIZE[i] += writeBuffer.remaining();
 
             maxValues[i] = max;
             sumValues[i] = sum;
+
+            Column column = Const.COLUMNS_INDEX.get(columnName);
+            positions[i] = column.getData().write(writeBuffer);
         }
 
         // write double values
         int columnIndex = intCount;
         for (int i = 0; i < doubleCount; i ++){
-            positions[i + columnIndex] = writeBuffer.position();
-            Codec<double[]> doubleCodec = Const.COLUMNS_DOUBLE_CODEC.getOrDefault(Const.DOUBLE_COLUMNS.get(i), Const.DEFAULT_DOUBLE_CODEC);
+            ByteBuffer writeBuffer = Context.getBlockWriteBuffer();
+            writeBuffer.clear();
+
+            String columnName = Const.DOUBLE_COLUMNS.get(i);
+            Codec<double[]> doubleCodec = Const.COLUMNS_DOUBLE_CODEC.getOrDefault(columnName, Const.DEFAULT_DOUBLE_CODEC);
             double max = Long.MIN_VALUE;
             double sum = 0;
             for (int v = 0; v < flushSize; v ++){
@@ -164,30 +168,36 @@ public class Block {
                 sum += doubleVal;
                 if (doubleVal > max) max = doubleVal;
             }
-            long oldPosition = writeBuffer.position();
             doubleCodec.encode(writeBuffer, doubleValues[i], flushSize);
-            long newPosition = writeBuffer.position();
-            Const.COLUMNS_SIZE[i+columnIndex] += (newPosition - oldPosition);
+            writeBuffer.flip();
+            lengths[i + columnIndex] = writeBuffer.remaining();
+            Const.COLUMNS_SIZE[i+columnIndex] += writeBuffer.remaining();
 
-            maxValues[i + intCount] = max;
-            sumValues[i + intCount] = sum;
+            maxValues[i + columnIndex] = max;
+            sumValues[i + columnIndex] = sum;
+
+            Column column = Const.COLUMNS_INDEX.get(columnName);
+            positions[i + columnIndex] = column.getData().write(writeBuffer);
         }
 
         // write string values
         columnIndex += doubleCount;
         for (int i = 0; i < Const.STRING_COLUMNS.size(); i ++){
-            positions[i + columnIndex] = writeBuffer.position() ;
-            Codec<ByteBuffer[]> stringCodec = Const.COLUMNS_STRING_CODEC.getOrDefault(Const.STRING_COLUMNS.get(i), Const.DEFAULT_STRING_CODEC);
-            long oldPosition = writeBuffer.position();
+            ByteBuffer writeBuffer = Context.getBlockWriteBuffer();
+            writeBuffer.clear();
+
+            String columnName = Const.STRING_COLUMNS.get(i);
+            Codec<ByteBuffer[]> stringCodec = Const.COLUMNS_STRING_CODEC.getOrDefault(columnName, Const.DEFAULT_STRING_CODEC);
             stringCodec.encode(writeBuffer, stringValues[i], flushSize);
-            long newPosition = writeBuffer.position();
-            Const.COLUMNS_SIZE[i + columnIndex] += (newPosition - oldPosition);
+            writeBuffer.flip();
+            lengths[i + columnIndex] = writeBuffer.remaining();
+            Const.COLUMNS_SIZE[i + columnIndex] += writeBuffer.remaining();
+
+            Column column = Const.COLUMNS_INDEX.get(columnName);
+            positions[i + columnIndex] = column.getData().write(writeBuffer);
         }
 
-        writeBuffer.flip();
-        int size = writeBuffer.remaining();
-        long pos = this.data.write(writeBuffer);
-        Header header = new Header(size, flushSize, pos, timestamps[0], positions, maxValues, sumValues);
+        Header header = new Header(flushSize, timestamps[0], positions, lengths, maxValues, sumValues);
         this.clear();
         return header;
     }
@@ -240,10 +250,10 @@ public class Block {
         }
     }
 
-    public static List<Tuple<Long, Map<String, ColumnValue>>> read(Data data, Header header, int start, int end, Collection<String> requestedColumns) throws IOException {
+    public static List<Tuple<Long, Map<String, ColumnValue>>> read(Header header, int start, int end, Collection<String> requestedColumns) throws IOException {
         int count = header.count;
-        int size = header.size;
-        int[] positions = header.positions;
+        long[] positions = header.positions;
+        int[] lengths = header.lengths;
         int intCount = Const.INT_COLUMNS.size();
         int doubleCount = Const.DOUBLE_COLUMNS.size();
         int numberCount = intCount + doubleCount;
@@ -263,15 +273,9 @@ public class Block {
                     break;
             }
 
-            int latestPos = size;
-            if (index < positions.length - 1){
-                latestPos = positions[index + 1];
-            }
-            int currentPos = positions[index];
-
             ByteBuffer readBuffer = Context.getBlockReadBuffer();
             readBuffer.clear();
-            data.read(readBuffer, header.position + currentPos, latestPos - currentPos);
+            column.getData().read(readBuffer, positions[index],  lengths[index]);
             readBuffer.flip();
 
             double[] doubleValues = Context.getBlockDoubleValues();
@@ -316,7 +320,7 @@ public class Block {
         return Arrays.asList(results);
     }
 
-    public static void aggregate(Data data, Header header, int start, int end, String requestedColumn, Aggregator aggregator) throws IOException {
+    public static void aggregate(Header header, int start, int end, String requestedColumn, Aggregator aggregator) throws IOException {
         Column column = Const.COLUMNS_INDEX.get(requestedColumn);
         int index = column.getIndex();
         ColumnValue.ColumnType type = column.getType();
@@ -341,15 +345,12 @@ public class Block {
             return;
         }
 
-        int latestPos = header.size;
-        if (index < header.positions.length - 1){
-            latestPos = header.positions[index + 1];
-        }
-        int currentPos = header.positions[index];
+        long[] positions = header.positions;
+        int[] lengths = header.lengths;
 
         ByteBuffer readBuffer = Context.getBlockReadBuffer();
         readBuffer.clear();
-        data.read(readBuffer, header.position + currentPos, latestPos - currentPos);
+        column.getData().read(readBuffer, positions[index], lengths[index]);
         readBuffer.flip();
 
         double[] doubleValues = Context.getBlockDoubleValues();
@@ -377,37 +378,28 @@ public class Block {
 
     public static class Header {
 
-        private final int size;
-
         private final int count;
-
-        private final long position;
 
         private final long start;
 
-        private final int[] positions;
+        private final long[] positions;
+
+        private final int[] lengths;
 
         private final double[] maxValues;
 
         private final double[] sumValues;
 
-        public Header(int size, int count, long position, long start, int[] positions, double[] maxValues, double[] sumValues) {
-            this.size = size;
+        public Header(int count, long start, long[] positions, int[] lengths, double[] maxValues, double[] sumValues) {
             this.count = count;
-            this.position = position;
             this.start = start;
             this.positions = positions;
+            this.lengths = lengths;
             this.maxValues = maxValues;
             this.sumValues = sumValues;
         }
 
-        public int getSize() {
-            return size;
-        }
 
-        public long getPosition() {
-            return position;
-        }
 
         public int getCount() {
             return count;
@@ -421,8 +413,12 @@ public class Block {
             return start + (long) (count - 1) * Const.TIMESTAMP_INTERVAL;
         }
 
-        public int[] getPositions() {
+        public long[] getPositions() {
             return positions;
+        }
+
+        public int[] getLengths() {
+            return lengths;
         }
 
         public double[] getMaxValues() {
@@ -431,19 +427,6 @@ public class Block {
 
         public double[] getSumValues() {
             return sumValues;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            Header header = (Header) o;
-            return position == header.position;
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(position);
         }
     }
 }

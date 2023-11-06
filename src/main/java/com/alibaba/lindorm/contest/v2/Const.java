@@ -20,7 +20,7 @@ public interface Const {
     int M = 1024 * K;
     int G = 1024 * M;
     int BYTE_BUFFER_SIZE = 512 * K;
-    int DATA_BUFFER_SIZE = 16 * M;
+    int DATA_BUFFER_SIZE = 512 * K;
 
     // vin
     int VIN_COUNT = 5000;

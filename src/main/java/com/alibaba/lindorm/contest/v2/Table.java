@@ -27,17 +27,14 @@ public class Table {
 
     private final Map<Vin, Integer> vinIds;
 
-    private final Data data;
-
     public Table(String basePath, String tableName) throws IOException {
         this.name = tableName;
         this.basePath = basePath;
         this.indexes = new ConcurrentHashMap<>(Const.VIN_COUNT, 0.65F);
         this.vinIds = new ConcurrentHashMap<>();
-        this.data = new Data(Path.of(basePath, tableName + ".data"), StandardOpenOption.WRITE, StandardOpenOption.READ, StandardOpenOption.CREATE);
     }
 
-    public void setSchema(Schema schema) {
+    public void setSchema(Schema schema) throws IOException {
         Const.COLUMNS.clear();
         Const.INT_COLUMNS.clear();
         Const.DOUBLE_COLUMNS.clear();
@@ -48,22 +45,28 @@ public class Table {
         this.schema.getColumnTypeMap().keySet().stream().sorted().forEach(columnName -> {
             Const.COLUMNS.add(columnName);
             ColumnValue.ColumnType columnType = schema.getColumnTypeMap().get(columnName);
+            Data file;
+            try {
+                file = new Data(Path.of(basePath, this.name + "_" + columnName + ".data"),
+                        StandardOpenOption.WRITE, StandardOpenOption.READ, StandardOpenOption.CREATE);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
             switch (columnType){
                 case COLUMN_TYPE_INTEGER:
-                    Const.COLUMNS_INDEX.put(columnName, new Column(Const.INT_COLUMNS.size(), columnType));
+                    Const.COLUMNS_INDEX.put(columnName, new Column(Const.INT_COLUMNS.size(), columnType, file));
                     Const.INT_COLUMNS.add(columnName);
                     break;
                 case COLUMN_TYPE_DOUBLE_FLOAT:
-                    Const.COLUMNS_INDEX.put(columnName, new Column(Const.DOUBLE_COLUMNS.size(), columnType));
+                    Const.COLUMNS_INDEX.put(columnName, new Column(Const.DOUBLE_COLUMNS.size(), columnType, file));
                     Const.DOUBLE_COLUMNS.add(columnName);
                     break;
                 case COLUMN_TYPE_STRING:
-                    Const.COLUMNS_INDEX.put(columnName, new Column(Const.STRING_COLUMNS.size(), columnType));
+                    Const.COLUMNS_INDEX.put(columnName, new Column(Const.STRING_COLUMNS.size(), columnType, file));
                     Const.STRING_COLUMNS.add(columnName);
                     break;
             }
         });
-
     }
 
     public static Table load(String basePath, String tableName) throws IOException {
@@ -82,7 +85,7 @@ public class Table {
     }
 
     public Index getOrCreateVinIndex(Integer vinId){
-        return indexes.computeIfAbsent(vinId, k -> new Index(this.data, vinId));
+        return indexes.computeIfAbsent(vinId, k -> new Index(vinId));
     }
 
     public Index getOrCreateVinIndex(Vin vin){
@@ -172,17 +175,25 @@ public class Table {
         for (Index index: indexes.values()){
             index.flush();
         }
-        this.data.force();
+        for (Column column: Const.COLUMNS_INDEX.values()){
+            column.getData().force();
+        }
         this.flushSchema();
         this.flushIndex();
     }
 
     public long size() throws IOException {
-        return this.data.size();
+        long size = 0;
+        for (Column column: Const.COLUMNS_INDEX.values()){
+            size += column.getData().size();
+        }
+        return size;
     }
 
     public void close() throws IOException {
-        this.data.close();
+        for (Column column: Const.COLUMNS_INDEX.values()){
+            column.getData().close();
+        }
     }
 
     public void flushSchema() throws IOException {
@@ -220,19 +231,18 @@ public class Table {
         int stringCount = Const.STRING_COLUMNS.size();
 
         // write first timestamp
-        ByteBuffer buffer = ByteBuffer.allocate(320 * Const.M);
+        ByteBuffer buffer = ByteBuffer.allocate(450 * Const.M);
         ByteBuffer encode = ByteBuffer.allocate(256 * Const.M);
         for (Index index: indexes.values()){
             List<Block.Header> headers = index.getHeaders();
             buffer.putInt(index.getVin());
             buffer.putShort((short) headers.size());
             for (Block.Header header: headers){
-                buffer.putInt(header.getSize());
                 buffer.putShort((short) header.getCount());
-                buffer.putLong(header.getPosition());
                 buffer.putLong(header.getStart());
                 for (int i = 0; i < numberCount + stringCount; i ++){
-                    buffer.putInt(header.getPositions()[i]);
+                    buffer.putLong(header.getPositions()[i]);
+                    buffer.putInt(header.getLengths()[i]);
                 }
                 for (int i = 0; i < numberCount; i ++){
                     buffer.putDouble(header.getMaxValues()[i]);
@@ -257,7 +267,7 @@ public class Table {
         int stringCount = Const.STRING_COLUMNS.size();
         int columnCount = numberCount + stringCount;
 
-        ByteBuffer buffer = ByteBuffer.allocate(320 * Const.M);
+        ByteBuffer buffer = ByteBuffer.allocate(450 * Const.M);
         ByteBuffer encode = ByteBuffer.allocate(256 * Const.M);
 
         ch.read(encode);
@@ -270,21 +280,21 @@ public class Table {
             int blockSize = buffer.getShort();
             Index index = getOrCreateVinIndex(vinId);
             for (int i = 0; i < blockSize; i ++){
-                int headerSize = buffer.getInt();
                 int headerCount = buffer.getShort();
-                long headerPosition = buffer.getLong();
                 long headerStart = buffer.getLong();
-                int[] headerPositions = new int[columnCount];
+                long[] headerPositions = new long[columnCount];
+                int[] headerLengths = new int[columnCount];
                 double[] maxValues = new double[numberCount];
                 double[] sumValues = new double[numberCount];
                 for (int j = 0; j < columnCount; j ++){
-                    headerPositions[j] = buffer.getInt();
+                    headerPositions[j] = buffer.getLong();
+                    headerLengths[j] = buffer.getInt();
                 }
                 for (int j = 0; j < numberCount; j ++){
                     maxValues[j] = buffer.getDouble();
                     sumValues[j] = buffer.getDouble();
                 }
-                Block.Header header = new Block.Header(headerSize, headerCount, headerPosition, headerStart, headerPositions, maxValues, sumValues);
+                Block.Header header = new Block.Header(headerCount, headerStart, headerPositions, headerLengths, maxValues, sumValues);
                 index.mark(header.getEnd());
                 index.getHeaders().add(header);
             }

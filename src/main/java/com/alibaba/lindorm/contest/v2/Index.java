@@ -19,21 +19,19 @@ public class Index {
 
     private long oldestTimestamp;
 
-    private final Data data;
 
     private Row latestRow;
 
     private Block block;
 
-    public Index(Data data, int vin){
+    public Index(int vin){
         this.vin = vin;
-        this.data = data;
         this.headers = new ArrayList<>(Const.TIME_SPAN / Const.BLOCK_SIZE);
     }
 
     public synchronized void insert(long timestamp, Map<String, ColumnValue> columns) throws IOException {
         if (block == null){
-            block = new Block(data);
+            block = new Block();
         }
         if (block.remaining() == 0){
             this.flush();
@@ -71,7 +69,7 @@ public class Index {
         List<Tuple<Long, Map<String, ColumnValue>>> results = new ArrayList<>();
         this.searchBlocks(start, end, (header, startIndex, endIndex) ->
             // read from disk
-            results.addAll(Block.read(this.data, header, startIndex, endIndex, requestedColumns.isEmpty() ? Const.COLUMNS : requestedColumns))
+            results.addAll(Block.read(header, startIndex, endIndex, requestedColumns.isEmpty() ? Const.COLUMNS : requestedColumns))
         );
         // read from memory
         if (block != null){
@@ -83,7 +81,7 @@ public class Index {
     public void aggregate(long start, long end, String requestedColumn, Aggregator aggregator) throws IOException {
         this.searchBlocks(start, end, (header, startIndex, endIndex) ->
             // read from disk
-            Block.aggregate(this.data, header, startIndex, endIndex, requestedColumn, aggregator)
+            Block.aggregate(header, startIndex, endIndex, requestedColumn, aggregator)
         );
         // read from memory
         if (block != null){

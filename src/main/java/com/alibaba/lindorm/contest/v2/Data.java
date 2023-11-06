@@ -51,10 +51,10 @@ public class Data {
         }
     }
 
-    public int read(ByteBuffer dst, long position, int limit) throws IOException {
+    public int read(ByteBuffer dst, long position, int length) throws IOException {
         try{
             this.lock.readLock().lock();
-            dst.limit(limit);
+            dst.limit(length);
             if (this.writePosition > position){
                 return this.channel.read(dst, position);
             }else if(this.readPosition > position){
@@ -62,7 +62,7 @@ public class Data {
                 long dstAddress = Util.getAddress(dst);
                 Util.copyMemory(srcAddress + position - this.writePosition, dstAddress, dst.limit());
                 dst.position(dst.limit());
-                return limit;
+                return length;
             }
             return 0;
         }finally {
