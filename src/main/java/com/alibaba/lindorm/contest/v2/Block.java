@@ -144,7 +144,6 @@ public class Block {
             intCodec.encode(writeBuffer, intValues[i], flushSize);
             writeBuffer.flip();
             lengths[i] = writeBuffer.remaining();
-            Const.COLUMNS_SIZE[i] += writeBuffer.remaining();
 
             maxValues[i] = max;
             sumValues[i] = sum;
@@ -171,7 +170,6 @@ public class Block {
             doubleCodec.encode(writeBuffer, doubleValues[i], flushSize);
             writeBuffer.flip();
             lengths[i + columnIndex] = writeBuffer.remaining();
-            Const.COLUMNS_SIZE[i+columnIndex] += writeBuffer.remaining();
 
             maxValues[i + columnIndex] = max;
             sumValues[i + columnIndex] = sum;
@@ -191,7 +189,6 @@ public class Block {
             stringCodec.encode(writeBuffer, stringValues[i], flushSize);
             writeBuffer.flip();
             lengths[i + columnIndex] = writeBuffer.remaining();
-            Const.COLUMNS_SIZE[i + columnIndex] += writeBuffer.remaining();
 
             Column column = Const.COLUMNS_INDEX.get(columnName);
             positions[i + columnIndex] = column.getData().write(writeBuffer);

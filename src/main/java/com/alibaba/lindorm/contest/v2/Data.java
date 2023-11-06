@@ -33,6 +33,10 @@ public class Data {
         this.lock = new ReentrantReadWriteLock();
     }
 
+    public Path getPath() {
+        return path;
+    }
+
     public long write(ByteBuffer buffer) throws IOException {
         try{
             this.lock.writeLock().lock();
@@ -75,7 +79,7 @@ public class Data {
     }
 
     public long size() throws IOException {
-        return this.channel.size();
+        return Files.size(this.path);
     }
 
     public void delete() throws IOException {

@@ -1,6 +1,7 @@
 package com.alibaba.lindorm.contest.v2;
 
 import com.alibaba.lindorm.contest.structs.*;
+import com.alibaba.lindorm.contest.util.File;
 import com.alibaba.lindorm.contest.util.Tuple;
 import com.alibaba.lindorm.contest.util.Util;
 import com.alibaba.lindorm.contest.util.Column;
@@ -171,12 +172,18 @@ public class Table {
         return rows;
     }
 
-    public void force() throws IOException {
+    public void forceAndClose() throws IOException {
         for (Index index: indexes.values()){
             index.flush();
         }
-        for (Column column: Const.COLUMNS_INDEX.values()){
-            column.getData().force();
+        for (Map.Entry<String, Column> e: Const.COLUMNS_INDEX.entrySet()){
+            String columnName = e.getKey();
+            Data data = e.getValue().getData();
+            data.force();
+            data.close();
+            if (Const.COMPRESS_COLUMNS.contains(columnName)){
+                File.compress(data.getPath());
+            }
         }
         this.flushSchema();
         this.flushIndex();
@@ -188,12 +195,6 @@ public class Table {
             size += column.getData().size();
         }
         return size;
-    }
-
-    public void close() throws IOException {
-        for (Column column: Const.COLUMNS_INDEX.values()){
-            column.getData().close();
-        }
     }
 
     public void flushSchema() throws IOException {
@@ -231,9 +232,9 @@ public class Table {
         int stringCount = Const.STRING_COLUMNS.size();
 
         // write first timestamp
-        ByteBuffer buffer = ByteBuffer.allocate(450 * Const.M);
-        ByteBuffer encode = ByteBuffer.allocate(256 * Const.M);
+        ByteBuffer buffer = ByteBuffer.allocate(4 * Const.M);
         for (Index index: indexes.values()){
+            buffer.clear();
             List<Block.Header> headers = index.getHeaders();
             buffer.putInt(index.getVin());
             buffer.putShort((short) headers.size());
@@ -249,32 +250,24 @@ public class Table {
                     buffer.putDouble(header.getSumValues()[i]);
                 }
             }
+            buffer.flip();
+            ch.write(buffer);
         }
-        buffer.flip();
-        int total = (int) Zstd.compressByteArray(encode.array(), 0, encode.array().length, buffer.array(), 0, buffer.remaining(), 3);
-        encode.limit(total);
-        ch.write(encode);
-        System.out.println("index file size:" + ch.size());
+        ch.force(true);
+        ch.close();
+        File.compress(indexPath);
+        System.out.println("index file size:" + File.getFileSize(indexPath));
     }
 
     public void loadIndex() throws IOException {
         Path indexPath = Path.of(basePath, name+ ".index");
-        FileChannel ch = FileChannel.open(indexPath, StandardOpenOption.WRITE, StandardOpenOption.READ, StandardOpenOption.CREATE);
 
         int intCount = Const.INT_COLUMNS.size();
         int doubleCount = Const.DOUBLE_COLUMNS.size();
         int numberCount = intCount + doubleCount;
         int stringCount = Const.STRING_COLUMNS.size();
         int columnCount = numberCount + stringCount;
-
-        ByteBuffer buffer = ByteBuffer.allocate(450 * Const.M);
-        ByteBuffer encode = ByteBuffer.allocate(256 * Const.M);
-
-        ch.read(encode);
-        encode.flip();
-        int total = (int) Zstd.decompressByteArray(buffer.array(), 0, buffer.array().length, encode.array(), 0, encode.remaining());
-        buffer.limit(total);
-
+        ByteBuffer buffer = File.decompress(indexPath);
         while (buffer.remaining() > 0){
             int vinId = buffer.getInt();
             int blockSize = buffer.getShort();
@@ -303,5 +296,4 @@ public class Table {
             index.getLatest(Const.EMPTY_COLUMNS);
         }
     }
-
 }

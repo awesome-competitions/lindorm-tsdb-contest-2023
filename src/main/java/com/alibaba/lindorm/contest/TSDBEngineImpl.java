@@ -61,28 +61,26 @@ public class TSDBEngineImpl extends TSDBEngine {
   @Override
   public void shutdown() {
     try {
-      table.force();
+      table.forceAndClose();
       System.out.println("shutdown table:" + table.getName() + ", size:" + table.size());
 
       System.out.println("int columns:");
       for (int i = 0; i < Const.INT_COLUMNS.size(); i++){
         String columnName = Const.INT_COLUMNS.get(i);
-        System.out.println("column " + columnName + " size:" + Const.COLUMNS_SIZE[i]);
+        System.out.println("column " + columnName + " size:" + Const.COLUMNS_INDEX.get(columnName).getData().size());
       }
 
       System.out.println("double columns:");
       for (int i = 0; i < Const.DOUBLE_COLUMNS.size(); i++){
           String columnName = Const.DOUBLE_COLUMNS.get(i);
-          System.out.println("column " + columnName + " size:" + Const.COLUMNS_SIZE[i + Const.INT_COLUMNS.size()]);
+          System.out.println("column " + columnName + " size:" + Const.COLUMNS_INDEX.get(columnName).getData().size());
       }
 
       System.out.println("string columns:");
       for (int i = 0; i < Const.STRING_COLUMNS.size(); i++){
           String columnName = Const.STRING_COLUMNS.get(i);
-          System.out.println("column " + columnName + " size:" + Const.COLUMNS_SIZE[i + Const.INT_COLUMNS.size() + Const.DOUBLE_COLUMNS.size()]);
+          System.out.println("column " + columnName + " size:" + Const.COLUMNS_INDEX.get(columnName).getData().size());
       }
-
-      table.close();
     } catch (Throwable e) {
       e.printStackTrace();
       throw new RuntimeException(e);

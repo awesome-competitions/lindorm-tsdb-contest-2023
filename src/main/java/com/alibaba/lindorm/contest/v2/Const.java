@@ -4,6 +4,7 @@ import com.alibaba.lindorm.contest.structs.Row;
 import com.alibaba.lindorm.contest.util.Column;
 import com.alibaba.lindorm.contest.v2.codec.*;
 import com.alibaba.lindorm.contest.v2.codec.Codec;
+import com.sun.source.tree.UsesTree;
 
 import java.nio.ByteBuffer;
 import java.util.*;
@@ -45,6 +46,29 @@ public interface Const {
     long[] COLUMNS_SIZE = new long[COLUMN_COUNT];
 
     Map<String, Column> COLUMNS_INDEX = new HashMap<>(COLUMN_COUNT);
+
+    // compress columns
+    Set<String> COMPRESS_COLUMNS = new HashSet<>(){{
+        add("LIOS");
+        add("LFZG");
+        add("WLYQ");
+        add("ZTGP");
+        add("DSKQ");
+        add("GMNR");
+        add("BTJH");
+        add("XCDQ");
+        add("JKZL");
+        add("MLBY");
+        add("EQLU");
+        add("KACE");
+        add("YDXB");
+        add("NXCR");
+        add("OZSM");
+        add("SYMN");
+        add("UAPJ");
+        add("PQRQ");
+        add("UICP");
+    }};
 
     // coding
     Map<String, Codec<int[]>> COLUMNS_INTEGER_CODEC = new HashMap<>(COLUMN_COUNT){{
