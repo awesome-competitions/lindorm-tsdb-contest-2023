@@ -2,6 +2,7 @@ package com.alibaba.lindorm.contest.v2;
 
 import com.alibaba.lindorm.contest.structs.ColumnValue;
 import com.alibaba.lindorm.contest.structs.Row;
+import com.alibaba.lindorm.contest.structs.Vin;
 import com.alibaba.lindorm.contest.util.FilterMap;
 import com.alibaba.lindorm.contest.util.Tuple;
 import com.alibaba.lindorm.contest.util.Util;
@@ -11,7 +12,7 @@ import java.util.*;
 
 public class Index {
 
-    private final int vin;
+    private final Vin vin;
 
     private final List<Block.Header> headers;
 
@@ -24,7 +25,7 @@ public class Index {
 
     private Block block;
 
-    public Index(int vin){
+    public Index(Vin vin){
         this.vin = vin;
         this.headers = new ArrayList<>(Const.TIME_SPAN / Const.BLOCK_SIZE);
     }
@@ -50,30 +51,30 @@ public class Index {
     }
 
     public Map<String, ColumnValue> get(long timestamp, Set<String> requestedColumns) throws IOException {
-        List<Tuple<Long, Map<String, ColumnValue>>> results = range(timestamp, timestamp + 1, requestedColumns);
+        List<Row> results = range(timestamp, timestamp + 1, requestedColumns);
         if (results.isEmpty()){
             return Collections.emptyMap();
         }
-        return results.get(0).V();
+        return results.get(0).getColumns();
     }
 
     public Map<String, ColumnValue> getLatest(Set<String> requestedColumns) throws IOException {
         if (latestRow == null || latestRow.getTimestamp() != latestTimestamp) {
             Map<String, ColumnValue> columnValue = this.get(latestTimestamp, Const.EMPTY_COLUMNS);
-            this.latestRow = new Row(null, latestTimestamp, columnValue);
+            this.latestRow = new Row(vin, latestTimestamp, columnValue);
         }
         return new FilterMap<>(this.latestRow.getColumns(), requestedColumns);
     }
 
-    public List<Tuple<Long, Map<String, ColumnValue>>> range(long start, long end, Collection<String> requestedColumns) throws IOException {
-        List<Tuple<Long, Map<String, ColumnValue>>> results = new ArrayList<>();
+    public ArrayList<Row> range(long start, long end, Collection<String> requestedColumns) throws IOException {
+        ArrayList<Row> results = new ArrayList<>();
         this.searchBlocks(start, end, (header, startIndex, endIndex) ->
             // read from disk
-            results.addAll(Block.read(header, startIndex, endIndex, requestedColumns.isEmpty() ? Const.ALL_COLUMNS : requestedColumns))
+            results.addAll(Block.read(vin, header, startIndex, endIndex, requestedColumns.isEmpty() ? Const.ALL_COLUMNS : requestedColumns))
         );
         // read from memory
         if (block != null){
-            results.addAll(block.read(start, end, requestedColumns.isEmpty() ? Const.ALL_COLUMNS : requestedColumns));
+            results.addAll(block.read(vin, start, end, requestedColumns.isEmpty() ? Const.ALL_COLUMNS : requestedColumns));
         }
         return results;
     }
@@ -173,7 +174,7 @@ public class Index {
         return headers;
     }
 
-    public int getVin() {
+    public Vin getVin() {
         return vin;
     }
 }

@@ -23,15 +23,12 @@ public class Table {
 
     private Schema schema;
 
-    private final Map<Integer, Index> indexes;
+    private final Map<Vin, Index> indexes;
 
-    private final Map<Vin, Integer> vinIds;
-
-    public Table(String basePath, String tableName) throws IOException {
+    public Table(String basePath, String tableName) {
         this.name = tableName;
         this.basePath = basePath;
         this.indexes = new ConcurrentHashMap<>(Const.VIN_COUNT, 0.65F);
-        this.vinIds = new ConcurrentHashMap<>();
     }
 
     public void setSchema(Schema schema) throws IOException {
@@ -80,20 +77,16 @@ public class Table {
         return name;
     }
 
-    public Map<Integer, Index> getIndexes() {
+    public Map<Vin, Index> getIndexes() {
         return indexes;
     }
 
-    public Index getOrCreateVinIndex(Integer vinId){
-        return indexes.computeIfAbsent(vinId, k -> new Index(vinId));
-    }
-
     public Index getOrCreateVinIndex(Vin vin){
-        return getOrCreateVinIndex(vinIds.computeIfAbsent(vin, Util::parseVinId));
+        return indexes.computeIfAbsent(vin, k -> new Index(vin));
     }
 
     public Index getVinIndex(Vin vin){
-        return indexes.get(vinIds.computeIfAbsent(vin, Util::parseVinId));
+        return indexes.get(vin);
     }
 
     public void upsert(Collection<Row> rows) throws IOException {
@@ -124,11 +117,7 @@ public class Table {
         if(index == null){
             return Const.EMPTY_ROWS;
         }
-
-        ArrayList<Row> rows = new ArrayList<>();
-        List<Tuple<Long, Map<String, ColumnValue>>> results = index.range(timeLowerBound, timeUpperBound, requestedColumns);
-        results.forEach((tuple) -> rows.add(new Row(vin, tuple.K(), tuple.V())));
-        return rows;
+        return index.range(timeLowerBound, timeUpperBound, requestedColumns);
     }
 
     public ArrayList<Row> executeAggregateQuery(Vin vin, long timeLowerBound, long timeUpperBound, String columnName, com.alibaba.lindorm.contest.structs.Aggregator aggregator) throws IOException {
@@ -254,7 +243,7 @@ public class Table {
         for (Index index: indexes.values()){
             buffer.clear();
             List<Block.Header> headers = index.getHeaders();
-            buffer.putInt(index.getVin());
+            buffer.put(index.getVin().getVin());
             buffer.putShort((short) headers.size());
             for (Block.Header header: headers){
                 buffer.putShort((short) header.getCount());
@@ -294,9 +283,10 @@ public class Table {
         ByteBuffer buffer = File.decompress(indexPath);
         List<Block.Header> headers = new ArrayList<>();
         while (buffer.remaining() > 0){
-            int vinId = buffer.getInt();
+            Vin vin = new Vin(new byte[Const.VIN_LENGTH]);
+            buffer.get(vin.getVin());
             int blockSize = buffer.getShort();
-            Index index = getOrCreateVinIndex(vinId);
+            Index index = getOrCreateVinIndex(vin);
             for (int i = 0; i < blockSize; i ++){
                 int headerCount = buffer.getShort();
                 long headerStart = buffer.getLong();

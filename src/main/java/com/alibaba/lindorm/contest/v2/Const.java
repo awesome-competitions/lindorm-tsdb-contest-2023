@@ -23,6 +23,7 @@ public interface Const {
 
     // vin
     int VIN_COUNT = 5000;
+    int VIN_LENGTH = 17;
 
     // block size
     int BLOCK_SIZE = 600;

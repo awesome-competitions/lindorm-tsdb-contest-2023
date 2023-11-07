@@ -1,6 +1,8 @@
 package com.alibaba.lindorm.contest.v2;
 
 import com.alibaba.lindorm.contest.structs.ColumnValue;
+import com.alibaba.lindorm.contest.structs.Row;
+import com.alibaba.lindorm.contest.structs.Vin;
 import com.alibaba.lindorm.contest.util.Column;
 import com.alibaba.lindorm.contest.util.Tuple;
 import com.alibaba.lindorm.contest.v2.codec.StringCodec;
@@ -199,8 +201,8 @@ public class Block {
         return header;
     }
 
-    public List<Tuple<Long, Map<String, ColumnValue>>> read(long start, long end, Collection<String> requestedColumns) {
-        List<Tuple<Long, Map<String, ColumnValue>>> results = new ArrayList<>();
+    public List<Row> read(Vin vin, long start, long end, Collection<String> requestedColumns) {
+        List<Row> results = new ArrayList<>();
         for(int i = 0; i < size; i ++){
             long t = timestamps[i];
             if (t >= end || t < start){
@@ -222,7 +224,7 @@ public class Block {
                         break;
                 }
             }
-            results.add(new Tuple<>(t, values));
+            results.add(new Row(vin, t, values));
         }
         return results;
     }
@@ -247,7 +249,7 @@ public class Block {
         }
     }
 
-    public static List<Tuple<Long, Map<String, ColumnValue>>> read(Header header, int start, int end, Collection<String> requestedColumns) throws IOException {
+    public static List<Row> read(Vin vin, Header header, int start, int end, Collection<String> requestedColumns) throws IOException {
         int count = header.count;
         long[] positions = header.positions;
         int[] lengths = header.lengths;
@@ -255,7 +257,7 @@ public class Block {
         int doubleCount = Const.DOUBLE_COLUMNS.size();
         int numberCount = intCount + doubleCount;
 
-        Tuple<Long, Map<String, ColumnValue>>[] results = new Tuple[end - start + 1];
+        Row[] results = new Row[end - start + 1];
         for (String requestedColumn: requestedColumns){
             Column column = Const.COLUMNS_INDEX.get(requestedColumn);
             int index = column.getIndex();
@@ -296,20 +298,20 @@ public class Block {
 
             for (int i = start; i <= end; i ++){
                 long t = header.start + (long) i * Const.TIMESTAMP_INTERVAL;
-                Tuple<Long, Map<String, ColumnValue>> result = results[i - start];
+                Row result = results[i - start];
                 if (result == null){
-                    result = new Tuple<>(t, new HashMap<>());
+                    result = new Row(vin, t, new HashMap<>());
                     results[i - start] = result;
                 }
                 switch (type){
                     case COLUMN_TYPE_DOUBLE_FLOAT:
-                        result.V().put(requestedColumn, new ColumnValue.DoubleFloatColumn(doubleValues[i]));
+                        result.getColumns().put(requestedColumn, new ColumnValue.DoubleFloatColumn(doubleValues[i]));
                         break;
                     case COLUMN_TYPE_INTEGER:
-                        result.V().put(requestedColumn, new ColumnValue.IntegerColumn(intValues[i]));
+                        result.getColumns().put(requestedColumn, new ColumnValue.IntegerColumn(intValues[i]));
                         break;
                     case COLUMN_TYPE_STRING:
-                        result.V().put(requestedColumn, new ColumnValue.StringColumn(stringValues[i]));
+                        result.getColumns().put(requestedColumn, new ColumnValue.StringColumn(stringValues[i]));
                         break;
                 }
             }
