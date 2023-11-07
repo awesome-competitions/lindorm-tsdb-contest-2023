@@ -250,7 +250,7 @@ public class Block {
     }
 
     public static List<Row> read(Vin vin, Header header, int start, int end, Collection<String> requestedColumns) throws IOException {
-        int count = header.count;
+        int count = end + 1;
         long[] positions = header.positions;
         int[] lengths = header.lengths;
         int intCount = Const.INT_COLUMNS.size();
@@ -328,7 +328,7 @@ public class Block {
             index += Const.INT_COLUMNS.size();
         }
 
-        int count = header.count;
+        int count = end + 1;
         int requestedCount = end - start + 1;
         boolean isDownsample = aggregator instanceof Downsample;
         if (!isDownsample && aggregator.getColumnFilter() == null && requestedCount == count){
