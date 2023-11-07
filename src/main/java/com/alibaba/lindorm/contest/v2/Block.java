@@ -328,22 +328,22 @@ public class Block {
             index += Const.INT_COLUMNS.size();
         }
 
-        int count = end + 1;
         int requestedCount = end - start + 1;
         boolean isDownsample = aggregator instanceof Downsample;
-        if (!isDownsample && aggregator.getColumnFilter() == null && requestedCount == count){
+        if (!isDownsample && aggregator.getColumnFilter() == null && requestedCount == header.count){
             // return first
             switch (aggregator.getAggregator()){
                 case MAX:
                     aggregator.accept(header.maxValues[index]);
                     break;
                 case AVG:
-                    aggregator.accept(header.sumValues[index], count);
+                    aggregator.accept(header.sumValues[index], header.count);
                     break;
             }
             return;
         }
 
+        int count = end + 1;
         long[] positions = header.positions;
         int[] lengths = header.lengths;
 
