@@ -5,6 +5,7 @@ import com.alibaba.lindorm.contest.util.File;
 import com.alibaba.lindorm.contest.util.Tuple;
 import com.alibaba.lindorm.contest.util.Util;
 import com.alibaba.lindorm.contest.util.Column;
+import com.alibaba.lindorm.contest.v2.codec.Codec;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -254,14 +255,6 @@ public class Table {
                 for (int i = numberCount; i < columnCount; i ++){
                     buffer.putLong(header.getPositions()[i]);
                 }
-                for (int i = 0; i < intCount; i ++){
-                    buffer.putInt((int) header.getMaxValues()[i]);
-                    buffer.putDouble(header.getSumValues()[i]);
-                }
-                for (int i = intCount; i < numberCount; i ++){
-                    buffer.putDouble(header.getMaxValues()[i]);
-                    buffer.putDouble(header.getSumValues()[i]);
-                }
             }
             buffer.flip();
             ch.write(buffer);
@@ -300,14 +293,6 @@ public class Table {
                 for (int j = numberCount; j < columnCount; j ++){
                     headerPositions[j] = buffer.getLong();
                 }
-                for (int j = 0; j < intCount; j ++){
-                    maxValues[j] = buffer.getInt();
-                    sumValues[j] = buffer.getDouble();
-                }
-                for (int j = intCount; j < numberCount; j ++){
-                    maxValues[j] = buffer.getDouble();
-                    sumValues[j] = buffer.getDouble();
-                }
                 Block.Header header = new Block.Header(headerCount, headerStart, headerPositions, headerLengths, maxValues, sumValues);
                 index.mark(header.getEnd());
                 index.getHeaders().add(header);
@@ -315,21 +300,67 @@ public class Table {
             }
         }
 
+        // calculate length
         for (int i = 0; i < columnCount; i ++){
-            int index = i;
+            // get column data
+            String columnName = Const.ALL_COLUMNS.get(i);
+            Column column = Const.COLUMNS_INDEX.get(columnName);
+            Data data = column.getData();
+            ColumnValue.ColumnType type = column.getType();
+
             // sort by position asc
+            int index = i;
             headers.sort(Comparator.comparingLong(o -> o.getPositions()[index]));
             // calculate length
             for (int j = 0; j < headers.size() - 1; j ++){
                 Block.Header header = headers.get(j);
                 Block.Header nextHeader = headers.get(j + 1);
-                header.getLengths()[index] = (int) (nextHeader.getPositions()[index] - header.getPositions()[index]);
+                header.getLengths()[i] = (int) (nextHeader.getPositions()[i] - header.getPositions()[i]);
             }
             // last one
-            String columnName = Const.ALL_COLUMNS.get(i);
-            Column column = Const.COLUMNS_INDEX.get(columnName);
             Block.Header lastHeader = headers.get(headers.size() - 1);
-            lastHeader.getLengths()[index] = (int) (column.getData().size() - lastHeader.getPositions()[index]);
+            lastHeader.getLengths()[i] = (int) (data.size() - lastHeader.getPositions()[i]);
+
+            if (ColumnValue.ColumnType.COLUMN_TYPE_STRING.equals(type)){
+                continue;
+            }
+            // calculate max and sum
+            for (Block.Header header: headers){
+                long pos = header.getPositions()[i];
+                int len = header.getLengths()[i];
+                int count = header.getCount();
+                ByteBuffer readBuffer = Context.getBlockReadBuffer().clear();
+                data.read(readBuffer, pos, len);
+                readBuffer.flip();
+
+                double[] doubleValues = Context.getBlockDoubleValues();
+                int[] intValues = Context.getBlockIntValues();
+
+                double max = 0;
+                double sum = 0;
+                switch (type){
+                    case COLUMN_TYPE_DOUBLE_FLOAT:
+                        Codec<double[]> doubleCodec = Const.COLUMNS_DOUBLE_CODEC.getOrDefault(columnName, Const.DEFAULT_DOUBLE_CODEC);
+                        doubleCodec.decode(readBuffer, doubleValues, count);
+                        for (int j = 0; j < count; j ++){
+                            double doubleVal = doubleValues[j];
+                            sum += doubleVal;
+                            if (doubleVal > max) max = doubleVal;
+                        }
+                        break;
+                    case COLUMN_TYPE_INTEGER:
+                        Codec<int[]> intCodec = Const.COLUMNS_INTEGER_CODEC.getOrDefault(columnName, Const.DEFAULT_INT_CODEC);
+                        intCodec.decode(readBuffer, intValues, count);
+                        for (int j = 0; j < count; j ++){
+                            int intValue = intValues[j];
+                            sum += intValue;
+                            if (intValue > max) max = intValue;
+                        }
+                        break;
+                }
+                header.getMaxValues()[i] = max;
+                header.getSumValues()[i] = sum;
+            }
         }
 
         // load latest
