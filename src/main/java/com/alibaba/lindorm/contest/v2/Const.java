@@ -81,6 +81,11 @@ public interface Const {
         add("FQTH");
         add("SBXA");
         add("XRTP");
+
+        add("FVXS");
+        add("LIYD");
+        add("ZEBY");
+        add("UFPI");
     }};
 
     // coding

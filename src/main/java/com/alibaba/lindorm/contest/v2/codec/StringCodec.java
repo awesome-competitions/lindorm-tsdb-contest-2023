@@ -1,6 +1,5 @@
 package com.alibaba.lindorm.contest.v2.codec;
 
-import com.alibaba.lindorm.contest.util.Brotli;
 import com.alibaba.lindorm.contest.v2.Context;
 import com.github.luben.zstd.Zstd;
 
@@ -36,7 +35,7 @@ public class StringCodec extends Codec<ByteBuffer[]>{
             encodeBuffer.put(buffer);
         }
         encodeBuffer.flip();
-        Zstd.compress(src, encodeBuffer);
+        Zstd.compress(src, encodeBuffer, 1);
     }
 
     @Override
