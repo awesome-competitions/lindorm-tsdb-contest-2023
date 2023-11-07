@@ -69,11 +69,11 @@ public class Index {
         List<Tuple<Long, Map<String, ColumnValue>>> results = new ArrayList<>();
         this.searchBlocks(start, end, (header, startIndex, endIndex) ->
             // read from disk
-            results.addAll(Block.read(header, startIndex, endIndex, requestedColumns.isEmpty() ? Const.COLUMNS : requestedColumns))
+            results.addAll(Block.read(header, startIndex, endIndex, requestedColumns.isEmpty() ? Const.ALL_COLUMNS : requestedColumns))
         );
         // read from memory
         if (block != null){
-            results.addAll(block.read(start, end, requestedColumns.isEmpty() ? Const.COLUMNS : requestedColumns));
+            results.addAll(block.read(start, end, requestedColumns.isEmpty() ? Const.ALL_COLUMNS : requestedColumns));
         }
         return results;
     }

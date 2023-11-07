@@ -5,7 +5,6 @@ import com.alibaba.lindorm.contest.util.File;
 import com.alibaba.lindorm.contest.util.Tuple;
 import com.alibaba.lindorm.contest.util.Util;
 import com.alibaba.lindorm.contest.util.Column;
-import com.github.luben.zstd.Zstd;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -36,23 +35,19 @@ public class Table {
     }
 
     public void setSchema(Schema schema) throws IOException {
-        Const.COLUMNS.clear();
+        Const.ALL_COLUMNS.clear();
         Const.INT_COLUMNS.clear();
         Const.DOUBLE_COLUMNS.clear();
         Const.STRING_COLUMNS.clear();
         Const.COLUMNS_INDEX.clear();
-
         this.schema = schema;
-        this.schema.getColumnTypeMap().keySet().stream().sorted().forEach(columnName -> {
-            Const.COLUMNS.add(columnName);
+
+        List<String> columnNames = new ArrayList<>(schema.getColumnTypeMap().keySet());
+        columnNames.sort(Comparator.naturalOrder());
+        for (String columnName: columnNames){
             ColumnValue.ColumnType columnType = schema.getColumnTypeMap().get(columnName);
-            Data file;
-            try {
-                file = new DiskData(Path.of(basePath, this.name + "_" + columnName + ".data"),
-                        StandardOpenOption.WRITE, StandardOpenOption.READ, StandardOpenOption.CREATE);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            Data file = new DiskData(Path.of(basePath, this.name + "_" + columnName + ".data"),
+                    StandardOpenOption.WRITE, StandardOpenOption.READ, StandardOpenOption.CREATE);
             switch (columnType){
                 case COLUMN_TYPE_INTEGER:
                     Const.COLUMNS_INDEX.put(columnName, new Column(Const.INT_COLUMNS.size(), columnType, file));
@@ -67,20 +62,16 @@ public class Table {
                     Const.STRING_COLUMNS.add(columnName);
                     break;
             }
-        });
+        }
+        Const.ALL_COLUMNS.addAll(Const.INT_COLUMNS);
+        Const.ALL_COLUMNS.addAll(Const.DOUBLE_COLUMNS);
+        Const.ALL_COLUMNS.addAll(Const.STRING_COLUMNS);
     }
 
     public static Table load(String basePath, String tableName) throws IOException {
         Table t = new Table(basePath, tableName);
         t.loadSchema();
-        for (Map.Entry<String, Column> e: Const.COLUMNS_INDEX.entrySet()){
-            String columnName = e.getKey();
-            Data data = e.getValue().getData();
-            if (Const.COMPRESS_COLUMNS.contains(columnName)){
-                ByteBuffer buff = File.decompress(data.path());
-                e.getValue().setData(new MemData(buff));
-            }
-        }
+        t.loadData();
         t.loadIndex();
         return t;
     }
@@ -181,6 +172,20 @@ public class Table {
     }
 
     public void forceAndClose() throws IOException {
+        this.flushSchema();
+        this.flushData();
+        this.flushIndex();
+    }
+
+    public long size() throws IOException {
+        long size = 0;
+        for (Column column: Const.COLUMNS_INDEX.values()){
+            size += column.getData().size();
+        }
+        return size;
+    }
+
+    public void flushData() throws IOException {
         for (Index index: indexes.values()){
             index.flush();
         }
@@ -196,16 +201,17 @@ public class Table {
                 File.compress(data.path());
             }
         }
-        this.flushSchema();
-        this.flushIndex();
     }
 
-    public long size() throws IOException {
-        long size = 0;
-        for (Column column: Const.COLUMNS_INDEX.values()){
-            size += column.getData().size();
+    public void loadData() throws IOException {
+        for (Map.Entry<String, Column> e: Const.COLUMNS_INDEX.entrySet()){
+            String columnName = e.getKey();
+            Data data = e.getValue().getData();
+            if (Const.COMPRESS_COLUMNS.contains(columnName)){
+                ByteBuffer buff = File.decompress(data.path());
+                e.getValue().setData(new MemData(buff));
+            }
         }
-        return size;
     }
 
     public void flushSchema() throws IOException {
@@ -255,11 +261,9 @@ public class Table {
                 buffer.putLong(header.getStart());
                 for (int i = 0; i < numberCount; i ++){
                     buffer.putInt((int) header.getPositions()[i]);
-                    buffer.putShort((short) header.getLengths()[i]);
                 }
                 for (int i = numberCount; i < columnCount; i ++){
                     buffer.putLong(header.getPositions()[i]);
-                    buffer.putInt(header.getLengths()[i]);
                 }
                 for (int i = 0; i < intCount; i ++){
                     buffer.putInt((int) header.getMaxValues()[i]);
@@ -288,6 +292,7 @@ public class Table {
         int stringCount = Const.STRING_COLUMNS.size();
         int columnCount = numberCount + stringCount;
         ByteBuffer buffer = File.decompress(indexPath);
+        List<Block.Header> headers = new ArrayList<>();
         while (buffer.remaining() > 0){
             int vinId = buffer.getInt();
             int blockSize = buffer.getShort();
@@ -301,11 +306,9 @@ public class Table {
                 double[] sumValues = new double[numberCount];
                 for (int j = 0; j < numberCount; j ++){
                     headerPositions[j] = buffer.getInt();
-                    headerLengths[j] = buffer.getShort();
                 }
                 for (int j = numberCount; j < columnCount; j ++){
                     headerPositions[j] = buffer.getLong();
-                    headerLengths[j] = buffer.getInt();
                 }
                 for (int j = 0; j < intCount; j ++){
                     maxValues[j] = buffer.getInt();
@@ -318,9 +321,29 @@ public class Table {
                 Block.Header header = new Block.Header(headerCount, headerStart, headerPositions, headerLengths, maxValues, sumValues);
                 index.mark(header.getEnd());
                 index.getHeaders().add(header);
+                headers.add(header);
             }
+        }
 
-            // load latest
+        for (int i = 0; i < columnCount; i ++){
+            int index = i;
+            // sort by position asc
+            headers.sort(Comparator.comparingLong(o -> o.getPositions()[index]));
+            // calculate length
+            for (int j = 0; j < headers.size() - 1; j ++){
+                Block.Header header = headers.get(j);
+                Block.Header nextHeader = headers.get(j + 1);
+                header.getLengths()[index] = (int) (nextHeader.getPositions()[index] - header.getPositions()[index]);
+            }
+            // last one
+            String columnName = Const.ALL_COLUMNS.get(i);
+            Column column = Const.COLUMNS_INDEX.get(columnName);
+            Block.Header lastHeader = headers.get(headers.size() - 1);
+            lastHeader.getLengths()[index] = (int) (column.getData().size() - lastHeader.getPositions()[index]);
+        }
+
+        // load latest
+        for (Index index: indexes.values()){
             index.getLatest(Const.EMPTY_COLUMNS);
         }
     }

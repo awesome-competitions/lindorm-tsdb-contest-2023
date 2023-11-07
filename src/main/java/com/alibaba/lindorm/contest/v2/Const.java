@@ -4,7 +4,6 @@ import com.alibaba.lindorm.contest.structs.Row;
 import com.alibaba.lindorm.contest.util.Column;
 import com.alibaba.lindorm.contest.v2.codec.*;
 import com.alibaba.lindorm.contest.v2.codec.Codec;
-import com.sun.source.tree.UsesTree;
 
 import java.nio.ByteBuffer;
 import java.util.*;
@@ -37,7 +36,7 @@ public interface Const {
     int INT_COLUMN_COUNT = 40;
     int DOUBLE_COLUMN_COUNT = 10;
     int STRING_COLUMN_COUNT = 10;
-    List<String> COLUMNS = new ArrayList<>(COLUMN_COUNT);
+    List<String> ALL_COLUMNS = new ArrayList<>(COLUMN_COUNT);
     List<String> INT_COLUMNS = new ArrayList<>(INT_COLUMN_COUNT);
     List<String> DOUBLE_COLUMNS = new ArrayList<>(DOUBLE_COLUMN_COUNT);
     List<String> STRING_COLUMNS = new ArrayList<>(STRING_COLUMN_COUNT);
