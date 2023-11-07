@@ -68,12 +68,11 @@ public interface Const {
         add("UICP");
         add("WKUZ");
 
-        add("HJPZ");
-        add("JDOE");
-        add("KFGP");
-        add("KWET");
-        add("WNHB");
-        add("ZZBE");
+        add("FWKW");
+        add("BDPO");
+        add("FQTH");
+        add("SBXA");
+        add("XRTP");
     }};
 
     // coding
