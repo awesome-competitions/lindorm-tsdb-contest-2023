@@ -66,27 +66,12 @@ public interface Const {
         add("UAPJ");
         add("PQRQ");
         add("UICP");
-        add("AOAO");
-        add("EXGV");
-        add("JCGU");
-        add("TFGW");
-        add("MUBC");
-        add("JHET");
         add("WKUZ");
-        add("YCTI");
-        add("BBPX");
-        add("HRXI");
 
         add("FWKW");
         add("BDPO");
         add("FQTH");
         add("SBXA");
-        add("XRTP");
-
-        add("FVXS");
-        add("LIYD");
-        add("ZEBY");
-        add("UFPI");
     }};
 
     // coding
