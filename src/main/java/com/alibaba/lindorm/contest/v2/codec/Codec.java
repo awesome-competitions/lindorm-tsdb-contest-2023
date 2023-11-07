@@ -68,6 +68,10 @@ public abstract class Codec<T> {
         return new StringCodec(0);
     }
 
+    public static Codec<ByteBuffer[]> stringRunLengthCodec(int runLengthMaxSize){
+        return new StringRunLengthCodec(runLengthMaxSize);
+    }
+
     public static Codec<ByteBuffer[]> originalStringCodec(){
         return new OriginalStringCodec(0);
     }

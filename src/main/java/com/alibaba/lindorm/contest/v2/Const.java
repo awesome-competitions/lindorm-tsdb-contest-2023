@@ -66,7 +66,16 @@ public interface Const {
         add("UAPJ");
         add("PQRQ");
         add("UICP");
+        add("AOAO");
+        add("EXGV");
+        add("JCGU");
+        add("TFGW");
+        add("MUBC");
+        add("JHET");
         add("WKUZ");
+        add("YCTI");
+        add("BBPX");
+        add("HRXI");
 
         add("FWKW");
         add("BDPO");
@@ -135,9 +144,9 @@ public interface Const {
 
     Map<String, Codec<ByteBuffer[]>> COLUMNS_STRING_CODEC = new HashMap<>(COLUMN_COUNT){{
         put("FVXS", Codec.stringHuffman3Codec(-1));
-        put("LIYD", Codec.stringCodec(1));
-        put("ZEBY", Codec.stringCodec(7));
-        put("UFPI", Codec.stringCodec(5));
+        put("LIYD", Codec.stringRunLengthCodec(BLOCK_SIZE));
+        put("ZEBY", Codec.stringRunLengthCodec(BLOCK_SIZE));
+        put("UFPI", Codec.stringRunLengthCodec(BLOCK_SIZE));
         put("UZSV", Codec.stringCodec(15));
         put("FLLY", Codec.stringCodec(1));
         put("JUBK", Codec.stringCodec(100));

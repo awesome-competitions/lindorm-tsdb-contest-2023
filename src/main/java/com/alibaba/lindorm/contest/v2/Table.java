@@ -133,6 +133,7 @@ public class Table {
         if(index == null){
             return Const.EMPTY_ROWS;
         }
+
         ArrayList<Row> rows = new ArrayList<>();
         List<Tuple<Long, Map<String, ColumnValue>>> results = index.range(timeLowerBound, timeUpperBound, requestedColumns);
         results.forEach((tuple) -> rows.add(new Row(vin, tuple.K(), tuple.V())));
@@ -164,7 +165,6 @@ public class Table {
         }
         ArrayList<Row> rows = new ArrayList<>();
         ColumnValue.ColumnType type = this.schema.getColumnTypeMap().get(columnName);
-
 
         Downsample downsample = new Downsample(timeLowerBound, timeUpperBound, interval, type, aggregator, columnFilter);
         index.aggregate(timeLowerBound, timeUpperBound, columnName, downsample);
@@ -241,6 +241,7 @@ public class Table {
         int doubleCount = Const.DOUBLE_COLUMNS.size();
         int numberCount = intCount + doubleCount;
         int stringCount = Const.STRING_COLUMNS.size();
+        int columnCount = numberCount + stringCount;
 
         // write first timestamp
         ByteBuffer buffer = ByteBuffer.allocate(4 * Const.M);
@@ -252,11 +253,19 @@ public class Table {
             for (Block.Header header: headers){
                 buffer.putShort((short) header.getCount());
                 buffer.putLong(header.getStart());
-                for (int i = 0; i < numberCount + stringCount; i ++){
+                for (int i = 0; i < numberCount; i ++){
+                    buffer.putInt((int) header.getPositions()[i]);
+                    buffer.putShort((short) header.getLengths()[i]);
+                }
+                for (int i = numberCount; i < columnCount; i ++){
                     buffer.putLong(header.getPositions()[i]);
                     buffer.putInt(header.getLengths()[i]);
                 }
-                for (int i = 0; i < numberCount; i ++){
+                for (int i = 0; i < intCount; i ++){
+                    buffer.putInt((int) header.getMaxValues()[i]);
+                    buffer.putDouble(header.getSumValues()[i]);
+                }
+                for (int i = intCount; i < numberCount; i ++){
                     buffer.putDouble(header.getMaxValues()[i]);
                     buffer.putDouble(header.getSumValues()[i]);
                 }
@@ -290,11 +299,19 @@ public class Table {
                 int[] headerLengths = new int[columnCount];
                 double[] maxValues = new double[numberCount];
                 double[] sumValues = new double[numberCount];
-                for (int j = 0; j < columnCount; j ++){
+                for (int j = 0; j < numberCount; j ++){
+                    headerPositions[j] = buffer.getInt();
+                    headerLengths[j] = buffer.getShort();
+                }
+                for (int j = numberCount; j < columnCount; j ++){
                     headerPositions[j] = buffer.getLong();
                     headerLengths[j] = buffer.getInt();
                 }
-                for (int j = 0; j < numberCount; j ++){
+                for (int j = 0; j < intCount; j ++){
+                    maxValues[j] = buffer.getInt();
+                    sumValues[j] = buffer.getDouble();
+                }
+                for (int j = intCount; j < numberCount; j ++){
                     maxValues[j] = buffer.getDouble();
                     sumValues[j] = buffer.getDouble();
                 }

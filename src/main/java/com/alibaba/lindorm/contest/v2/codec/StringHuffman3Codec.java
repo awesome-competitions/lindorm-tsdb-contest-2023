@@ -19,16 +19,14 @@ public class StringHuffman3Codec extends Codec<ByteBuffer[]>{
         int[] intData = new int[size];
         for (int i = 0; i < size; i++) {
             ByteBuffer buffer = data[i];
-            if (buffer.remaining() > 0){
-                if (buffer.get(0) == '-'){
-                    intData[i] = -1;
-                }else if (buffer.get(0) == '0'){
-                    intData[i] = 0;
-                }else if (buffer.get(0) == '1'){
-                    intData[i] = 1;
-                }else{
-                    throw new RuntimeException("invalid value " + new String(buffer.array()));
-                }
+            if (buffer.get(0) == '-'){
+                intData[i] = -1;
+            }else if (buffer.get(0) == '0'){
+                intData[i] = 0;
+            }else if (buffer.get(0) == '1'){
+                intData[i] = 1;
+            }else{
+                throw new RuntimeException("invalid value " + new String(buffer.array()));
             }
         }
         codec.encode(src, intData, size);

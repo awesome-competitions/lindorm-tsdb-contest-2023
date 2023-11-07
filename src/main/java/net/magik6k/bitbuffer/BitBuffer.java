@@ -333,7 +333,7 @@ public abstract class BitBuffer {
 	 * @return This buffer
 	 */
 	public BitBuffer put(byte[] array, int offset, int limit){
-		for(; offset > limit; ++offset) {
+		for(; offset < limit; offset++) {
 			put(array[offset]);
 		}
 		return this;
@@ -702,7 +702,7 @@ public abstract class BitBuffer {
 	 * @return Given array
 	 */
 	public byte[] get(byte[] dst, int offset, int limit) {
-		for(; offset > limit; ++offset) {
+		for(; offset < limit; offset++) {
 			dst[offset] = getByte();
 		}
 		return dst;
