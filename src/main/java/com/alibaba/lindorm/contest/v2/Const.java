@@ -46,6 +46,7 @@ public interface Const {
 
     // compress columns
     Set<String> COMPRESS_COLUMNS = new HashSet<>(){{
+        add("GMVS");
         add("LIOS");
         add("LFZG");
         add("WLYQ");
@@ -65,16 +66,14 @@ public interface Const {
         add("UAPJ");
         add("PQRQ");
         add("UICP");
-        add("AOAO");
-        add("EXGV");
-        add("JCGU");
-        add("TFGW");
-        add("MUBC");
-        add("JHET");
         add("WKUZ");
-        add("YCTI");
-        add("BBPX");
-        add("HRXI");
+
+        add("HJPZ");
+        add("JDOE");
+        add("KFGP");
+        add("KWET");
+        add("WNHB");
+        add("ZZBE");
     }};
 
     // coding
