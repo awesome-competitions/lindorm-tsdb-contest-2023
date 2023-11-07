@@ -359,19 +359,21 @@ public class Table {
         Data data = column.getData();
         ColumnValue.ColumnType type = column.getType();
 
+        ByteBuffer readBuffer = ByteBuffer.allocateDirect(Const.BYTE_BUFFER_SIZE);
+        double[] doubleValues = new double[Const.BLOCK_SIZE];
+        int[] intValues = new int[Const.BLOCK_SIZE];
+
         // calculate max and sum
         for (Block.Header header: headers){
             long pos = header.getPositions()[i];
             int len = header.getLengths()[i];
             int count = header.getCount();
-            ByteBuffer readBuffer = Context.getBlockReadBuffer().clear();
+
+            readBuffer.clear();
             data.read(readBuffer, pos, len);
             readBuffer.flip();
 
-            double[] doubleValues = Context.getBlockDoubleValues();
-            int[] intValues = Context.getBlockIntValues();
-
-            double max = 0;
+            double max = Long.MIN_VALUE;
             double sum = 0;
             switch (type){
                 case COLUMN_TYPE_DOUBLE_FLOAT:

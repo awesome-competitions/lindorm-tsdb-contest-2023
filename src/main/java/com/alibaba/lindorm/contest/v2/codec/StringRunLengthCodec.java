@@ -50,6 +50,9 @@ public class StringRunLengthCodec extends Codec<ByteBuffer[]>{
             int count = buffer.getInt(runLengthSizeBits);
             for (int i = 0; i < count; i++) {
                 data[index++] = ByteBuffer.wrap(bytes);
+                if (index == size){
+                    break;
+                }
             }
         }
     }

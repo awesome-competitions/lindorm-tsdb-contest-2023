@@ -49,6 +49,9 @@ public class RunLengthIntCodec extends Codec<int[]>{
             int len = buffer.getInt(runLengthSizeBits);
             for (int i = 0; i < len; i++) {
                 data[index++] = v;
+                if (index == size){
+                    break;
+                }
             }
         }
     }

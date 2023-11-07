@@ -398,8 +398,6 @@ public class Block {
             this.sumValues = sumValues;
         }
 
-
-
         public int getCount() {
             return count;
         }
