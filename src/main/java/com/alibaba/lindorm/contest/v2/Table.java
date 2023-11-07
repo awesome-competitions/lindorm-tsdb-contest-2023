@@ -15,6 +15,9 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 
 public class Table {
 
@@ -66,7 +69,7 @@ public class Table {
         Const.ALL_COLUMNS.addAll(Const.STRING_COLUMNS);
     }
 
-    public static Table load(String basePath, String tableName) throws IOException {
+    public static Table load(String basePath, String tableName) throws IOException, InterruptedException {
         Table t = new Table(basePath, tableName);
         t.loadSchema();
         t.loadData();
@@ -265,7 +268,7 @@ public class Table {
         System.out.println("index file size:" + File.getFileSize(indexPath));
     }
 
-    public void loadIndex() throws IOException {
+    public void loadIndex() throws IOException, InterruptedException {
         Path indexPath = Path.of(basePath, name+ ".index");
 
         int intCount = Const.INT_COLUMNS.size();
@@ -275,6 +278,8 @@ public class Table {
         int columnCount = numberCount + stringCount;
         ByteBuffer buffer = File.decompress(indexPath);
         List<Block.Header> headers = new ArrayList<>();
+
+        Util.println("start load index");
         while (buffer.remaining() > 0){
             Vin vin = new Vin(new byte[Const.VIN_LENGTH]);
             buffer.get(vin.getVin());
@@ -301,6 +306,7 @@ public class Table {
         }
 
         // calculate length
+        Util.println("start calculate header lengths");
         for (int i = 0; i < columnCount; i ++){
             // get column data
             String columnName = Const.ALL_COLUMNS.get(i);
@@ -320,52 +326,76 @@ public class Table {
             // last one
             Block.Header lastHeader = headers.get(headers.size() - 1);
             lastHeader.getLengths()[i] = (int) (data.size() - lastHeader.getPositions()[i]);
-
-            if (ColumnValue.ColumnType.COLUMN_TYPE_STRING.equals(type)){
-                continue;
-            }
-            // calculate max and sum
-            for (Block.Header header: headers){
-                long pos = header.getPositions()[i];
-                int len = header.getLengths()[i];
-                int count = header.getCount();
-                ByteBuffer readBuffer = Context.getBlockReadBuffer().clear();
-                data.read(readBuffer, pos, len);
-                readBuffer.flip();
-
-                double[] doubleValues = Context.getBlockDoubleValues();
-                int[] intValues = Context.getBlockIntValues();
-
-                double max = 0;
-                double sum = 0;
-                switch (type){
-                    case COLUMN_TYPE_DOUBLE_FLOAT:
-                        Codec<double[]> doubleCodec = Const.COLUMNS_DOUBLE_CODEC.getOrDefault(columnName, Const.DEFAULT_DOUBLE_CODEC);
-                        doubleCodec.decode(readBuffer, doubleValues, count);
-                        for (int j = 0; j < count; j ++){
-                            double doubleVal = doubleValues[j];
-                            sum += doubleVal;
-                            if (doubleVal > max) max = doubleVal;
-                        }
-                        break;
-                    case COLUMN_TYPE_INTEGER:
-                        Codec<int[]> intCodec = Const.COLUMNS_INTEGER_CODEC.getOrDefault(columnName, Const.DEFAULT_INT_CODEC);
-                        intCodec.decode(readBuffer, intValues, count);
-                        for (int j = 0; j < count; j ++){
-                            int intValue = intValues[j];
-                            sum += intValue;
-                            if (intValue > max) max = intValue;
-                        }
-                        break;
-                }
-                header.getMaxValues()[i] = max;
-                header.getSumValues()[i] = sum;
-            }
         }
+
+        //calculate max and sum
+        Util.println("start calculate max and sum values");
+        ThreadPoolExecutor pools = (ThreadPoolExecutor) Executors.newFixedThreadPool(16);
+        CountDownLatch cdl = new CountDownLatch(numberCount);
+        for (int i = 0; i < numberCount; i ++){
+            int finalI = i;
+            pools.execute(() -> {
+                try {
+                    loadMaxAndSumValues(finalI, headers);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }finally {
+                    cdl.countDown();
+                    Util.println("load max and sum " + finalI + " done");
+                }
+            });
+        }
+        cdl.await();
 
         // load latest
         for (Index index: indexes.values()){
             index.getLatest(Const.EMPTY_COLUMNS);
         }
     }
+
+    public void loadMaxAndSumValues(int i, List<Block.Header> headers) throws IOException {
+        String columnName = Const.ALL_COLUMNS.get(i);
+        Column column = Const.COLUMNS_INDEX.get(columnName);
+        Data data = column.getData();
+        ColumnValue.ColumnType type = column.getType();
+
+        // calculate max and sum
+        for (Block.Header header: headers){
+            long pos = header.getPositions()[i];
+            int len = header.getLengths()[i];
+            int count = header.getCount();
+            ByteBuffer readBuffer = Context.getBlockReadBuffer().clear();
+            data.read(readBuffer, pos, len);
+            readBuffer.flip();
+
+            double[] doubleValues = Context.getBlockDoubleValues();
+            int[] intValues = Context.getBlockIntValues();
+
+            double max = 0;
+            double sum = 0;
+            switch (type){
+                case COLUMN_TYPE_DOUBLE_FLOAT:
+                    Codec<double[]> doubleCodec = Const.COLUMNS_DOUBLE_CODEC.getOrDefault(columnName, Const.DEFAULT_DOUBLE_CODEC);
+                    doubleCodec.decode(readBuffer, doubleValues, count);
+                    for (int j = 0; j < count; j ++){
+                        double doubleVal = doubleValues[j];
+                        sum += doubleVal;
+                        if (doubleVal > max) max = doubleVal;
+                    }
+                    break;
+                case COLUMN_TYPE_INTEGER:
+                    Codec<int[]> intCodec = Const.COLUMNS_INTEGER_CODEC.getOrDefault(columnName, Const.DEFAULT_INT_CODEC);
+                    intCodec.decode(readBuffer, intValues, count);
+                    for (int j = 0; j < count; j ++){
+                        int intValue = intValues[j];
+                        sum += intValue;
+                        if (intValue > max) max = intValue;
+                    }
+                    break;
+            }
+            header.getMaxValues()[i] = max;
+            header.getSumValues()[i] = sum;
+        }
+    }
+
 }

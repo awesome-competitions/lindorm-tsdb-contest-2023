@@ -20,16 +20,11 @@ public class MemData extends Data{
     }
 
     public int read(ByteBuffer dst, long position, int length) throws IOException {
-        try{
-            this.lock.readLock().lock();
-            dst.limit(length);
-            for (int i = 0; i < length; i++) {
-                dst.put(data.get((int)position + i));
-            }
-            return length;
-        }finally {
-            this.lock.readLock().unlock();
+        dst.limit(length);
+        for (int i = 0; i < length; i++) {
+            dst.put(data.get((int)position + i));
         }
+        return length;
     }
 
     public void close() throws IOException {

@@ -95,6 +95,10 @@ public class Util {
         return timestamp / 1000 * 1000;
     }
 
+    public static void println(Object o){
+        System.out.println(System.currentTimeMillis() + " " + o);
+    }
+
     public static void main(String[] args) {
         System.out.println(parseBits(Integer.MAX_VALUE, true));
     }
