@@ -55,7 +55,7 @@ public class TestBenchmarkRead {
 
   static final int parallel = 1;
 
-  static final int vinCount = 150 / parallel;
+  static final int vinCount = 50 / parallel;
 
   public static void main(String[] args) {
     File dataDir = new File(Const.TEST_DATA_DIR);

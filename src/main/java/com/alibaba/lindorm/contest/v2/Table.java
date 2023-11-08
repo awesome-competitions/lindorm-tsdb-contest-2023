@@ -47,19 +47,14 @@ public class Table {
         columnNames.sort(Comparator.naturalOrder());
         for (String columnName: columnNames){
             ColumnValue.ColumnType columnType = schema.getColumnTypeMap().get(columnName);
-            Data file = new DiskData(Path.of(basePath, this.name + "_" + columnName + ".data"),
-                    StandardOpenOption.WRITE, StandardOpenOption.READ, StandardOpenOption.CREATE);
             switch (columnType){
                 case COLUMN_TYPE_INTEGER:
-                    Const.COLUMNS_INDEX.put(columnName, new Column(Const.INT_COLUMNS.size(), columnType, file));
                     Const.INT_COLUMNS.add(columnName);
                     break;
                 case COLUMN_TYPE_DOUBLE_FLOAT:
-                    Const.COLUMNS_INDEX.put(columnName, new Column(Const.DOUBLE_COLUMNS.size(), columnType, file));
                     Const.DOUBLE_COLUMNS.add(columnName);
                     break;
                 case COLUMN_TYPE_STRING:
-                    Const.COLUMNS_INDEX.put(columnName, new Column(Const.STRING_COLUMNS.size(), columnType, file));
                     Const.STRING_COLUMNS.add(columnName);
                     break;
             }
@@ -67,6 +62,13 @@ public class Table {
         Const.ALL_COLUMNS.addAll(Const.INT_COLUMNS);
         Const.ALL_COLUMNS.addAll(Const.DOUBLE_COLUMNS);
         Const.ALL_COLUMNS.addAll(Const.STRING_COLUMNS);
+        for (int i = 0; i < Const.ALL_COLUMNS.size(); i++){
+            String columnName = Const.ALL_COLUMNS.get(i);
+            ColumnValue.ColumnType columnType = schema.getColumnTypeMap().get(columnName);
+            Data file = new DiskData(Path.of(basePath, this.name + "_" + columnName + ".data"),
+                    StandardOpenOption.WRITE, StandardOpenOption.READ, StandardOpenOption.CREATE);
+            Const.COLUMNS_INDEX.put(columnName, new Column(i, columnType, file));
+        }
     }
 
     public static Table load(String basePath, String tableName) throws IOException, InterruptedException {

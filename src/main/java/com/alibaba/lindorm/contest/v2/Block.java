@@ -4,6 +4,7 @@ import com.alibaba.lindorm.contest.structs.ColumnValue;
 import com.alibaba.lindorm.contest.structs.Row;
 import com.alibaba.lindorm.contest.structs.Vin;
 import com.alibaba.lindorm.contest.util.Column;
+import com.alibaba.lindorm.contest.util.ColumnMap;
 import com.alibaba.lindorm.contest.v2.codec.Codec;
 
 import java.io.IOException;
@@ -208,18 +209,20 @@ public class Block {
             if (t >= end || t < start){
                 continue;
             }
-            Map<String, ColumnValue> values = new HashMap<>();
+            Map<String, ColumnValue> values = new ColumnMap(requestedColumns, Const.ALL_COLUMNS.size());
             for (String requestedColumn: requestedColumns){
                 Column column = Const.COLUMNS_INDEX.get(requestedColumn);
                 int columnIndex = column.getIndex();
                 switch(column.getType()){
                     case COLUMN_TYPE_DOUBLE_FLOAT:
+                        columnIndex -= Const.INT_COLUMNS.size();
                         values.put(requestedColumn, new ColumnValue.DoubleFloatColumn(this.doubleValues[columnIndex][i]));
                         break;
                     case COLUMN_TYPE_INTEGER:
                         values.put(requestedColumn, new ColumnValue.IntegerColumn(this.intValues[columnIndex][i]));
                         break;
                     case COLUMN_TYPE_STRING:
+                        columnIndex -= Const.INT_COLUMNS.size() + Const.DOUBLE_COLUMNS.size();
                         values.put(requestedColumn, new ColumnValue.StringColumn(this.stringValues[columnIndex][i]));
                         break;
                 }
@@ -240,6 +243,7 @@ public class Block {
             int columnIndex = column.getIndex();
             switch (type){
                 case COLUMN_TYPE_DOUBLE_FLOAT:
+                    columnIndex -= Const.INT_COLUMNS.size();
                     consumer.accept(t, this.doubleValues[columnIndex][i]);
                     break;
                 case COLUMN_TYPE_INTEGER:
@@ -253,7 +257,7 @@ public class Block {
         Row[] results = new Row[end - start + 1];
         for (int i = start; i <= end; i ++){
             long t = header.start + (long) i * Const.TIMESTAMP_INTERVAL;
-            results[i - start] = new Row(vin, t, new HashMap<>());
+            results[i - start] = new Row(vin, t, new ColumnMap(requestedColumns, Const.ALL_COLUMNS.size()));
         }
 
         for (String requestedColumn: requestedColumns){
@@ -266,22 +270,10 @@ public class Block {
         int count = end + 1;
         long[] positions = header.positions;
         int[] lengths = header.lengths;
-        int intCount = Const.INT_COLUMNS.size();
-        int doubleCount = Const.DOUBLE_COLUMNS.size();
-        int numberCount = intCount + doubleCount;
 
         Column column = Const.COLUMNS_INDEX.get(requestedColumn);
         int index = column.getIndex();
         ColumnValue.ColumnType type = column.getType();
-
-        switch (type){
-            case COLUMN_TYPE_DOUBLE_FLOAT:
-                index += intCount;
-                break;
-            case COLUMN_TYPE_STRING:
-                index += numberCount;
-                break;
-        }
 
         ByteBuffer readBuffer = Context.getBlockReadBuffer();
         readBuffer.clear();
@@ -327,10 +319,6 @@ public class Block {
         Column column = Const.COLUMNS_INDEX.get(requestedColumn);
         int index = column.getIndex();
         ColumnValue.ColumnType type = column.getType();
-
-        if (type.equals(ColumnValue.ColumnType.COLUMN_TYPE_DOUBLE_FLOAT)){
-            index += Const.INT_COLUMNS.size();
-        }
 
         int requestedCount = end - start + 1;
         boolean isDownsample = aggregator instanceof Downsample;
