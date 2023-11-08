@@ -18,7 +18,7 @@ public interface Const {
     int K = 1024;
     int M = 1024 * K;
     int G = 1024 * M;
-    int BYTE_BUFFER_SIZE = 512 * K;
+    int BYTE_BUFFER_SIZE = 128 * K;
     int DATA_BUFFER_SIZE = 512 * K;
 
     // vin

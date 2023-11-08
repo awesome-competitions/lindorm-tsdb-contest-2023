@@ -359,9 +359,9 @@ public class Table {
         Data data = column.getData();
         ColumnValue.ColumnType type = column.getType();
 
-        ByteBuffer readBuffer = Context.getBlockReadBuffer();
-        double[] doubleValues = Context.getBlockDoubleValues();
-        int[] intValues = Context.getBlockIntValues();
+        ByteBuffer readBuffer = ByteBuffer.allocateDirect(Const.BYTE_BUFFER_SIZE);
+        double[] doubleValues = new double[Const.BLOCK_SIZE];
+        int[] intValues = new int[Const.BLOCK_SIZE];
 
         // calculate max and sum
         for (Block.Header header: headers){
