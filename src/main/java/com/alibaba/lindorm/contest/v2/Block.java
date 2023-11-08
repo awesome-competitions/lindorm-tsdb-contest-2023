@@ -250,36 +250,14 @@ public class Block {
     }
 
     public static List<Row> read(Vin vin, Header header, int start, int end, Collection<String> requestedColumns) throws IOException {
-        int count = end + 1;
-        long[] positions = header.positions;
-        int[] lengths = header.lengths;
-        int intCount = Const.INT_COLUMNS.size();
-        int doubleCount = Const.DOUBLE_COLUMNS.size();
-        int numberCount = intCount + doubleCount;
-
         Row[] results = new Row[end - start + 1];
         for (int i = start; i <= end; i ++){
             long t = header.start + (long) i * Const.TIMESTAMP_INTERVAL;
-            results[i - start] = new Row(vin, t, new ConcurrentHashMap<>());
+            results[i - start] = new Row(vin, t, new HashMap<>());
         }
 
-        ThreadPoolExecutor pools = Context.getPools();
-        CountDownLatch cdl = new CountDownLatch(requestedColumns.size());
         for (String requestedColumn: requestedColumns){
-            pools.execute(() -> {
-                try {
-                    readColumnValue(header, start, end, requestedColumn, results);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                } finally {
-                    cdl.countDown();
-                }
-            });
-        }
-        try {
-            cdl.await();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+            readColumnValue(header, start, end, requestedColumn, results);
         }
         return Arrays.asList(results);
     }
