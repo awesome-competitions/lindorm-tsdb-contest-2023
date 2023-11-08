@@ -40,8 +40,6 @@ public class Context {
 
     private final ThreadPoolExecutor pools;
 
-    private final Semaphore semaphore;
-
     public Context() {
         this.blockWriteBuffer = ByteBuffer.allocateDirect(Const.BYTE_BUFFER_SIZE);
         this.blockReadBuffer = ByteBuffer.allocateDirect(Const.BYTE_BUFFER_SIZE);
@@ -51,7 +49,6 @@ public class Context {
         this.blockDoubleValues = new double[Const.BLOCK_SIZE];
         this.blockStringValues = new ByteBuffer[Const.BLOCK_SIZE];
         this.pools = (ThreadPoolExecutor) Executors.newFixedThreadPool(16);
-        this.semaphore = new Semaphore(0);
     }
 
     public static ByteBuffer getBlockWriteBuffer() {
@@ -86,7 +83,4 @@ public class Context {
         return get().pools;
     }
 
-    public static Semaphore getSemaphore() {
-        return get().semaphore;
-    }
 }

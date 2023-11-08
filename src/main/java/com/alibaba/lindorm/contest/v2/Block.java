@@ -10,7 +10,7 @@ import com.alibaba.lindorm.contest.v2.codec.Codec;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.*;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadPoolExecutor;
 
 public class Block {
@@ -238,7 +238,7 @@ public class Block {
         }
 
         ThreadPoolExecutor pools = Context.getPools();
-        Semaphore semaphore = Context.getSemaphore();
+        CountDownLatch cdl = new CountDownLatch(requestedColumns.size());
         for (String requestedColumn: requestedColumns){
             pools.execute(() -> {
                 try {
@@ -246,12 +246,12 @@ public class Block {
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 } finally {
-                    semaphore.release();
+                    cdl.countDown();
                 }
             });
         }
         try {
-            semaphore.acquire(requestedColumns.size());
+            cdl.await();
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
