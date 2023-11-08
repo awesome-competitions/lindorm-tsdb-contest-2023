@@ -330,7 +330,7 @@ public class Table {
 
         //calculate max and sum
         Util.println("start calculate max and sum values");
-        ThreadPoolExecutor pools = (ThreadPoolExecutor) Executors.newFixedThreadPool(16);
+        ThreadPoolExecutor pools = (ThreadPoolExecutor) Executors.newFixedThreadPool(32);
         CountDownLatch cdl = new CountDownLatch(numberCount);
         for (int i = 0; i < numberCount; i ++){
             int finalI = i;
@@ -398,6 +398,8 @@ public class Table {
             header.getMaxValues()[i] = max;
             header.getSumValues()[i] = sum;
         }
+
+        Util.clean(readBuffer);
     }
 
 }
