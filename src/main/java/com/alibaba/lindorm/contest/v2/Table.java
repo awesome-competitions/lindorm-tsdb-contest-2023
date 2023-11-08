@@ -330,11 +330,11 @@ public class Table {
 
         //calculate max and sum
         Util.println("start calculate max and sum values");
-        ThreadPoolExecutor pools = (ThreadPoolExecutor) Executors.newFixedThreadPool(32);
+
         CountDownLatch cdl = new CountDownLatch(numberCount);
         for (int i = 0; i < numberCount; i ++){
             int finalI = i;
-            pools.execute(() -> {
+            Context.getPools().execute(() -> {
                 try {
                     loadMaxAndSumValues(finalI, headers);
                 } catch (IOException e) {
@@ -359,9 +359,9 @@ public class Table {
         Data data = column.getData();
         ColumnValue.ColumnType type = column.getType();
 
-        ByteBuffer readBuffer = ByteBuffer.allocateDirect(Const.BYTE_BUFFER_SIZE);
-        double[] doubleValues = new double[Const.BLOCK_SIZE];
-        int[] intValues = new int[Const.BLOCK_SIZE];
+        ByteBuffer readBuffer = Context.getBlockReadBuffer();
+        double[] doubleValues = Context.getBlockDoubleValues();
+        int[] intValues = Context.getBlockIntValues();
 
         // calculate max and sum
         for (Block.Header header: headers){
