@@ -10,8 +10,7 @@ import com.alibaba.lindorm.contest.v2.codec.Codec;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadPoolExecutor;
 
 public class Block {
@@ -127,8 +126,6 @@ public class Block {
 
         long[] positions = new long[columnCount];
         int[] lengths = new int[columnCount];
-        double[] maxValues = new double[numberCount];
-        double[] sumValues = new double[numberCount];
 
         // write int values
         for (int i = 0; i < intCount; i ++){
@@ -137,19 +134,9 @@ public class Block {
 
             String columnName = Const.INT_COLUMNS.get(i);
             Codec<int[]> intCodec = Const.COLUMNS_INTEGER_CODEC.getOrDefault(columnName, Const.DEFAULT_INT_CODEC);
-            double max = Long.MIN_VALUE;
-            double sum = 0;
-            for (int v = 0; v < flushSize; v ++){
-                int intVal = intValues[i][v];
-                sum += intVal;
-                if (intVal > max) max = intVal;
-            }
             intCodec.encode(writeBuffer, intValues[i], flushSize);
             writeBuffer.flip();
             lengths[i] = writeBuffer.remaining();
-
-            maxValues[i] = max;
-            sumValues[i] = sum;
 
             Column column = Const.COLUMNS_INDEX.get(columnName);
             positions[i] = column.getData().write(writeBuffer);
@@ -163,19 +150,9 @@ public class Block {
 
             String columnName = Const.DOUBLE_COLUMNS.get(i);
             Codec<double[]> doubleCodec = Const.COLUMNS_DOUBLE_CODEC.getOrDefault(columnName, Const.DEFAULT_DOUBLE_CODEC);
-            double max = Long.MIN_VALUE;
-            double sum = 0;
-            for (int v = 0; v < flushSize; v ++){
-                double doubleVal = doubleValues[i][v];
-                sum += doubleVal;
-                if (doubleVal > max) max = doubleVal;
-            }
             doubleCodec.encode(writeBuffer, doubleValues[i], flushSize);
             writeBuffer.flip();
             lengths[i + columnIndex] = writeBuffer.remaining();
-
-            maxValues[i + columnIndex] = max;
-            sumValues[i + columnIndex] = sum;
 
             Column column = Const.COLUMNS_INDEX.get(columnName);
             positions[i + columnIndex] = column.getData().write(writeBuffer);
@@ -197,7 +174,7 @@ public class Block {
             positions[i + columnIndex] = column.getData().write(writeBuffer);
         }
 
-        Header header = new Header(flushSize, timestamps[0], positions, lengths, maxValues, sumValues);
+        Header header = new Header(flushSize, timestamps[0], positions, lengths);
         this.clear();
         return header;
     }
@@ -260,8 +237,23 @@ public class Block {
             results[i - start] = new Row(vin, t, new ColumnMap(requestedColumns, Const.ALL_COLUMNS.size()));
         }
 
+        ThreadPoolExecutor pools = Context.getPools();
+        Semaphore semaphore = Context.getSemaphore();
         for (String requestedColumn: requestedColumns){
-            readColumnValue(header, start, end, requestedColumn, results);
+            pools.execute(() -> {
+                try {
+                    readColumnValue(header, start, end, requestedColumn, results);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                } finally {
+                    semaphore.release();
+                }
+            });
+        }
+        try {
+            semaphore.acquire(requestedColumns.size());
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
         return Arrays.asList(results);
     }
@@ -322,7 +314,12 @@ public class Block {
 
         int requestedCount = end - start + 1;
         boolean isDownsample = aggregator instanceof Downsample;
-        if (!isDownsample && aggregator.getColumnFilter() == null && requestedCount == header.count){
+        if (!isDownsample &&
+                aggregator.getColumnFilter() == null &&
+                requestedCount == header.count &&
+                header.maxValues != null &&
+                header.sumValues != null
+        ){
             // return first
             switch (aggregator.getAggregator()){
                 case MAX:
@@ -388,6 +385,10 @@ public class Block {
             this.lengths = lengths;
             this.maxValues = maxValues;
             this.sumValues = sumValues;
+        }
+
+        public Header(int count, long start, long[] positions, int[] lengths) {
+            this(count, start, positions, lengths, null, null);
         }
 
         public int getCount() {

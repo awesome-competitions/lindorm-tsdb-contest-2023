@@ -2,6 +2,7 @@ package com.alibaba.lindorm.contest.v2;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadPoolExecutor;
 
 public class Context {
@@ -39,6 +40,8 @@ public class Context {
 
     private final ThreadPoolExecutor pools;
 
+    private final Semaphore semaphore;
+
     public Context() {
         this.blockWriteBuffer = ByteBuffer.allocateDirect(Const.BYTE_BUFFER_SIZE);
         this.blockReadBuffer = ByteBuffer.allocateDirect(Const.BYTE_BUFFER_SIZE);
@@ -48,6 +51,7 @@ public class Context {
         this.blockDoubleValues = new double[Const.BLOCK_SIZE];
         this.blockStringValues = new ByteBuffer[Const.BLOCK_SIZE];
         this.pools = (ThreadPoolExecutor) Executors.newFixedThreadPool(16);
+        this.semaphore = new Semaphore(0);
     }
 
     public static ByteBuffer getBlockWriteBuffer() {
@@ -66,7 +70,6 @@ public class Context {
         return get().codecDecodeBuffer;
     }
 
-
     public static int[] getBlockIntValues() {
         return get().blockIntValues;
     }
@@ -81,5 +84,9 @@ public class Context {
 
     public static ThreadPoolExecutor getPools() {
         return get().pools;
+    }
+
+    public static Semaphore getSemaphore() {
+        return get().semaphore;
     }
 }
