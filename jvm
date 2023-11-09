@@ -1,5 +1,5 @@
 -Xms512m
--Xmx5120m
--XX:MaxDirectMemorySize=2048m
+-Xmx6144m
+-XX:MaxDirectMemorySize=1280m
 -XX:ParallelGCThreads=8
 -XX:+UseParallelGC
