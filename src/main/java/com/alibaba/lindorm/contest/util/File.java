@@ -44,7 +44,7 @@ public class File {
                 baos.write(buffer, 0, bytesRead);
             }
         }
-        ByteBuffer buffer = ByteBuffer.allocateDirect(baos.size());
+        ByteBuffer buffer = ByteBuffer.allocate(baos.size());
         buffer.put(baos.toByteArray());
         buffer.flip();
         return buffer;

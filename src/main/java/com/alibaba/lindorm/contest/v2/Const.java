@@ -69,6 +69,18 @@ public interface Const {
         add("PQRQ");
         add("UICP");
         add("WKUZ");
+
+        add("KFGP");
+//        add("ZZBE");
+//        add("HJPZ");
+        add("JDOE");
+//        add("KWET");
+//        add("WNHB");
+//        add("ENVH");
+//        add("CSRC");
+//        add("GONE");
+//        add("BZPV");
+
 //        add("AOAO");
 //        add("EXGV");
 //        add("JCGU");
