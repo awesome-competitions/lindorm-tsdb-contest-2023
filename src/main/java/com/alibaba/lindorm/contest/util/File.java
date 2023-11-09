@@ -34,18 +34,16 @@ public class File {
         Files.move(output, input);
     }
 
-    public static ByteBuffer decompress(Path src) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    public static ByteBuffer decompress(Path src, int size) throws IOException {
+        ByteBuffer buffer = ByteBuffer.allocate(size);
+        byte[] bs = new byte[4096];
         try (FileInputStream fis = new FileInputStream(src.toString());
              ZstdInputStream zis = new ZstdInputStream(fis);) {
-            byte[] buffer = new byte[4096];
             int bytesRead;
-            while ((bytesRead = zis.read(buffer)) != -1) {
-                baos.write(buffer, 0, bytesRead);
+            while ((bytesRead = zis.read(bs)) != -1) {
+                buffer.put(bs, 0, bytesRead);
             }
         }
-        ByteBuffer buffer = ByteBuffer.allocate(baos.size());
-        buffer.put(baos.toByteArray());
         buffer.flip();
         return buffer;
     }

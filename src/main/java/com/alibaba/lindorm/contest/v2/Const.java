@@ -7,6 +7,7 @@ import com.alibaba.lindorm.contest.v2.codec.Codec;
 
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public interface Const {
 
@@ -45,6 +46,8 @@ public interface Const {
     List<String> STRING_COLUMNS = new ArrayList<>(STRING_COLUMN_COUNT);
 
     Map<String, Column> COLUMNS_INDEX = new HashMap<>(COLUMN_COUNT);
+
+    Map<String, Integer> FILE_SIZE = new ConcurrentHashMap<>();
 
     // compress columns
     Set<String> COMPRESS_COLUMNS = new HashSet<>(){{

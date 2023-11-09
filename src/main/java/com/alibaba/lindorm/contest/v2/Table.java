@@ -2,7 +2,6 @@ package com.alibaba.lindorm.contest.v2;
 
 import com.alibaba.lindorm.contest.structs.*;
 import com.alibaba.lindorm.contest.util.File;
-import com.alibaba.lindorm.contest.util.Tuple;
 import com.alibaba.lindorm.contest.util.Util;
 import com.alibaba.lindorm.contest.util.Column;
 import com.alibaba.lindorm.contest.v2.codec.Codec;
@@ -16,8 +15,6 @@ import java.nio.file.StandardOpenOption;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
 
 public class Table {
 
@@ -73,6 +70,7 @@ public class Table {
 
     public static Table load(String basePath, String tableName) throws IOException, InterruptedException {
         Table t = new Table(basePath, tableName);
+        t.loadFileSize();
         t.loadSchema();
         t.loadData();
         t.loadIndex();
@@ -170,6 +168,7 @@ public class Table {
         this.flushSchema();
         this.flushData();
         this.flushIndex();
+        this.flushFileSize();
     }
 
     public long size() throws IOException {
@@ -193,6 +192,7 @@ public class Table {
             data.force();
             data.close();
             if (Const.COMPRESS_COLUMNS.contains(columnName)){
+                Const.FILE_SIZE.put(columnName, (int) File.getFileSize(data.path()));
                 File.compress(data.path());
             }
         }
@@ -203,7 +203,7 @@ public class Table {
             String columnName = e.getKey();
             Data data = e.getValue().getData();
             if (Const.COMPRESS_COLUMNS.contains(columnName)){
-                ByteBuffer buff = File.decompress(data.path());
+                ByteBuffer buff = File.decompress(data.path(), Const.FILE_SIZE.get(columnName));
                 e.getValue().setData(new MemData(buff));
             }
         }
@@ -266,8 +266,33 @@ public class Table {
         }
         ch.force(true);
         ch.close();
+
+        Const.FILE_SIZE.put("_index", (int) File.getFileSize(indexPath));
         File.compress(indexPath);
         System.out.println("index file size:" + File.getFileSize(indexPath));
+    }
+
+    public void flushFileSize() throws IOException {
+        Path fsize = Path.of(basePath, name+ ".fsize");
+        StringBuilder builder = new StringBuilder();
+        for(Map.Entry<String, Integer> entry : Const.FILE_SIZE.entrySet()){
+            builder.append(entry.getKey())
+                    .append(":")
+                    .append(entry.getValue())
+                    .append("\n");
+        }
+        Files.write(fsize, builder.toString().getBytes(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+    }
+
+    public void loadFileSize() throws IOException {
+        byte[] bytes = Files.readAllBytes(Path.of(basePath, name + ".fsize"));
+        String[] lines = new String(bytes).split("\n");
+        for(String line: lines){
+            String[] kv = line.split(":");
+            String columnName = kv[0];
+            int size = Integer.parseInt(kv[1]);
+            Const.FILE_SIZE.put(columnName, size);
+        }
     }
 
     public void loadIndex() throws IOException, InterruptedException {
@@ -278,7 +303,7 @@ public class Table {
         int numberCount = intCount + doubleCount;
         int stringCount = Const.STRING_COLUMNS.size();
         int columnCount = numberCount + stringCount;
-        ByteBuffer buffer = File.decompress(indexPath);
+        ByteBuffer buffer = File.decompress(indexPath, Const.FILE_SIZE.get("_index"));
         List<Block.Header> headers = new ArrayList<>();
 
         Util.println("start load index");
