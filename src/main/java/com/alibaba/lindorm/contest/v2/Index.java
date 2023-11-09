@@ -20,14 +20,13 @@ public class Index {
 
     private long oldestTimestamp;
 
-
     private Row latestRow;
 
     private Block block;
 
     public Index(Vin vin){
         this.vin = vin;
-        this.headers = new ArrayList<>(Const.TIME_SPAN / Const.BLOCK_SIZE);
+        this.headers = new ArrayList<>((Const.TIME_SPAN + Const.BLOCK_SIZE - 1) / Const.BLOCK_SIZE);
     }
 
     public synchronized void insert(long timestamp, Map<String, ColumnValue> columns) throws IOException {
@@ -90,47 +89,32 @@ public class Index {
         }
     }
 
-    // binary search
-    public int searchBlock(long t) {
-        if (headers.isEmpty()){
-            return -1;
-        }
-        int left = 0;
-        int right = headers.size() - 1;
-
-        if (t <= headers.get(left).getStart()){
+    public int searchBlock(long first, long last, long t) {
+        if (t < first){
             return 0;
         }
-        if (t > headers.get(right).getEnd()){
-            return -1;
+        if (t > last){
+            return headers.size() - 1;
         }
-        while (true){
-            int mid = (left + right) / 2;
-            Block.Header header = headers.get(mid);
-            if (t < header.getStart()){
-                right = mid - 1;
-            }else if (t > header.getEnd()){
-                left = mid + 1;
-            }else {
-                return mid;
-            }
-            if (left > right){
-                return left;
-            }
-        }
+        return (int) ((t - first) / 1000 / Const.BLOCK_SIZE);
     }
 
     public void searchBlocks(long start, long end, ThConsumer<Block.Header, Integer, Integer> consumer) throws IOException {
-        // binary search
-        int target = searchBlock(start);
-        if (target == -1){
+        if (headers.isEmpty()){
             return;
         }
-        for (int i = target; i < headers.size(); i++) {
+        long first = headers.get(0).getStart();
+        long last = headers.get(headers.size() - 1).getEnd();
+        if (start < first && end < first){
+            return;
+        }
+        if (start > last && end > last){
+            return;
+        }
+        int left = searchBlock(first, last, start);
+        int right = searchBlock(first, last, end);
+        for (int i = left; i <= right; i++) {
             Block.Header header = headers.get(i);
-            if (header.getStart() > end){
-                break;
-            }
             long startTs = Util.trim(Math.max(start, header.getStart()));
             if (startTs < start) startTs += Const.TIMESTAMP_INTERVAL;
             long endTs = Util.trim(Math.min(end-1, header.getEnd()));

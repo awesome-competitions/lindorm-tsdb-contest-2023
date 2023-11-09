@@ -27,6 +27,8 @@ public interface Const {
 
     // block size
     int BLOCK_SIZE = 600;
+    int BLOCK_BUFFER_SIZE = 610;
+
     // the time span of all the data
     int TIME_SPAN = 60 * 60 * 10;
 

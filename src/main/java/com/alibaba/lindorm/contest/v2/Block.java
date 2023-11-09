@@ -28,10 +28,10 @@ public class Block {
     private int flushSize;
 
     public Block(){
-        this.timestamps = new long[Const.BLOCK_SIZE];
-        this.intValues = new int[Const.INT_COLUMN_COUNT][Const.BLOCK_SIZE];
-        this.doubleValues = new double[Const.DOUBLE_COLUMN_COUNT][Const.BLOCK_SIZE];
-        this.stringValues = new ByteBuffer[Const.STRING_COLUMN_COUNT][Const.BLOCK_SIZE];
+        this.timestamps = new long[Const.BLOCK_BUFFER_SIZE];
+        this.intValues = new int[Const.INT_COLUMN_COUNT][Const.BLOCK_BUFFER_SIZE];
+        this.doubleValues = new double[Const.DOUBLE_COLUMN_COUNT][Const.BLOCK_BUFFER_SIZE];
+        this.stringValues = new ByteBuffer[Const.STRING_COLUMN_COUNT][Const.BLOCK_BUFFER_SIZE];
     }
 
     public void insert(long timestamp, Map<String, ColumnValue> columns){
@@ -49,7 +49,7 @@ public class Block {
     }
 
     public int remaining(){
-        return Const.BLOCK_SIZE - size;
+        return Const.BLOCK_BUFFER_SIZE - size;
     }
 
     public int getSize() {
@@ -110,6 +110,7 @@ public class Block {
            }
            this.flushSize ++;
         }
+        this.flushSize = Math.min(this.flushSize, Const.BLOCK_SIZE);
     }
 
     public Header flush() throws IOException {
