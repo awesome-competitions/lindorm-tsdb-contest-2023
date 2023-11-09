@@ -15,17 +15,20 @@ public class TestXOR {
         double[] numbers = {154476.05679147458,154491.5267799328,154492.2854211078,154490.20782726153,154490.97573887615,154488.3228144937,154489.0859333985,154486.44652734432,154486.07722810772,154486.8448577259,154474.98827819715,154475.74691827522,154473.12911031581,154473.89224518865,154471.81914717602,154472.5822820575};
 //        double[] numbers = {9973.29309055919, 9973.39245805256,9973.397330989092,9973.383986099192,9973.38891858201,9973.371878204334,9973.376779902414,9973.359826356242,9973.357454257546,9973.362384929032,9973.286227238877,9973.291100168366,9973.274285352003,9973.27918715265,9973.26587114058,9973.270772941281};
 
-        int count = 0;
+        long preXor = 0;
+        long prePreXor = 0;
         for (int i = 1; i < numbers.length; i ++){
             double pre = numbers[0];
             double curr = numbers[i];
             long v1 = Double.doubleToLongBits(pre);
             long v2 = Double.doubleToLongBits(curr);
             long xorVal = v1 ^ v2;
-            System.out.println(Long.numberOfLeadingZeros(xorVal) + " " + Long.numberOfTrailingZeros(xorVal) + " " + xorVal);
-            count += 64 - Long.numberOfLeadingZeros(xorVal) - Long.numberOfTrailingZeros(xorVal);
+            long xorVal2 = preXor ^ xorVal;
+            System.out.println(Long.numberOfLeadingZeros(xorVal2) + " " + Long.numberOfTrailingZeros(xorVal2) + " " + xorVal2);
+
+            preXor = xorVal;
         }
-        System.out.println(count);
+
 
     }
 }

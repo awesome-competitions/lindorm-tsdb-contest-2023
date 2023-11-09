@@ -26,8 +26,8 @@ public interface Const {
     int VIN_LENGTH = 17;
 
     // block size
-    int BLOCK_SIZE = 600;
-    int BLOCK_BUFFER_SIZE = 610;
+    int BLOCK_SIZE = 500;
+    int BLOCK_BUFFER_SIZE = 510;
 
     // the time span of all the data
     int TIME_SPAN = 60 * 60 * 10;
@@ -81,15 +81,15 @@ public interface Const {
 //        add("GONE");
 //        add("BZPV");
 
-//        add("AOAO");
-//        add("EXGV");
-//        add("JCGU");
-//        add("TFGW");
-//        add("MUBC");
-//        add("JHET");
-//        add("YCTI");
-//        add("BBPX");
-//        add("HRXI");
+        add("AOAO");
+        add("EXGV");
+        add("JCGU");
+        add("TFGW");
+        add("MUBC");
+        add("JHET");
+        add("YCTI");
+        add("BBPX");
+        add("HRXI");
 
         add("FWKW");
         add("BDPO");
@@ -97,10 +97,12 @@ public interface Const {
         add("SBXA");
         add("XRTP");
 
-//        add("FVXS");
-//        add("LIYD");
-//        add("ZEBY");
-//        add("UFPI");
+        add("FVXS");
+        add("LIYD");
+        add("ZEBY");
+        add("UFPI");
+        add("FLLY");
+        add("SCHU");
     }};
 
     // coding
