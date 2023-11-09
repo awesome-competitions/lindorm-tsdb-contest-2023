@@ -306,6 +306,7 @@ public class Table {
                 headers.add(header);
             }
         }
+        Util.clean(buffer);
 
         // calculate length
         Util.println("start calculate header lengths");

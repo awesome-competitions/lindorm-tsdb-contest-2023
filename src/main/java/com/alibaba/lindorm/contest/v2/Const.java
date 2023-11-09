@@ -67,15 +67,15 @@ public interface Const {
         add("PQRQ");
         add("UICP");
         add("WKUZ");
-        add("AOAO");
-        add("EXGV");
-        add("JCGU");
-        add("TFGW");
-        add("MUBC");
-        add("JHET");
-        add("YCTI");
-        add("BBPX");
-        add("HRXI");
+//        add("AOAO");
+//        add("EXGV");
+//        add("JCGU");
+//        add("TFGW");
+//        add("MUBC");
+//        add("JHET");
+//        add("YCTI");
+//        add("BBPX");
+//        add("HRXI");
 
         add("FWKW");
 //        add("BDPO");
