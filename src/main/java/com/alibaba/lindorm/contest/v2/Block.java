@@ -236,24 +236,8 @@ public class Block {
             long t = header.start + (long) i * Const.TIMESTAMP_INTERVAL;
             results[i - start] = new Row(vin, t, new ColumnMap(requestedColumns, Const.ALL_COLUMNS.size()));
         }
-
-        ThreadPoolExecutor pools = Context.getPools();
-        CountDownLatch cdl = new CountDownLatch(requestedColumns.size());
         for (String requestedColumn: requestedColumns){
-            pools.execute(() -> {
-                try {
-                    readColumnValue(header, start, end, requestedColumn, results);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                } finally {
-                    cdl.countDown();
-                }
-            });
-        }
-        try {
-            cdl.await();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+            readColumnValue(header, start, end, requestedColumn, results);
         }
         return Arrays.asList(results);
     }
