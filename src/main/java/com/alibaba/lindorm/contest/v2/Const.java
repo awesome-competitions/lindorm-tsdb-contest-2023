@@ -26,7 +26,7 @@ public interface Const {
     int VIN_LENGTH = 17;
 
     // block size
-    int BLOCK_SIZE = 400;
+    int BLOCK_SIZE = 600;
     // the time span of all the data
     int TIME_SPAN = 60 * 60 * 10;
 
