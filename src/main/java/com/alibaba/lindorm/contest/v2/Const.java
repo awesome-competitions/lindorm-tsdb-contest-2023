@@ -71,11 +71,11 @@ public interface Const {
         add("WKUZ");
 
         add("KFGP");
-//        add("ZZBE");
-//        add("HJPZ");
+        add("ZZBE");
+        add("HJPZ");
         add("JDOE");
-//        add("KWET");
-//        add("WNHB");
+        add("KWET");
+        add("WNHB");
 //        add("ENVH");
 //        add("CSRC");
 //        add("GONE");
@@ -92,10 +92,10 @@ public interface Const {
 //        add("HRXI");
 
         add("FWKW");
-//        add("BDPO");
-//        add("FQTH");
-//        add("SBXA");
-//        add("XRTP");
+        add("BDPO");
+        add("FQTH");
+        add("SBXA");
+        add("XRTP");
 
 //        add("FVXS");
 //        add("LIYD");
