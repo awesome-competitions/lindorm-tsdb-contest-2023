@@ -79,9 +79,9 @@ public interface Const {
         add("JDOE");
         add("KWET");
         add("WNHB");
-//        add("ENVH");
+        add("ENVH");
 //        add("CSRC");
-//        add("GONE");
+        add("GONE");
 //        add("BZPV");
 
         add("AOAO");
@@ -104,8 +104,8 @@ public interface Const {
         add("LIYD");
         add("ZEBY");
         add("UFPI");
-        add("FLLY");
-        add("SCHU");
+//        add("FLLY");
+//        add("SCHU");
     }};
 
     // coding

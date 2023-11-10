@@ -1,4 +1,4 @@
 -Xms512m
--Xmx7200m
+-Xmx7300m
 -XX:ParallelGCThreads=8
 -XX:+UseParallelGC
